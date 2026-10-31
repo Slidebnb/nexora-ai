@@ -1,0 +1,32 @@
+# Beta-Pilot (Masterplan Phase 4)
+
+## Ziel
+10–20 passende Nutzer (Büro und Selbstständige mit wiederkehrender Dateiarbeit) sollen **ohne Entwicklerhilfe** vom Installieren über das Onboarding zum ersten echten Erfolg kommen.
+
+## Auswahl
+- Windows 10/11, wöchentlich mindestens 1 h wiederkehrende Datei-, Recherche- oder Antwortarbeit
+- Mischung: 50 % ohne eigenen KI-Schlüssel (nur lokale Funktionen), 50 % mit Anthropic/OpenAI-Schlüssel
+
+## Abnahme-Checkliste für den frischen Windows-PC (vor dem Pilot, manuell)
+1. Installer aus der CI herunterladen und auf frischem Windows (VM) ohne Node/Python ausführen
+2. Start: „Worker: verbunden“ innerhalb von 30 s
+3. Ordner-Organisator mit Testordner: Freigabe → Verschieben → Undo
+4. Web-Recherche mit 3 öffentlichen Seiten → CSV öffnet sich in Excel mit korrekten Umlauten
+5. PDF-Analyse mit 2 echten PDFs → Bericht verlinkt die Dateien
+6. Entwurf → `.eml` öffnet in Outlook als Entwurf
+7. API-Schlüssel speichern → nach Neustart weiterhin „hinterlegt“
+8. Deinstallieren: Programm entfernt, Nutzerdaten bleiben erhalten
+
+## Messgrößen (manuell erhoben, ohne Telemetrie)
+| Messgröße | Erhebung | Ziel |
+|---|---|---|
+| Aktivierung | Installiert und erster Vorgang erfolgreich innerhalb 24 h | ≥ 70 % |
+| Erfolgsquote | erfolgreiche ÷ gestartete Vorgänge (Nutzer exportiert die Aktivitäten-Ansicht als Screenshot) | ≥ 80 % |
+| Zeitersparnis | Selbstauskunft je Workflow: Minuten vorher und nachher | ≥ 30 min/Woche |
+| Supportvolumen | Tickets je Nutzer in 2 Wochen | ≤ 1 |
+| Zahlungsbereitschaft | Interview plus Angebot (Starter/Pro) | ≥ 30 % „würde zahlen“ |
+
+## Ablauf (3 Wochen)
+- Woche 0: Einladung, 15-Minuten-Onboarding-Call (nur beobachten, nicht helfen)
+- Woche 1–2: freie Nutzung, wöchentliche Kurzumfrage
+- Woche 3: Interview (Nutzen, Vertrauen in Freigaben, Preis), Angebot mit Pilotrabatt
