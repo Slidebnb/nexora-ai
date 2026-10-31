@@ -10,7 +10,7 @@ export function CostChart() {
   const demo = useNexora((s) => s.demoMode)
 
   return (
-    <Panel title={demo ? 'API-Kosten (simuliert)' : 'API-Kosten'} bodyClassName="p-2 h-48">
+    <Panel title={demo ? 'API-Kosten (simuliert)' : 'API-Kosten'} className="h-60" bodyClassName="p-2">
       {series.length === 0 ? (
         <EmptyState>Keine Kostendaten. Werte stammen ausschließlich aus cost_updated-Events.</EmptyState>
       ) : (

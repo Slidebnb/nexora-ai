@@ -14,3 +14,13 @@ Im Ordner `app`:
 | Unit-Tests | `pnpm test` |
 | Typecheck + Produktions-Build | `pnpm build` |
 | Gebaute App starten | `pnpm preview` |
+| End-to-End-Test (nach `pnpm build`) | `pnpm e2e` |
+
+## Zum ersten Ausprobieren
+
+1. `pnpm install`
+2. `pnpm dev`
+3. In der App unten auf **Demo-Modus öffnen** klicken, dann auf **Demo starten**.
+4. Wenn das Freigabe-Fenster erscheint, **Erlauben** oder **Ablehnen** wählen.
+
+Alles im Demo-Modus ist simuliert und als **DEMO** gekennzeichnet. Echte Aufgaben folgen mit dem lokalen Worker (Phase 2).

@@ -73,6 +73,7 @@ try {
     await win.getByText(/1 Quelle fehlgeschlagen/).first().waitFor({ timeout: 15_000 })
     await win.getByRole('navigation').getByRole('button', { name: 'Aktivitäten' }).click()
     assert.equal(await win.locator('tbody tr').count(), 2)
+    await win.getByRole('region', { name: 'API-Kosten (simuliert)' }).locator('.recharts-area').waitFor()
     await win.screenshot({ path: join(shots, '05-aktivitaeten.png') })
   })
 

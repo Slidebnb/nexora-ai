@@ -28,6 +28,6 @@ export default defineConfig({
     root: resolve(import.meta.dirname, 'src/renderer'),
     resolve: { alias: shared },
     plugins: [react(), tailwindcss(), cspMetaPlugin()],
-    build: { rollupOptions: { input: resolve(import.meta.dirname, 'src/renderer/index.html') } }
+    build: { minify: true, rollupOptions: { input: resolve(import.meta.dirname, 'src/renderer/index.html') } }
   }
 })

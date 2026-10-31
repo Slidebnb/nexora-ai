@@ -6,6 +6,7 @@ import { isTerminal } from '../state/runReducer'
 import { respondDemoApproval, stopDemoRun } from '../demo/controller'
 import { RunStatusBadge } from '../components/common/StatusBadge'
 import { ApprovalCard } from '../components/approvals/ApprovalCenter'
+import { CostChart } from '../components/kpi/CostChart'
 import { DemoTag, EmptyState } from '../components/common/Panel'
 import { formatDuration, formatTime, formatUsd, cx } from '../lib/format'
 import { ScreenHeader } from './ScreenHeader'
@@ -42,6 +43,10 @@ export function Activity() {
           </div>
         </section>
       )}
+
+      <div className="mb-6">
+        <CostChart />
+      </div>
 
       <div className="mb-3 flex gap-1" role="group" aria-label="Filter">
         {FILTERS.map((f) => (

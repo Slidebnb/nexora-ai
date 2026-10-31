@@ -19,25 +19,31 @@
 
 **Nächster Schritt** → siehe Phase 1
 
-## Phase 1: UI-Shell
-
-### Schritt 1 + 2: Electron-Grundgerüst mit gehärtetem Fenster (2026-10-31) ✅
+## Phase 1: UI-Shell (2026-10-31) ✅ abgeschlossen, Windows-Test offen
 
 **Implementiert** (`app/`)
-- electron-vite 6, Electron 45, React 19, Vite 8, Tailwind 4, TypeScript 7 (Versionen exakt gepinnt)
-- `src/main/security.ts`: `contextIsolation`, `sandbox`, `nodeIntegration: false`, kein `webviewTag`, CSP-Builder, Navigationsprüfung
-- `src/main/index.ts`: CSP-Header, Popups → deny (https-Links im Standardbrowser), `will-navigate`-Schutz, alle Berechtigungsanfragen (Kamera, Mikrofon …) verweigert, Mindestgröße 1024×640
-- Produktions-CSP zusätzlich als `<meta>`-Tag im Build (der Header greift bei `file://` nicht)
-- `src/shared/ipc-contract.ts`: IPC-Allowlist mit zod-Schemas, erster Kanal `app:getInfo`, Prüfung des Absender-Frames
-- `src/preload`: nur `window.nexora.getAppInfo()` freigegeben
-- Design-Tokens „Crimson“ als Tailwind-Theme, `prefers-reduced-motion`
+- Electron 45 + electron-vite 6, React 19, Vite 8, Tailwind 4, TypeScript 7, zustand, recharts, lucide-react (Versionen exakt gepinnt)
+- Sicherheit: `contextIsolation`, `sandbox`, `nodeIntegration: false`, CSP (Header + Meta-Tag), Popups/Navigation/Berechtigungen gesperrt, IPC-Allowlist mit zod und Absenderprüfung
+- Event-Vertrag (`src/shared/events.ts`) und Reducer: Fortschritt nur aus Events, indeterminiert ohne Plan, Erfolg nur mit Verifikation, Replay-sicher, Demo und Live strikt getrennt
+- Oberfläche: Sidebar mit 6 Bereichen (Dashboard, Agenten, Automationen, Aktivitäten, Dateien, Einstellungen), Statusleiste (Worker-Status wahrheitsgemäß „nicht verbunden“), Orbit-Kern (Canvas), KPI-Raster, Aufgabenfeld mit den 5 MVP-Vorlagen, Agentenkarten mit 6 Zuständen, Live-Aktivität, Ereignisprotokoll, Ergebnisse, Kostendiagramm, Verlauf mit Filter
+- Freigabe-Center: Aktion, Ziel, Daten, Auswirkung; Erlauben, Ablehnen oder Abbrechen; Standardfokus auf „Ablehnen“
+- Demo-Modus: dauerhaftes DEMO-Banner, 3 Szenarien (Ordner, Recherche mit simuliertem Fehler, Entwürfe), echte Freigabe-Pausen; beim Beenden werden alle Demo-Daten entfernt
+- API-Schlüssel (Anthropic/OpenAI): nur verschlüsselt via `safeStorage` im Main-Prozess, der Renderer erhält nur „hinterlegt ja/nein“, kein Klartext-Fallback
+- Barrierearmut: Status immer als Icon + Text, `prefers-reduced-motion` (Orbit statisch), Animation pausiert bei verstecktem Fenster
+- Mindestfenster 1024×640; die rechte Seitenleiste ist umschaltbar, bei wenig Höhe scrollt das Dashboard vertikal
 
-**Teststatus**
-- `pnpm test`: 6/6 Unit-Tests grün (Sicherheitsoptionen, CSP, Navigation, IPC-Allowlist)
-- `pnpm build`: Typecheck + Build grün
-- Laufzeit-Smoketest (Linux, Xvfb, Playwright `_electron`, Skript noch nicht im Repo): Fenster öffnet, IPC liefert Version; im Renderer sind `require`/`process` undefined; Inline-Script und String-`eval` werden von der CSP blockiert; `window.open` blockiert
-- **Nicht getestet:** Start unter Windows, `pnpm dev` (Dev-Server-Modus)
+**Teststatus** (alle Befehle in `app/`)
+- `pnpm test`: 44/44 Unit-Tests grün (Sicherheit, Reducer, Selektoren, Demo-Player, Store, Schlüsselspeicher, Freigabe-Karte, Fortschrittsbalken)
+- `pnpm build`: Typecheck + Produktions-Build grün; Renderer-Bundle 719 kB (minifiziert)
+- `pnpm e2e` (Linux, Xvfb): 8/8 Schritte grün. Start, alle 6 Bereiche, Demo-Freigabe-Ablauf, Schrittfehler, Kostendiagramm, kein Überlauf und keine Überlappung bei 1024×640, Demo-Ende löscht Demo-Daten, keine Konsolenfehler
+- Während der Tests gefunden und behoben: CSP griff bei `file://` nicht; Protokollfehler bei abgelehnter Freigabe; Layout-Überlauf in der rechten Spalte; Überlappung bei kleinen Fenstern; Kostendiagramm mit 0 px Höhe; Bundle nicht minifiziert
+- **Nicht getestet:** Start unter Windows, `pnpm dev`, `safeStorage` mit echter DPAPI (unter Linux/Xvfb ohne Schlüsselbund ist sichere Speicherung „nicht verfügbar“, was korrekt angezeigt wird)
 
 **Offen**
-- Renderer-Bundle 566 kB, prüfen (Minify/Splitting)
-- Playwright-E2E-Test ins Repo übernehmen (To-do 14)
+- Windows-Test durch Nutzer (siehe `app/README.md`)
+- Pause-Button erst mit Worker funktionsfähig (derzeit deaktiviert mit Hinweis)
+- recharts per Lazy-Load abtrennen, falls Startzeit unter Windows auffällt
+- Themes Cyan/Violet/Minimal; Export der Verlaufstabelle (CSV)
+
+**Nächster Schritt**
+Phase 2, Schritt 1: Python-Worker (`worker/`, FastAPI, SQLite) mit Events gemäß Vertrag; Start aus dem Main-Prozess an 127.0.0.1 mit Einmal-Token; WS-Event-Stream mit Replay-Cursor an den Renderer.
