@@ -102,6 +102,14 @@ export class WorkerHub {
     await this.client.request('POST', `/api/tasks/${encodeURIComponent(taskId)}/cancel`)
   }
 
+  systemStatus(): Promise<unknown> {
+    return this.client.request('GET', '/api/system')
+  }
+
+  testAi(provider: string): Promise<unknown> {
+    return this.client.request('POST', '/api/ai/test', { provider })
+  }
+
   listTemplates(): Promise<unknown[]> {
     return this.client.request('GET', '/api/templates')
   }

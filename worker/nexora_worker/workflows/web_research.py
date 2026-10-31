@@ -1,6 +1,9 @@
 """MVP-Workflow 2: Web-Recherche – öffentliche Seiten lesen, Vergleichstabelle mit Quellen und Zeitstempel, CSV.
 
 Nur lesend. Die CSV wird im NEXORA-Datenordner abgelegt (keine Nutzerdateien verändert → keine Freigabe nötig).
+Der KI-Browser (browser-use) sendet Seiteninhalte an einen KI-Anbieter. Er wird deshalb nur bei ausdrücklicher
+Wahl (`engine="browser_use"`) genutzt, braucht die Berechtigung „ai.cloud“ und eine Freigabe vor dem Start.
+„auto“ nutzt immer den lokalen Direktabruf.
 """
 
 from __future__ import annotations
@@ -52,9 +55,12 @@ class WebResearch(Workflow):
         assert isinstance(data, ResearchInput)
         return f"Recherche: {data.question[:60]}" + ("…" if len(data.question) > 60 else "")
 
+    def required_capabilities(self, data: BaseModel) -> frozenset[str]:
+        assert isinstance(data, ResearchInput)
+        return self.capabilities | ({"ai.cloud"} if data.engine == "browser_use" else frozenset())
+
     def _engine(self, ctx: RunContext, data: ResearchInput) -> WebEngine:
-        want_ai = data.engine == "browser_use" or (data.engine == "auto" and browser_use_available() and bool(ctx.secrets))
-        if not want_ai:
+        if data.engine != "browser_use":
             return DirectEngine()
         if not browser_use_available():
             raise WorkflowError("browser-use ist nicht installiert (im Ordner worker: `uv sync --extra browser`)")
@@ -67,7 +73,22 @@ class WebResearch(Workflow):
         assert isinstance(data, ResearchInput)
         engine = self._engine(ctx, data)
         steps = [(f"src{i}", f"Quelle {i}: {urlparse(u).hostname}") for i, u in enumerate(data.urls, 1)]
-        ctx.plan(steps + [("table", "Vergleichstabelle erstellen"), ("verify", "Export prüfen")])
+        gate = [("ai", "KI-Browser freigeben")] if isinstance(engine, BrowserUseEngine) else []
+        ctx.plan(gate + steps + [("table", "Vergleichstabelle erstellen"), ("verify", "Export prüfen")])
+        if gate:
+            ctx.step_started("ai", "KI-Browser freigeben")
+            decision = await ctx.approve(
+                action="Webseiten mit dem KI-Browser lesen",
+                target=", ".join(sorted({urlparse(u).hostname or u for u in data.urls})),
+                data=f"Deine Frage und die Inhalte von {len(data.urls)} Webseite(n)",
+                impact="Frage und Seiteninhalte werden an deinen KI-Anbieter gesendet. Es fallen API-Kosten auf deinem Konto an.",
+            )
+            if decision == "allow":
+                ctx.step_succeeded("ai", "Freigegeben")
+            else:
+                await engine.close()
+                engine = DirectEngine()
+                ctx.step_failed("ai", "Abgelehnt – Seiten werden ohne KI direkt abgerufen")
         results: list[tuple[int, SourceResult | None, str]] = []
         cost = 0.0
         try:

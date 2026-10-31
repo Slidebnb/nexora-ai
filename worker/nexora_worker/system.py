@@ -49,7 +49,8 @@ def system_status(manager: TaskManager) -> dict[str, Any]:
         },
         "database": {
             "schemaVersion": db.schema_version,
-            "bytes": db.path.stat().st_size if db.path.exists() else 0,
+            # SQLite im WAL-Modus: neue Daten stehen zunächst in der -wal-Datei
+            "bytes": sum(f.stat().st_size for f in (db.path, db.path.with_name(db.path.name + "-wal")) if f.exists()),
             "runs": db.query_one("SELECT COUNT(*) AS n FROM runs")["n"],
             "events": db.query_one("SELECT COUNT(*) AS n FROM events")["n"],
             "templates": db.query_one("SELECT COUNT(*) AS n FROM templates")["n"],

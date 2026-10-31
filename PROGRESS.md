@@ -141,3 +141,21 @@ Außerdem: Berechtigungen je Aufgabe mit ausdrücklicher Zustimmung (Cloud-KI nu
 
 **Nächster Schritt**
 Pilot nach `docs/PILOT.md`. Phase 5 (Recorder/Replay, weitere Integrationen, Teamfunktionen …) laut Masterplan erst nach positiver Beta.
+
+## Systemzustand und Verbindungstest (2026-10-31) ✅
+
+Masterplan-Module „SystemStatus: echte Worker-/Browser-/Modellverbindung“ und „ModelSettings: Test-Verbindung“.
+
+**Implementiert**
+- Worker `GET /api/system`: Version, Laufzeit, Datenbank (Schema, Größe inkl. WAL-Datei, Anzahl Läufe/Ereignisse/Vorlagen), Festplatte, Texterkennung, browser-use, hinterlegte Schlüssel. Alles gemessen, nichts geschätzt.
+- Worker `POST /api/ai/test`: prüft den Schlüssel über die Modellliste des Anbieters. Das kostet keine Tokens.
+- Einstellungen → „Systemzustand“ in Alltagssprache, Details nur in der Expertenansicht. Die Anzeigen sind aus jenman `SystemPanel` portiert. Dazu kommt der Knopf „Verbindung testen“ je hinterlegtem Schlüssel.
+- **Sicherheitskorrektur Web-Recherche:** Bisher wählte die Einstellung „auto“ den KI-Browser still, sobald browser-use installiert und ein Schlüssel hinterlegt war. Seiteninhalte gingen dann ohne Berechtigung „ai.cloud“ und ohne Freigabe an den KI-Anbieter. Jetzt gilt:
+  - „auto“ ruft immer lokal direkt ab.
+  - Den KI-Browser gibt es nur über ein ausdrückliches Häkchen. Das Häkchen erscheint nur, wenn browser-use installiert ist (im Installer nicht enthalten).
+  - Der KI-Browser braucht die Berechtigung „ai.cloud“ und eine Freigabe vor dem Start. Wird abgelehnt, ruft NEXORA ohne KI ab.
+  - Zwei Regressionstests; beide schlagen mit dem alten Code fehl (geprüft).
+- Veraltete Texte in den Einstellungen („folgt in Phase 2“) ersetzt.
+
+**Teststatus:** Worker 60 Tests, Unit 59, E2E 22 Schritte (neu: Systemzustand mit Werten aus der echten Datenbank), Typprüfung grün.
+

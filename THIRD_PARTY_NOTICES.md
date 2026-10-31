@@ -9,6 +9,7 @@ Die Übernahme erfolgte auf ausdrückliche Anweisung des Projektinhabers. Er hat
 | NEXORA-Datei | Quelle @ Commit, Originalpfad | Lizenz / Copyright | Änderungen |
 |---|---|---|---|
 | `app/src/renderer/src/components/hud/OrbitCore.tsx` | Davood121/jenman @ 5a19ab9, `artifacts/jarvis/src/components/AiCore.tsx` | MIT, (c) 2025 Shaik Davood | Branding und Fantasiewerte entfernt; Anzeigen aus echten Events; Agenten-Satelliten; Crimson; Animations-Loop |
+| `app/src/renderer/src/components/settings/SystemStatusPanel.tsx` (`BarGauge`, `DataRow`, Bogen-Anzeiger) | Davood121/jenman @ 5a19ab9, `artifacts/jarvis/src/components/SystemPanel.tsx` | MIT, (c) 2025 Shaik Davood | ohne framer-motion; NEXORA-Farbvariablen; nur gemessene Werte (Festplatte, Datenbank, Dienste) statt fester Fantasiewerte wie „HULL 98“ |
 | `app/src/renderer/src/components/hud/MatrixRain.tsx` | ChatDSJ/evil-ai-viz @ cf22a87, `src/components/viz/MatrixRain.tsx` | MIT (laut README) | Crimson; Elterngröße; Intensität an Aktivität gekoppelt |
 | `app/src/renderer/src/components/hud/ScanLines.tsx` (+ `.scan-move` in `styles.css`) | ChatDSJ/evil-ai-viz @ cf22a87, `src/components/viz/ScanLines.tsx` | MIT (laut README) | Crimson; Keyframes in CSS (CSP) |
 | `app/src/renderer/src/components/hud/DataFlowLines.tsx` | ChatDSJ/evil-ai-viz @ cf22a87, `src/components/viz/DataFlowLines.tsx` | MIT (laut README) | Impulse je echtem Event, Farbe nach Eventart, Flug zur Mitte |

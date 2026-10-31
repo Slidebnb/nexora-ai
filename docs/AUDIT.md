@@ -93,7 +93,7 @@ Externe Programme werden an genau drei Stellen gestartet, alle mit fester Argume
 | Content-Security-Policy als HTTP-Header **und** als Meta-Tag im Build (der Header greift bei `file://` nicht) | `app/src/main/index.ts`, `app/electron.vite.config.mts` |
 | Neue Fenster blockiert (`setWindowOpenHandler` → deny), Navigation nur zur eigenen App, `<webview>` blockiert | `app/src/main/index.ts` |
 | Alle Berechtigungsanfragen (Kamera, Mikrofon, Standort …) abgelehnt | `app/src/main/index.ts` |
-| IPC nur über eine Allowlist mit 25 Kanälen; jede Anfrage und Antwort wird mit zod geprüft, der Absender-Frame wird kontrolliert | `app/src/shared/ipc-contract.ts`, `app/src/main/ipc.ts` |
+| IPC nur über eine Allowlist mit 27 Kanälen; jede Anfrage und Antwort wird mit zod geprüft, der Absender-Frame wird kontrolliert | `app/src/shared/ipc-contract.ts`, `app/src/main/ipc.ts` |
 | Pfade nur über native Dialoge; die Oberfläche kennt nur zufällige IDs | `app/src/main/ipc.ts` |
 | Worker nur an 127.0.0.1, Einmal-Token je Start, Browser-Anfragen (Origin) abgelehnt | `worker/nexora_worker/api.py` |
 
@@ -103,24 +103,30 @@ Externe Programme werden an genau drei Stellen gestartet, alle mit fester Argume
 
 | Bereich | Anzahl | Quelle |
 |---|---|---|
-| Worker (pytest) | 55 bestanden | `uv run pytest` |
+| Worker (pytest) | 60 bestanden (Stand Systemzustand-Commit; beim Audit 55) | `uv run pytest` |
 | Lizenzdienst (pytest) | 7 bestanden | `uv run pytest` |
-| App-Unit-Tests (vitest) | 58 bestanden | `pnpm test` |
-| E2E mit echter App, echtem Worker und echten Dateien | 21 Schritte | `tests/e2e/smoke.mjs`; läuft unter Linux und Windows in der CI |
+| App-Unit-Tests (vitest) | 59 bestanden | `pnpm test` |
+| E2E mit echter App, echtem Worker und echten Dateien | 22 Schritte | `tests/e2e/smoke.mjs`; läuft unter Linux und Windows in der CI |
 | Windows-Installationsaudit | 24 Prüfungen | siehe Abschnitt 1 |
 
-Umfang: 8.575 Zeilen Quellcode und 2.459 Zeilen Testcode (`git ls-files … | wc -l`).
+Umfang zum Audit-Zeitpunkt (Commit `a34cbda`): 8.575 Zeilen Quellcode und 2.459 Zeilen Testcode (`git ls-files … | wc -l`).
 
 ---
 
-## 6. Korrekturen eigener Angaben
+## 6. Nachträglich gefundener Sicherheitsfehler
+
+| Befund | Auswirkung | Behoben |
+|---|---|---|
+| Die Web-Recherche wählte in der Standardeinstellung „auto“ den KI-Browser still, sobald browser-use installiert und ein KI-Schlüssel hinterlegt war. | Frage und Seiteninhalte wären ohne Berechtigung „ai.cloud“ und ohne Freigabe an den KI-Anbieter gegangen. **Nicht betroffen:** der Windows-Installer, weil er browser-use nicht enthält. Betroffen war nur eine Entwicklungsinstallation mit `--extra browser`. | „auto“ ruft immer lokal ab. Der KI-Browser läuft nur auf ausdrückliche Wahl mit „ai.cloud“ und Freigabe. Zwei Regressionstests, die mit dem alten Code fehlschlagen. |
+
+## 7. Korrekturen eigener Angaben
 
 Beim Audit habe ich frühere Angaben gegen das Testskript im jeweiligen Commit geprüft:
 - Die Zahl der E2E-Schritte war seit Commit `840558e` **jeweils um eins zu hoch** angegeben (19/20/21/22 statt richtig 18/19/20/21). In `PROGRESS.md` ist das korrigiert (`46bd3f7`). Die betroffenen Commit-Nachrichten bleiben unverändert, weil sich die Historie sonst umschreiben müsste.
 
 ---
 
-## 7. Offene Punkte
+## 8. Offene Punkte
 
 | Punkt | Warum offen | Wer |
 |---|---|---|

@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { FileText, FolderOpen, X } from 'lucide-react'
 import type { CreateTask, PickedFolder } from '@shared/ipc-contract'
 import { useNexora, type ComposerDraft } from '../../state/store'
@@ -44,7 +45,8 @@ export function buildRequest(t: WorkflowTemplate, d: ComposerDraft, folder: Pick
       if (urls.length > 10) return { request: null, missing: 'Höchstens 10 Adressen' }
       const bad = urls.find((u) => !/^https?:\/\/[^\s/]+/i.test(u))
       if (bad) return { request: null, missing: `Ungültige Adresse: ${bad}` }
-      return { request: { workflow: 'web_research', question: d.question.trim(), urls, capabilities } }
+      const caps = d.useAiBrowser ? [...capabilities, 'ai.cloud' as const] : capabilities
+      return { request: { workflow: 'web_research', question: d.question.trim(), urls, useCloudAi: d.useAiBrowser, capabilities: caps } }
     }
     case 'pdf_analysis': {
       if (d.files.length === 0) return { request: null, missing: 'Bitte PDF-Dateien wählen' }
@@ -118,6 +120,7 @@ export function LiveForm({ template, onError }: { template: WorkflowTemplate; on
             aria-label="Adressen"
             className="input min-h-16 flex-1 resize-none font-mono text-xs"
           />
+          <CloudBrowserOption checked={d.useAiBrowser} onChange={(v) => set({ useAiBrowser: v })} />
         </div>
       )
     case 'pdf_analysis':
@@ -203,4 +206,31 @@ export function LiveForm({ template, onError }: { template: WorkflowTemplate; on
         </p>
       )
   }
+}
+
+/** Nur sichtbar, wenn der KI-Browser wirklich installiert ist (laut Systemstatus des Workers). */
+function CloudBrowserOption({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
+  const connected = useNexora((s) => s.worker.state === 'connected')
+  const [installed, setInstalled] = useState(false)
+  useEffect(() => {
+    if (!connected) return
+    let alive = true
+    window.nexora.getSystemStatus().then(
+      (st) => alive && setInstalled(st.browserUse.installed),
+      () => undefined
+    )
+    return () => {
+      alive = false
+    }
+  }, [connected])
+  useEffect(() => {
+    if (!installed && checked) onChange(false)
+  }, [installed, checked, onChange])
+  if (!installed) return null
+  return (
+    <label className="flex items-start gap-2 text-xs text-text-2">
+      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="mt-0.5 accent-[var(--color-accent)]" aria-label="KI-Browser verwenden" />
+      <span>KI-Browser verwenden (liest Seiten mit KI). Frage und Seiteninhalte gehen an deinen KI-Anbieter; vorher wird gefragt, es fallen API-Kosten an. Ohne Häkchen werden die Seiten direkt abgerufen.</span>
+    </label>
+  )
 }

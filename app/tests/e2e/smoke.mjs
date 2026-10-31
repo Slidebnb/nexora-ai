@@ -205,6 +205,23 @@ try {
     await win.getByText('Worker: verbunden').waitFor()
   })
 
+  await step('Systemzustand zeigt echte Werte vom Worker', async () => {
+    await nav('Einstellungen')
+    const panel = win.getByTestId('system-status')
+    await panel.getByText(/Hintergrunddienst läuft/).waitFor()
+    await panel.getByRole('meter', { name: /Festplatte/ }).waitFor()
+    // Expertenansicht ist an: Detailzeilen aus der echten Datenbank
+    await panel.getByText(/Schema v\d+/).waitFor()
+    const counts = await panel.getByText(/^\d+ \/ \d+ \/ \d+$/).textContent()
+    const [runs, events] = counts.split(' / ').map(Number)
+    if (!(runs >= 2 && events > runs)) throw new Error(`unerwartete Zählwerte: ${counts}`)
+    await panel.getByText(/organize_folder/).waitFor()
+    // Ohne hinterlegten Schlüssel gibt es nichts zu testen
+    if ((await win.getByRole('button', { name: 'Verbindung testen' }).count()) !== 0) throw new Error('Verbindungstest ohne Schlüssel sichtbar')
+    await panel.screenshot({ path: join(shots, '02f-systemzustand.png') })
+    await nav('Start')
+  })
+
   await step('LIVE: Ordner wählen, Erlaubnis geben, Aufgabe starten', async () => {
     const start = win.getByRole('button', { name: 'Aufgabe starten' })
     await win.getByRole('button', { name: 'Ordner wählen' }).click()

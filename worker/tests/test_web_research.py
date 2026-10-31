@@ -168,3 +168,54 @@ def test_browser_use_adapter_with_fake_library(monkeypatch, tmp_path):
     import os
 
     assert os.environ["ANONYMIZED_TELEMETRY"] == "false"
+
+
+KEY = {"anthropic": "sk-ant-test-123456789012345678901"}
+
+
+def test_auto_never_uses_cloud_ai_even_with_key(api, site, monkeypatch):
+    """Regression: „auto“ wählte früher still den KI-Browser, sobald browser-use und ein Schlüssel vorhanden waren."""
+    import nexora_worker.workflows.web_research as wr
+
+    monkeypatch.setattr(wr, "browser_use_available", lambda: True)
+    api.c.put("/api/session/secrets", headers=api.h, json=KEY)
+    r = api.post("/api/tasks", {"workflow": "web_research", "input": {"question": "Was kostet der Tarif?", "urls": [f"{site}/anbieter-a"]}, "capabilities": CAPS})
+    assert r.status_code == 201, r.text
+    evs = api.wait_terminal(r.json()["runId"])
+    assert evs[-1]["type"] == "run_succeeded"
+    assert not any(e["type"] == "approval_requested" for e in evs)
+
+
+def test_browser_use_needs_cloud_permission_and_approval(api, site, monkeypatch):
+    import nexora_worker.workflows.web_research as wr
+
+    created = []
+
+    class FakeEngine:
+        label = "browser-use (KI)"
+
+        def __init__(self, secrets, profile_dir):
+            created.append(self)
+            self.closed = False
+
+        async def research(self, url, question):  # pragma: no cover – darf nach Ablehnung nicht laufen
+            raise AssertionError("KI-Browser trotz Ablehnung benutzt")
+
+        async def close(self):
+            self.closed = True
+
+    monkeypatch.setattr(wr, "browser_use_available", lambda: True)
+    monkeypatch.setattr(wr, "BrowserUseEngine", FakeEngine)
+    api.c.put("/api/session/secrets", headers=api.h, json=KEY)
+    body = {"workflow": "web_research", "input": {"question": "Was kostet der Tarif?", "urls": [f"{site}/anbieter-a"], "engine": "browser_use"}}
+    assert api.post("/api/tasks", {**body, "capabilities": CAPS}).status_code == 403, "ohne ai.cloud abgelehnt"
+
+    r = api.post("/api/tasks", {**body, "capabilities": [*CAPS, "ai.cloud"]})
+    assert r.status_code == 201, r.text
+    run_id = r.json()["runId"]
+    approval = api.approval_id(run_id)
+    api.post(f"/api/approvals/{approval}/respond", {"decision": "deny"})
+    evs = api.wait_terminal(run_id)
+    assert evs[-1]["type"] == "run_succeeded"
+    assert created and created[0].closed
+    assert any(e["type"] == "step_failed" and "ohne KI" in e["payload"]["error"] for e in evs)

@@ -31,6 +31,8 @@ export interface ComposerDraft {
   files: PickedFile[]
   outFolder: PickedFolder | null
   useCloudAi: boolean
+  /** Web-Recherche mit KI-Browser (nur wenn browser-use installiert ist) */
+  useAiBrowser: boolean
   useOcr: boolean
 }
 
@@ -87,7 +89,7 @@ export const useNexora = create<NexoraStore>((set, get) => ({
   expertMode: readExpert(),
   wizard: null,
   settings: null,
-  composer: { question: '', urls: '', briefing: '', recipients: '', subject: '', files: [], outFolder: null, useCloudAi: false, useOcr: false },
+  composer: { question: '', urls: '', briefing: '', recipients: '', subject: '', files: [], outFolder: null, useCloudAi: false, useAiBrowser: false, useOcr: false },
   ingest: (raw) => {
     const parsed = NexoraEventSchema.safeParse(raw)
     if (!parsed.success) return false

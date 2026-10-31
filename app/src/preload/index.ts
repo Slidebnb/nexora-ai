@@ -34,6 +34,8 @@ const api: NexoraApi = {
   runTemplate: (req) => ipcRenderer.invoke('templates:run', req),
   scheduleTemplate: (templateId, schedule) => ipcRenderer.invoke('templates:schedule', { templateId, schedule }),
   deleteTemplate: (templateId) => ipcRenderer.invoke('templates:delete', { templateId }),
+  getSystemStatus: () => ipcRenderer.invoke('system:status'),
+  testAiConnection: (provider) => ipcRenderer.invoke('ai:test', { provider }),
   onWorkerEvent: (cb) => subscribe('worker:event', cb),
   onWorkerStatus: (cb) => subscribe('worker:status', cb)
 }

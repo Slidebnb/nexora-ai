@@ -66,6 +66,8 @@ export const CreateTaskSchema = z.discriminatedUnion('workflow', [
     workflow: z.literal('web_research'),
     question: z.string().trim().min(3).max(500),
     urls: z.array(z.url({ protocol: /^https?$/ })).min(1).max(10),
+    /** KI-Browser (browser-use): sendet Inhalte an den KI-Anbieter, braucht „ai.cloud“ und eine Freigabe */
+    useCloudAi: z.boolean().default(false),
     capabilities: Caps
   }),
   z.object({ workflow: z.literal('pdf_analysis'), fileIds: z.array(z.string().min(1)).min(1).max(20), useCloudAi: z.boolean(), useOcr: z.boolean().default(false), capabilities: Caps }),
@@ -122,6 +124,20 @@ export const TemplateSchema = z.object({
 })
 export type Template = z.infer<typeof TemplateSchema>
 
+/** Echter Systemstatus vom Worker (Masterplan „SystemStatus“) – nur gemessene Werte. */
+export const SystemStatusSchema = z.object({
+  worker: z.object({ version: z.string(), python: z.string(), platform: z.string(), uptimeSeconds: z.number().int().nonnegative(), frozen: z.boolean() }),
+  database: z.object({ schemaVersion: z.number().int(), bytes: z.number().int().nonnegative(), runs: z.number().int().nonnegative(), events: z.number().int().nonnegative(), templates: z.number().int().nonnegative() }),
+  disk: z.object({ total: z.number().nonnegative(), used: z.number().nonnegative(), free: z.number().nonnegative() }),
+  ocr: z.object({ available: z.boolean(), version: z.string().nullable() }),
+  browserUse: z.object({ installed: z.boolean(), version: z.string().nullable() }),
+  ai: z.object({ anthropic: z.boolean(), openai: z.boolean() }),
+  workflows: z.array(z.string())
+})
+export type SystemStatus = z.infer<typeof SystemStatusSchema>
+export const AiTestResultSchema = z.object({ ok: z.boolean(), message: z.string().max(300) })
+export type AiTestResult = z.infer<typeof AiTestResultSchema>
+
 export const IPC_CHANNELS = {
   'app:getInfo': { request: z.undefined(), response: AppInfoSchema },
   'secrets:status': { request: z.undefined(), response: SecretStatusSchema },
@@ -158,7 +174,9 @@ export const IPC_CHANNELS = {
     response: z.object({ taskId: z.string(), runId: z.string() })
   },
   'templates:schedule': { request: z.object({ templateId: z.string().min(1), schedule: ScheduleSchema.nullable() }), response: TemplateSchema },
-  'templates:delete': { request: z.object({ templateId: z.string().min(1) }), response: Ok }
+  'templates:delete': { request: z.object({ templateId: z.string().min(1) }), response: Ok },
+  'system:status': { request: z.undefined(), response: SystemStatusSchema },
+  'ai:test': { request: z.object({ provider: ProviderSchema }), response: AiTestResultSchema }
 } as const
 
 /** Kanäle, auf denen der Main-Prozess an den Renderer sendet (kein invoke). */

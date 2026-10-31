@@ -4,7 +4,7 @@ import { WORKFLOWS } from '../src/renderer/src/data/workflows'
 import type { ComposerDraft } from '../src/renderer/src/state/store'
 
 const draft = (p: Partial<ComposerDraft> = {}): ComposerDraft => ({
-  question: '', urls: '', briefing: '', recipients: '', subject: '', files: [], outFolder: null, useCloudAi: false, useOcr: false, ...p
+  question: '', urls: '', briefing: '', recipients: '', subject: '', files: [], outFolder: null, useCloudAi: false, useAiBrowser: false, useOcr: false, ...p
 })
 const wf = (id: string) => WORKFLOWS.find((w) => w.id === id)!
 
@@ -22,7 +22,13 @@ describe('buildRequest', () => {
     const many = Array.from({ length: 11 }, (_, i) => `https://e${i}.de`).join('\n')
     expect(buildRequest(wf('recherche'), draft({ question: 'Preis?', urls: many }), null).missing).toMatch(/10/)
     const ok = buildRequest(wf('recherche'), draft({ question: ' Preis? ', urls: 'https://a.de\n\n https://b.de ' }), null).request
-    expect(ok).toEqual({ workflow: 'web_research', question: 'Preis?', urls: ['https://a.de', 'https://b.de'], capabilities: ['web.read', 'files.export'] })
+    expect(ok).toEqual({ workflow: 'web_research', question: 'Preis?', urls: ['https://a.de', 'https://b.de'], useCloudAi: false, capabilities: ['web.read', 'files.export'] })
+  })
+
+  it('Recherche: KI-Browser nur mit ausdrücklicher Wahl, dann mit Berechtigung ai.cloud', () => {
+    const base = { question: 'Preis?', urls: 'https://a.de' }
+    expect(buildRequest(wf('recherche'), draft({ ...base, useCloudAi: true }), null).request).toMatchObject({ useCloudAi: false, capabilities: ['web.read', 'files.export'] })
+    expect(buildRequest(wf('recherche'), draft({ ...base, useAiBrowser: true }), null).request).toMatchObject({ useCloudAi: true, capabilities: ['web.read', 'files.export', 'ai.cloud'] })
   })
 
   it('PDF: verlangt Dateien; Cloud-KI fügt die Berechtigung ai.cloud hinzu', () => {

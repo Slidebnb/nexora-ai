@@ -97,7 +97,7 @@ export function registerIpcHandlers(opts: { devServerUrl?: string; secrets: Secr
       case 'undo_organize':
         return hub.createTask('undo_organize', { runId: req.runId }, req.capabilities)
       case 'web_research':
-        return hub.createTask('web_research', { question: req.question, urls: req.urls }, req.capabilities)
+        return hub.createTask('web_research', { question: req.question, urls: req.urls, engine: req.useCloudAi ? 'browser_use' : 'direct' }, req.capabilities)
       case 'pdf_analysis': {
         const files = req.fileIds.map((id) => pickedFiles.get(id))
         if (files.some((f) => !f)) throw new Error('Bitte die Dateien erneut auswählen')
@@ -127,6 +127,8 @@ export function registerIpcHandlers(opts: { devServerUrl?: string; secrets: Secr
     await hub.respondApproval(approvalId, decision)
     return { ok: true }
   })
+  handle('system:status', async () => (await hub.systemStatus()) as IpcResponse<'system:status'>)
+  handle('ai:test', async ({ provider }) => (await hub.testAi(provider)) as IpcResponse<'ai:test'>)
   handle('templates:list', async () => (await hub.listTemplates()) as IpcResponse<'templates:list'>)
   handle('templates:create', async ({ runId, name }) => (await hub.createTemplate(runId, name)) as IpcResponse<'templates:create'>)
   handle('templates:run', async ({ templateId, folderId, fileIds, outFolderId }) => {

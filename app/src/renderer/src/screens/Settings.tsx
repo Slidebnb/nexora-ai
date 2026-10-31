@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
-import { KeyRound, ShieldCheck, ShieldOff, FlaskConical } from 'lucide-react'
+import { KeyRound, ShieldCheck, ShieldOff, FlaskConical, PlugZap } from 'lucide-react'
 import { PROVIDERS, type AppInfo, type Provider, type SecretStatus } from '@shared/ipc-contract'
 import { useNexora } from '../state/store'
 import { enterDemo, exitDemo } from '../demo/controller'
 import { ScreenHeader } from './ScreenHeader'
 import { LicenseSection } from '../components/settings/LicenseSection'
+import { SystemStatusPanel } from '../components/settings/SystemStatusPanel'
 
 const THEME_OPTIONS = [
   { id: 'crimson', label: 'Crimson', color: '#f43f67' },
@@ -25,10 +26,24 @@ function ApiKeyRow({ provider, configured, disabled, onChange }: { provider: Pro
   const [value, setValue] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [test, setTest] = useState<{ ok: boolean; message: string } | null>(null)
+
+  const runTest = async () => {
+    setBusy(true)
+    setTest(null)
+    try {
+      setTest(await window.nexora.testAiConnection(provider))
+    } catch (e) {
+      setTest({ ok: false, message: cleanError(e) })
+    } finally {
+      setBusy(false)
+    }
+  }
 
   const run = async (fn: () => Promise<SecretStatus>) => {
     setBusy(true)
     setError(null)
+    setTest(null)
     try {
       onChange(await fn())
       setValue('')
@@ -68,12 +83,22 @@ function ApiKeyRow({ provider, configured, disabled, onChange }: { provider: Pro
           Speichern
         </button>
         {configured && (
+          <button type="button" className="btn-secondary" disabled={busy} onClick={() => void runTest()}>
+            <PlugZap className="size-4" aria-hidden /> Verbindung testen
+          </button>
+        )}
+        {configured && (
           <button type="button" className="btn-ghost" disabled={busy} onClick={() => void run(() => window.nexora.clearSecret(provider))}>
             Entfernen
           </button>
         )}
       </form>
       {error && <p role="alert" className="mt-1.5 text-xs text-danger">{error}</p>}
+      {test && (
+        <p role="status" className={`mt-1.5 text-xs ${test.ok ? 'text-success' : 'text-warning'}`}>
+          {test.message}
+        </p>
+      )}
     </div>
   )
 }
@@ -97,6 +122,7 @@ export function Settings() {
     <div className="h-full overflow-y-auto p-6">
       <ScreenHeader title="Einstellungen" />
       <div className="grid max-w-3xl gap-5">
+        <SystemStatusPanel />
         <LicenseSection />
 
         <section className="panel p-5" aria-labelledby="keys-title">
@@ -119,7 +145,7 @@ export function Settings() {
               ))}
             </>
           )}
-          <p className="mt-2 text-xs text-text-2">Verbindungstest und Verbrauchslimits folgen mit dem Worker (Phase 2).</p>
+          <p className="mt-2 text-xs text-text-2">„Verbindung testen“ fragt nur die Modellliste des Anbieters ab und verbraucht keine Tokens.</p>
         </section>
 
         <section className="panel p-5" aria-labelledby="demo-title">
@@ -148,8 +174,8 @@ export function Settings() {
         <section className="panel p-5" aria-labelledby="data-title">
           <h2 id="data-title" className="hud-label">Datenverarbeitung</h2>
           <p className="mt-2 text-sm text-text-2">
-            Derzeit findet keine Cloud-Verarbeitung statt. Bevor Screenshots oder Inhalte an einen KI-Anbieter gesendet werden, fragt NEXORA
-            ausdrücklich nach (ab Phase 2).
+            Ordner aufräumen läuft vollständig auf diesem PC; die Web-Recherche ruft nur die Webseiten ab, die du angibst. Bevor Inhalte an
+            einen KI-Anbieter gesendet werden (PDF-Analyse oder E-Mail-Entwürfe mit KI), fragt NEXORA ausdrücklich nach.
           </p>
         </section>
 
