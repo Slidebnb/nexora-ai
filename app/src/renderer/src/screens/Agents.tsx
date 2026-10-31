@@ -22,6 +22,7 @@ export function Agents() {
   const data = useNexora((s) => s.data)
   const agents = selectAgents(data)
   const stats = selectAgentStats(data)
+  const expert = useNexora((s) => s.expertMode)
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState<AgentView | null>(null)
   const q = query.trim().toLowerCase()
@@ -70,7 +71,7 @@ export function Agents() {
                       <button type="button" className="text-left font-medium text-text hover:text-accent-hi" onClick={(e) => { e.stopPropagation(); setSelected(a) }}>
                         {a.name}
                       </button>
-                      <span className="block font-mono text-[11px] text-text-2">{a.agentId}</span>
+                      {expert && <span className="block font-mono text-[11px] text-text-2">{a.agentId}</span>}
                     </td>
                     <td className="px-4 py-2.5">
                       <span className="flex items-center gap-2 text-xs text-text">
@@ -97,7 +98,7 @@ export function Agents() {
       )}
 
       {current && (
-        <DetailModal title={current.name} subtitle={current.agentId} onClose={() => setSelected(null)}>
+        <DetailModal title={current.name} subtitle={expert ? current.agentId : undefined} onClose={() => setSelected(null)}>
           <AgentCard agent={current} detailed />
         </DetailModal>
       )}

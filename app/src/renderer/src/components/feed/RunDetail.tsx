@@ -23,10 +23,11 @@ const DECISION: Record<string, string> = { allow: 'Erlaubt', deny: 'Abgelehnt', 
 export function RunDetail({ run, onClose }: { run: RunState; onClose: () => void }) {
   const allApprovals = useNexora((s) => s.data.approvals)
   const allArtifacts = useNexora((s) => s.data.artifacts)
+  const expert = useNexora((s) => s.expertMode)
   const approvals = Object.values(allApprovals).filter((a) => a.runId === run.runId)
   const artifacts = allArtifacts.filter((a) => a.runId === run.runId)
   return (
-    <DetailModal title={run.title} subtitle={run.runId} onClose={onClose}>
+    <DetailModal title={run.title} subtitle={expert ? run.runId : undefined} onClose={onClose}>
       <div className="flex flex-wrap items-center gap-3">
         <RunStatusBadge status={run.status} />
         {run.paused && <span className="text-xs text-warning">pausiert</span>}
@@ -97,7 +98,7 @@ export function RunDetail({ run, onClose }: { run: RunState; onClose: () => void
           </ul>
         </Field>
       )}
-      {run.protocolErrors.length > 0 && <p className="text-xs text-danger">Protokollfehler: {run.protocolErrors.join('; ')}</p>}
+      {expert && run.protocolErrors.length > 0 && <p className="text-xs text-danger">Protokollfehler: {run.protocolErrors.join('; ')}</p>}
     </DetailModal>
   )
 }
