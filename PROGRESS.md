@@ -45,5 +45,45 @@
 - recharts per Lazy-Load abtrennen, falls Startzeit unter Windows auffällt
 - Themes Cyan/Violet/Minimal; Export der Verlaufstabelle (CSV)
 
+**Nachtrag (ADR-002):** HUD-Komponenten aus jenman, evil-ai-viz und cyberpunk-dashboard portiert (Herkunftsvermerke je Datei, `THIRD_PARTY_NOTICES.md`).
+
+## Phase 2: Echte Engine (2026-10-31) ✅
+
+**Implementiert** (`worker/`, `app/src/main/worker/`)
+- Python-Worker (FastAPI, Python 3.12, uv): nur 127.0.0.1, Bearer-Einmal-Token je App-Start, Anfragen mit Browser-Origin abgelehnt, Host-Prüfung, WebSocket-Authentifizierung über die erste Nachricht
+- SQLite mit versionierten Migrationen (aktuell v2); Event-Bus mit fortlaufender seq und Replay ohne Lücke; Schwärzung aller Payloads und Logs
+- Sicherheitsrichtlinie aus ClawBridge portiert (Apache-2.0) und verschärft: kein Permissive-Modus
+- Electron: WorkerSupervisor (READY-Zeile, begrenzte Neustarts, Worker beendet sich bei App-Ende), WorkerHub, Event-Stream mit Replay-Cursor; API-Schlüssel werden nur im Speicher an den Worker übergeben
+- Wiederanlauf: Vorgänge, die bei einem Absturz liefen, werden ehrlich als fehlgeschlagen markiert
+
+**Abnahme laut Masterplan:** „mindestens ein Ende-zu-Ende realer Test, Fehlerfälle/Abbruch reproduzierbar“ ✅ (siehe Teststatus)
+
+## Phase 3: Nutzen und Freigaben (2026-10-31) ✅ (mit offenen Punkten)
+
+| MVP-Workflow | Status | Freigaben | Ergebnis / Prüfung |
+|---|---|---|---|
+| 1 Ordner-Organisator | ✅ live | vor dem Verschieben; Undo ebenfalls mit Freigabe | Sortierplan.csv, Undo-Protokoll; jede Datei geprüft |
+| 2 Web-Recherche | ✅ live (Direktabruf); browser-use optional | nur lesend → keine | Recherche.csv mit Quell-URL und Zeitstempel, erneut eingelesen |
+| 3 PDF-Analyse | ✅ live (lokal); KI optional | vor dem Senden an die Cloud | PDF-Analyse.csv + PDF-Bericht.md, jede Datei referenziert |
+| 4 Entwurf statt Versand | ✅ live | vor dem Speichern; bei KI zusätzlich vor dem Senden | .eml mit X-Unsent, Empfänger/Betreff geprüft, **kein Versand** |
+| 5 Wiederholbarer Workflow | ✅ live | alle Freigaben bei jedem Lauf erneut | versionierte Vorlagen, Zeitplan bei geöffneter App |
+
+Außerdem: Berechtigungen je Aufgabe mit ausdrücklicher Zustimmung (Cloud-KI nur mit `ai.cloud`), SSRF-Schutz, Schutz vor CSV-Formel- und E-Mail-Header-Injection, Markierung von Prompt-Injection, „Im Explorer anzeigen“ für Ergebnisse, echter Worker-Status in der Oberfläche.
+
+**Teststatus** (alle Befehle wiederholbar)
+- `worker/`: `uv run pytest` → 48 Tests grün (Sicherheit, alle Workflows, Freigaben, Abbruch, Undo, Migration, Prozess-Lebenszyklus)
+- `app/`: `pnpm test` → 49 Unit-Tests grün; `pnpm build` grün
+- `app/`: `pnpm e2e` (Linux/Xvfb, echter Worker, echte Dateien) → 16 Schritte grün, darunter: Freigabe vor jeder Änderung, Verschieben und Undo auf der Platte geprüft, Ablehnen ändert nichts, Recherche gegen lokalen Testserver, PDF-Analyse mit generierten PDFs, .eml-Entwürfe auf der Platte geprüft, Vorlage speichern/planen/ausführen, keine Konsolenfehler, keine verwaisten Prozesse
+- Durch Tests gefundene und behobene Fehler, unter anderem: Freigabe kam nie an (null-Felder im Event), verwaiste Worker bei offener WebSocket-Verbindung, Ordnerwahl ging beim Bereichswechsel verloren, irreführende 404-Meldung, „zuletzt ausgeführt“ nach bloßem Planen
+
+**Nicht getestet / offen**
+- **Windows:** Start, Pfade, DPAPI-Speicher, Explorer-Anzeige – alles nur unter Linux geprüft
+- **Echte KI-Aufrufe:** Anthropic/OpenAI und browser-use nur gegen nachgebildete Anbieter getestet (kein API-Schlüssel in der Testumgebung)
+- **Kosten:** browser-use liefert USD-Kosten; bei PDF/Entwürfen werden nur Token gezählt (Preisliste je Modell fehlt noch)
+- **Pause** zwischen Schritten (der Button wurde entfernt, statt eine Pause vorzutäuschen)
+- **OCR** für Scan-PDFs (bewusst optional, nicht aktiviert)
+- **Desktop-Automation** (pywinauto/UI Automation): im Architekturziel vorgesehen, kein MVP-Workflow benötigt sie bisher
+- Ein einmaliger, nicht reproduzierbarer E2E-Fehlschlag bei einer Freigabe (3 Wiederholungen grün). Als Absicherung lädt die Oberfläche den Stand nach, wenn der Worker „bereits entschieden“ meldet.
+
 **Nächster Schritt**
-Phase 2, Schritt 1: Python-Worker (`worker/`, FastAPI, SQLite) mit Events gemäß Vertrag; Start aus dem Main-Prozess an 127.0.0.1 mit Einmal-Token; WS-Event-Stream mit Replay-Cursor an den Renderer.
+Phase 4: Installer (PyInstaller-Sidecar + electron-builder/NSIS), Update-Strategie, Telemetrie nur per Opt-in, Lizenz-/Billing-Prototyp, Rechtstexte, Pilotplan.

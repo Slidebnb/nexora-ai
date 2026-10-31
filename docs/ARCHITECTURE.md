@@ -1,4 +1,6 @@
-# ARCHITECTURE — NEXORA AI (Zielbild, noch nicht implementiert)
+# ARCHITECTURE — NEXORA AI
+
+Stand 2026-10-31: Das Zielbild ist bis einschließlich Phase 3 umgesetzt. Abweichungen und Ist-Stand stehen am Ende dieses Dokuments.
 
 ## Verbindlicher Stack
 
@@ -69,3 +71,25 @@ Regeln: Den Fortschritt berechnet ausschließlich ein Reducer über diese Events
 3. Kein `eval`, keine freie Shell. Dateioperationen sind auf vom Nutzer gewählte Wurzelordner begrenzt (realpath-Prüfung).
 4. LLM- und Webtext gelten als Daten und werden nie als Instruktion für die Policy verwendet. Aktionen stammen aus einem festen Tool-Schema.
 5. Jede irreversible Aktion erzeugt `approval_requested` mit Ziel, Daten und Auswirkung. Fehlt eine Antwort, wird nichts ausgeführt.
+
+
+## Ist-Stand (Phase 3)
+
+| Baustein | Datei(en) |
+|---|---|
+| Fensterhärtung, CSP, Navigation | `app/src/main/security.ts`, `app/src/main/index.ts` |
+| IPC-Allowlist mit zod (24 Kanäle) | `app/src/shared/ipc-contract.ts`, `app/src/main/ipc.ts`, `app/src/preload/` |
+| Worker-Start/-Überwachung, Event-Stream | `app/src/main/worker/{supervisor,client,hub}.ts` |
+| Event-Vertrag (TS ↔ Python) | `app/src/shared/events.ts` ↔ `worker/nexora_worker/events.py` |
+| Zustand/Reducer, Demo-Player | `app/src/renderer/src/state/`, `app/src/renderer/src/demo/` |
+| Worker-API (REST/WS) | `worker/nexora_worker/api.py` |
+| Lebenszyklus, Berechtigungen, Freigaben | `worker/nexora_worker/{runner,approvals}.py` |
+| Sicherheit/Schwärzung | `worker/nexora_worker/safety.py` |
+| Workflows | `worker/nexora_worker/workflows/{organizer,web_research,pdf_analysis,drafts}.py`, `worker/nexora_worker/templates.py` |
+| Web/KI | `worker/nexora_worker/{web,engines,llm}.py` |
+
+Abweichungen vom ursprünglichen Plan:
+- **Migrationen:** eigene, versionierte SQL-Migrationen statt Alembic (weniger Abhängigkeiten; per Test von v1 auf v2 geprüft).
+- **Logging:** JSON-Zeilen mit Schwärzung über `logging` statt structlog.
+- **API-Schlüssel:** Electron `safeStorage` (DPAPI) im Main-Prozess; der Worker erhält sie pro Sitzung nur im Speicher (`PUT /api/session/secrets`).
+- **Ordner- und Dateiauswahl:** ausschließlich über native Dialoge im Main-Prozess. Der Renderer kennt nur zufällige IDs, nie frei wählbare Pfade.
