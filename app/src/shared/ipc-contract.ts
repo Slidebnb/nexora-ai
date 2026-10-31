@@ -136,6 +136,8 @@ export const IPC_CHANNELS = {
   'dialog:pickFiles': { request: z.object({ kind: z.enum(['pdf']) }), response: z.array(PickedFileSchema) },
   'tasks:create': { request: CreateTaskSchema, response: z.object({ taskId: z.string(), runId: z.string() }) },
   'tasks:cancel': { request: z.object({ taskId: z.string().min(1) }), response: Ok },
+  'tasks:pause': { request: z.object({ taskId: z.string().min(1) }), response: Ok },
+  'tasks:resume': { request: z.object({ taskId: z.string().min(1) }), response: Ok },
   'approvals:respond': { request: z.object({ approvalId: z.string().min(1), decision: ApprovalDecisionSchema }), response: Ok },
   'files:reveal': { request: z.object({ artifactId: z.string().min(1) }), response: Ok },
   'settings:get': { request: z.undefined(), response: AppSettingsSchema },

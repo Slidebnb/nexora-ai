@@ -146,3 +146,13 @@ describe('Selektoren', () => {
     expect(selectKpis(s)).toMatchObject({ total: 2, succeeded: 1, failed: 1, active: 0 })
   })
 })
+
+describe('Pause', () => {
+  it('markiert den Lauf als pausiert und wieder fortgesetzt', () => {
+    resetSeq()
+    const s1 = reduceEvents([ev('run_created', 'queued', { title: 'x' }), ev('run_paused', 'running', {})])
+    expect(s1.runs['r1']!.paused).toBe(true)
+    const s2 = applyEvent(s1, ev('run_resumed', 'running', {}))
+    expect(s2.runs['r1']!.paused).toBe(false)
+  })
+})

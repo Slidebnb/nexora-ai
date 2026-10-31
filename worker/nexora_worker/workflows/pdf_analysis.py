@@ -129,6 +129,7 @@ class PdfAnalysis(Workflow):
 
         infos: list[tuple[int, PdfInfo | None, str]] = []
         for (sid, title), (i, path) in zip(steps, enumerate(files, 1)):
+            await ctx.checkpoint()
             ctx.step_started(sid, title)
             try:
                 info = await asyncio.to_thread(read_pdf, path)
@@ -167,7 +168,7 @@ class PdfAnalysis(Workflow):
                     tokens_in = tokens_out = 0
                     errors = 0
                     for inf in readable:
-                        ctx.check_cancel()
+                        await ctx.checkpoint()
                         try:
                             res = await asyncio.to_thread(summarize, inf.text, ctx.secrets)
                             summaries[inf.path] = (redact_text(res.text), f"{res.provider} {res.model}")

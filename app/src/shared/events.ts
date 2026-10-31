@@ -23,7 +23,9 @@ export const EVENT_TYPES = [
   'run_succeeded',
   'run_failed',
   'run_cancelled',
-  'cost_updated'
+  'cost_updated',
+  'run_paused',
+  'run_resumed'
 ] as const
 export type EventType = (typeof EVENT_TYPES)[number]
 
@@ -77,5 +79,7 @@ export const PAYLOAD_SCHEMAS = {
   run_succeeded: z.object({ verification: z.string().min(1), summary: z.string().optional() }),
   run_failed: z.object({ error: z.string() }),
   run_cancelled: z.object({ reason: z.string().optional() }),
-  cost_updated: z.object({ totalUsd: z.number().nonnegative() })
+  cost_updated: z.object({ totalUsd: z.number().nonnegative() }),
+  run_paused: z.object({}),
+  run_resumed: z.object({})
 } satisfies Record<EventType, z.ZodType>

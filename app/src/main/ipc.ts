@@ -115,6 +115,14 @@ export function registerIpcHandlers(opts: { devServerUrl?: string; secrets: Secr
     await hub.cancelTask(taskId)
     return { ok: true }
   })
+  handle('tasks:pause', async ({ taskId }) => {
+    await hub.pauseTask(taskId)
+    return { ok: true }
+  })
+  handle('tasks:resume', async ({ taskId }) => {
+    await hub.resumeTask(taskId)
+    return { ok: true }
+  })
   handle('approvals:respond', async ({ approvalId, decision }) => {
     await hub.respondApproval(approvalId, decision)
     return { ok: true }

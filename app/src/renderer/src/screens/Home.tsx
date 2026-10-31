@@ -1,4 +1,4 @@
-import { ArrowRight, CheckCircle2, FileText, FolderOpen, FolderSync, Globe, Mail, Repeat, Square, Undo2, XCircle } from 'lucide-react'
+import { ArrowRight, CheckCircle2, FileText, FolderOpen, FolderSync, Globe, Mail, Pause, Play, Repeat, Square, Undo2, XCircle } from 'lucide-react'
 import { useNexora } from '../state/store'
 import { selectActiveRuns, selectAgents, selectRuns } from '../state/selectors'
 import { isTerminal, progressOf, type RunState } from '../state/runReducer'
@@ -6,7 +6,7 @@ import { WORKFLOWS } from '../data/workflows'
 import { OrbitCore } from '../components/hud/OrbitCore'
 import { ProgressBar } from '../components/common/ProgressBar'
 import { DemoTag } from '../components/common/Panel'
-import { canUndo, stopRun, undoRun } from '../lib/actions'
+import { canUndo, stopRun, togglePause, undoRun } from '../lib/actions'
 import { formatTime } from '../lib/format'
 import { TaskWizard } from '../components/home/TaskWizard'
 
@@ -14,6 +14,7 @@ const ICON: Record<string, typeof FolderSync> = { ordner: FolderSync, recherche:
 
 /** Satz über den aktuellen Stand eines laufenden Vorgangs – ohne Fachbegriffe. */
 function currentStep(run: RunState): string {
+  if (run.paused) return 'Pausiert – klicke auf „Fortsetzen“, um weiterzumachen'
   if (run.status === 'waiting_approval') return 'Wartet auf deine Bestätigung'
   if (run.status === 'queued' || !run.planReady) return 'Bereitet vor …'
   const idx = run.steps.findIndex((s) => s.id === run.currentStepId)
@@ -31,13 +32,18 @@ function RunningCard({ run }: { run: RunState }) {
           <p className="truncate font-medium text-text">{run.title}</p>
           {run.source === 'demo' && <DemoTag />}
         </div>
-        <p className={`mt-0.5 text-sm ${run.status === 'waiting_approval' ? 'text-warning' : 'text-text-2'}`} aria-live="polite">
+        <p className={`mt-0.5 text-sm ${run.status === 'waiting_approval' || run.paused ? 'text-warning' : 'text-text-2'}`} aria-live="polite">
           {currentStep(run)}
         </p>
         <div className="mt-2">
           <ProgressBar value={progress} label={`Fortschritt ${run.title}`} tone={run.status === 'waiting_approval' ? 'warning' : 'accent'} />
         </div>
       </div>
+      {run.source === 'live' && (
+        <button type="button" className="btn-ghost" onClick={() => void togglePause(run).catch(() => undefined)}>
+          {run.paused ? <Play className="size-4" aria-hidden /> : <Pause className="size-4" aria-hidden />} {run.paused ? 'Fortsetzen' : 'Pausieren'}
+        </button>
+      )}
       <button type="button" className="btn-ghost" onClick={() => void stopRun(run).catch(() => undefined)}>
         <Square className="size-4" aria-hidden /> Stoppen
       </button>

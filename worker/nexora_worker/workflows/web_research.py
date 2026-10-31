@@ -72,6 +72,7 @@ class WebResearch(Workflow):
         cost = 0.0
         try:
             for (sid, title), (i, url) in zip(steps, enumerate(data.urls, 1)):
+                await ctx.checkpoint()
                 ctx.step_started(sid, title)
                 try:
                     r = await engine.research(url, data.question)

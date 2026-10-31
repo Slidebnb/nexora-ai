@@ -42,8 +42,9 @@ const pages = {
   '/a': '<html><head><title>Anbieter A</title></head><body><p>Der Tarif kostet 9,99 Euro im Monat.</p></body></html>',
   '/b': '<html><head><title>Anbieter B</title></head><body><p>Monatlicher Tarif: 12 Euro.</p></body></html>'
 }
-const web = createServer((req, res) => {
-  const body = pages[req.url]
+const web = createServer(async (req, res) => {
+  if (req.url === '/langsam') await new Promise((r) => setTimeout(r, 2500)) // für den Pause-Test
+  const body = req.url === '/langsam' ? '<html><head><title>Langsam</title></head><body><p>Tarif 15 Euro im Monat.</p></body></html>' : pages[req.url]
   res.writeHead(body ? 200 : 404, { 'Content-Type': 'text/html; charset=utf-8' })
   res.end(body ?? '')
 })
@@ -164,6 +165,25 @@ try {
     void doneList
   })
 
+  await step('KUNDE: Aufgabe pausieren und fortsetzen', async () => {
+    await nav('Start')
+    await win.getByRole('button', { name: /Webseiten vergleichen/ }).click()
+    const wizard = win.getByRole('dialog', { name: 'Webseiten vergleichen' })
+    await wizard.getByLabel('Recherchefrage').fill('Was kostet der Tarif?')
+    await wizard.getByLabel('Adressen').fill(`${webBase}/langsam\n${webBase}/a`)
+    await wizard.getByLabel('Erlaubnis für diese Aufgabe').check()
+    await wizard.getByRole('button', { name: 'Aufgabe starten' }).click()
+    const card = win.getByRole('article', { name: /Läuft: Recherche/ })
+    await card.getByRole('button', { name: 'Pausieren' }).click()
+    await card.getByText(/^Pausiert/).waitFor({ timeout: 5_000 })
+    await new Promise((r) => setTimeout(r, 3500)) // langsame Quelle ist inzwischen fertig – Quelle 2 darf NICHT starten
+    await card.getByText(/^Pausiert/).waitFor()
+    assert.equal(await win.getByText(/Webseiten ausgewertet/).count(), 0, 'pausiert: nicht fertig geworden')
+    await win.screenshot({ path: join(shots, '02e-pausiert.png') })
+    await card.getByRole('button', { name: 'Fortsetzen' }).click()
+    await win.getByText('2 von 2 Webseiten ausgewertet – deine Tabelle ist fertig.').waitFor({ timeout: 15_000 })
+  })
+
   await step('Farbthema wechseln (Cyan) und zurück', async () => {
     await nav('Einstellungen')
     await win.getByRole('radio', { name: 'Cyan' }).click()
@@ -240,11 +260,15 @@ try {
     await win.getByLabel('Recherchefrage').fill('Was kostet der Tarif im Monat?')
     await win.getByLabel('Adressen').fill(`${webBase}/a\n${webBase}/b`)
     await win.getByLabel('Erlaubnis für diese Aufgabe').check()
-    await win.getByRole('button', { name: 'Aufgabe starten' }).click()
-    await win.getByText(/2 von 2 Quellen gelesen \(Direktabruf/).first().waitFor({ timeout: 20_000 })
-    await win.getByText('Recherche.csv').first().waitFor()
     const runs = join(userData, 'worker', 'runs')
-    const csvFile = readdirSync(runs).map((d) => join(runs, d, 'Recherche.csv')).find((p) => existsSync(p))
+    const csvFiles = () => (existsSync(runs) ? readdirSync(runs).map((d) => join(runs, d, 'Recherche.csv')).filter((p) => existsSync(p)) : [])
+    const before = new Set(csvFiles())
+    await win.getByRole('button', { name: 'Aufgabe starten' }).click()
+    const end = Date.now() + 20_000
+    let csvFile
+    // neue CSV, vollständig geschrieben (beide Quellen enthalten)
+    const complete = (p) => !before.has(p) && /Anbieter B/.test(readFileSync(p, 'utf8'))
+    while (!(csvFile = csvFiles().find(complete)) && Date.now() < end) await new Promise((r) => setTimeout(r, 200))
     assert.ok(csvFile, 'CSV fehlt auf der Platte')
     const csv = readFileSync(csvFile, 'utf8')
     assert.match(csv, /Anbieter A;.*9,99 Euro/)
@@ -356,7 +380,7 @@ try {
     await nav('Aktivitäten')
     await win.locator('tbody tr').first().waitFor()
     assert.equal(await win.locator('tbody').getByText('DEMO', { exact: true }).count(), 0)
-    assert.equal(await win.locator('tbody tr').count(), 10)
+    assert.equal(await win.locator('tbody tr').count(), 11)
   })
 
   await step('Keine Konsolenfehler', async () => {

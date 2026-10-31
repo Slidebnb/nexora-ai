@@ -122,6 +122,14 @@ export class WorkerHub {
     await this.client.request('DELETE', `/api/templates/${encodeURIComponent(templateId)}`)
   }
 
+  async pauseTask(taskId: string): Promise<void> {
+    await this.client.request('POST', `/api/tasks/${encodeURIComponent(taskId)}/pause`)
+  }
+
+  async resumeTask(taskId: string): Promise<void> {
+    await this.client.request('POST', `/api/tasks/${encodeURIComponent(taskId)}/resume`)
+  }
+
   async respondApproval(approvalId: string, decision: ApprovalDecision): Promise<void> {
     await this.client.request('POST', `/api/approvals/${encodeURIComponent(approvalId)}/respond`, { decision })
   }

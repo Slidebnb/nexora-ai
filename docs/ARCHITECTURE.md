@@ -51,7 +51,8 @@ Stand 2026-10-31: Das Zielbild ist bis einschließlich Phase 3 umgesetzt. Abweic
 type RunStatus = 'queued'|'running'|'waiting_approval'|'succeeded'|'failed'|'cancelled';
 type EventType = 'run_created'|'plan_ready'|'step_started'|'step_succeeded'|'step_failed'
   |'approval_requested'|'approval_resolved'|'artifact_created'
-  |'run_succeeded'|'run_failed'|'run_cancelled'|'cost_updated';
+  |'run_succeeded'|'run_failed'|'run_cancelled'|'cost_updated'
+  |'run_paused'|'run_resumed';   // Erweiterung: Pause wirkt am nächsten sicheren Haltepunkt
 interface NexoraEvent {
   id: string; seq: number;            // seq = Replay-Cursor
   runId: string; taskId: string; timestamp: string;
@@ -93,3 +94,5 @@ Abweichungen vom ursprünglichen Plan:
 - **Logging:** JSON-Zeilen mit Schwärzung über `logging` statt structlog.
 - **API-Schlüssel:** Electron `safeStorage` (DPAPI) im Main-Prozess; der Worker erhält sie pro Sitzung nur im Speicher (`PUT /api/session/secrets`).
 - **Ordner- und Dateiauswahl:** ausschließlich über native Dialoge im Main-Prozess. Der Renderer kennt nur zufällige IDs, nie frei wählbare Pfade.
+
+- **Event-Vertrag erweitert:** `run_paused` und `run_resumed`. Sie ändern den Run-Status nicht. Pausiert wird an sicheren Haltepunkten zwischen Dateien bzw. Quellen und direkt nach einer Freigabe, nie mitten in einer Dateioperation. Ein Abbruch weckt pausierte Läufe auf.

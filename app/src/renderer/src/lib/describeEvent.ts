@@ -27,6 +27,10 @@ export function describeEvent(e: NexoraEvent, runTitle?: string): string {
       return `Vorgang fehlgeschlagen: ${str('error')}`
     case 'run_cancelled':
       return `Vorgang abgebrochen${str('reason') ? `: ${str('reason')}` : ''}`
+    case 'run_paused':
+      return 'Pausiert – wird am nächsten sicheren Haltepunkt angehalten'
+    case 'run_resumed':
+      return 'Fortgesetzt'
     case 'cost_updated':
       return `Kosten aktualisiert: ${typeof p['totalUsd'] === 'number' ? p['totalUsd'].toFixed(3) : '?'} USD`
   }

@@ -12,6 +12,8 @@ export interface NexoraApi {
   pickFiles: (kind: 'pdf') => Promise<PickedFile[]>
   createTask: (req: CreateTask) => Promise<{ taskId: string; runId: string }>
   cancelTask: (taskId: string) => Promise<{ ok: boolean }>
+  pauseTask: (taskId: string) => Promise<{ ok: boolean }>
+  resumeTask: (taskId: string) => Promise<{ ok: boolean }>
   respondApproval: (approvalId: string, decision: ApprovalDecision) => Promise<{ ok: boolean }>
   revealArtifact: (artifactId: string) => Promise<{ ok: boolean }>
   getSettings: () => Promise<AppSettings>

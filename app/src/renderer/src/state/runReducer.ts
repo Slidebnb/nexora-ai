@@ -64,6 +64,8 @@ export interface RunState {
   verification?: string
   /** Kurzer Ergebnissatz für Kunden (falls der Worker ihn liefert) */
   summary?: string
+  /** Vom Nutzer angehalten (wirkt beim nächsten sicheren Haltepunkt) */
+  paused?: boolean
   /** Events, die gegen den Vertrag verstoßen (z. B. Erfolg ohne Verifikation). */
   protocolErrors: string[]
 }
@@ -249,7 +251,7 @@ export function applyEvent(state: NexoraState, event: NexoraEvent): NexoraState 
     }
     case 'run_succeeded': {
       const { verification, summary } = PAYLOAD_SCHEMAS.run_succeeded.parse(event.payload)
-      return withRun(next, { ...run, status: 'succeeded', verification, summary, endedAt: event.timestamp, currentStepId: undefined })
+      return withRun(next, { ...run, paused: false, status: 'succeeded', verification, summary, endedAt: event.timestamp, currentStepId: undefined })
     }
     case 'run_failed': {
       const { error } = PAYLOAD_SCHEMAS.run_failed.parse(event.payload)
@@ -259,6 +261,10 @@ export function applyEvent(state: NexoraState, event: NexoraEvent): NexoraState 
       const { reason } = PAYLOAD_SCHEMAS.run_cancelled.parse(event.payload)
       return withRun(next, { ...run, status: 'cancelled', error: reason, endedAt: event.timestamp, currentStepId: undefined })
     }
+    case 'run_paused':
+      return withRun(next, { ...run, paused: true })
+    case 'run_resumed':
+      return withRun(next, { ...run, paused: false })
     case 'cost_updated': {
       const { totalUsd } = PAYLOAD_SCHEMAS.cost_updated.parse(event.payload)
       return withRun(next, { ...run, costUsd: totalUsd })

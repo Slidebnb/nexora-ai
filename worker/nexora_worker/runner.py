@@ -31,6 +31,12 @@ class RunCancelled(Exception):
     pass
 
 
+def _set_event() -> asyncio.Event:
+    e = asyncio.Event()
+    e.set()
+    return e
+
+
 class WorkflowError(Exception):
     """Erwarteter, für Nutzer verständlicher Fehler."""
 
@@ -45,6 +51,8 @@ class RunContext:
     approvals: ApprovalBroker
     secrets: dict[str, str]
     cancel_event: asyncio.Event = field(default_factory=asyncio.Event)
+    # gesetzt = läuft; gelöscht = pausiert (wirkt an Checkpoints zwischen Schritten/Dateien)
+    resume_event: asyncio.Event = field(default_factory=lambda: _set_event())
     finished: bool = False
 
     def _emit(self, type: EventType, status: RunStatus, payload: dict[str, Any] | None = None, step_id: str | None = None) -> None:
@@ -53,6 +61,13 @@ class RunContext:
     def check_cancel(self) -> None:
         if self.cancel_event.is_set():
             raise RunCancelled()
+
+    async def checkpoint(self) -> None:
+        """Sichere Haltestelle: wartet bei Pause, bricht bei Abbruch ab."""
+        self.check_cancel()
+        if not self.resume_event.is_set():
+            await self.resume_event.wait()
+        self.check_cancel()
 
     def plan(self, steps: list[tuple[str, str]]) -> None:
         self._emit("plan_ready", "running", {"steps": [{"id": i, "title": t} for i, t in steps]})
@@ -90,6 +105,7 @@ class RunContext:
         )
         if decision == "cancel":
             raise RunCancelled()
+        await self.checkpoint()  # Pause während der Freigabe wirkt direkt danach
         return decision
 
     def succeed(self, verification: str, summary: str = "") -> None:
@@ -240,8 +256,34 @@ class TaskManager:
         ctx = self._contexts.get(row["id"])
         if ctx:
             ctx.cancel_event.set()
+            ctx.resume_event.set()  # pausierte Läufe aufwecken, damit sie sauber abbrechen
             self.approvals.cancel_run(row["id"])
         return row["id"]
+
+    def _live_ctx(self, task_id: str) -> RunContext:
+        row = self.db.query_one("SELECT id, status FROM runs WHERE task_id = ?", (task_id,))
+        if row is None:
+            raise TaskError("Aufgabe nicht gefunden", 404)
+        ctx = self._contexts.get(row["id"])
+        if row["status"] in TERMINAL or ctx is None:
+            raise TaskError("Vorgang läuft nicht", 409)
+        return ctx
+
+    def pause_task(self, task_id: str) -> str:
+        ctx = self._live_ctx(task_id)
+        if ctx.resume_event.is_set():
+            ctx.resume_event.clear()
+            row = self.db.query_one("SELECT status FROM runs WHERE id = ?", (ctx.run_id,))
+            ctx._emit("run_paused", row["status"] if row else "running", {})
+        return ctx.run_id
+
+    def resume_task(self, task_id: str) -> str:
+        ctx = self._live_ctx(task_id)
+        if not ctx.resume_event.is_set():
+            row = self.db.query_one("SELECT status FROM runs WHERE id = ?", (ctx.run_id,))
+            ctx._emit("run_resumed", row["status"] if row else "running", {})
+            ctx.resume_event.set()
+        return ctx.run_id
 
     async def wait(self, run_id: str) -> None:
         t = self._tasks.get(run_id)
@@ -251,6 +293,7 @@ class TaskManager:
     async def shutdown(self) -> None:
         for ctx in list(self._contexts.values()):
             ctx.cancel_event.set()
+            ctx.resume_event.set()
             self.approvals.cancel_run(ctx.run_id)
         if self._tasks:
             await asyncio.wait(list(self._tasks.values()), timeout=10)

@@ -123,6 +123,20 @@ def create_app(manager: TaskManager, token: str, templates: TemplateStore | None
             raise _err(e) from e
         return {"runId": run_id, "status": "cancelling"}
 
+    @app.post("/api/tasks/{task_id}/pause")
+    async def pause_task(task_id: str) -> dict[str, str]:
+        try:
+            return {"runId": manager.pause_task(task_id), "status": "paused"}
+        except TaskError as e:
+            raise _err(e) from e
+
+    @app.post("/api/tasks/{task_id}/resume")
+    async def resume_task(task_id: str) -> dict[str, str]:
+        try:
+            return {"runId": manager.resume_task(task_id), "status": "running"}
+        except TaskError as e:
+            raise _err(e) from e
+
     @app.post("/api/approvals/{approval_id}/respond")
     async def respond(approval_id: str, body: ApprovalResponse) -> dict[str, str]:
         try:

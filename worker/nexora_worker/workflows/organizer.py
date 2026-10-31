@@ -217,7 +217,7 @@ class OrganizeFolder(Workflow):
         _write_journal(jpath, journal)
         try:
             for m in moves:
-                ctx.check_cancel()
+                await ctx.checkpoint()
                 src = root / m.name
                 try:
                     st = src.stat(follow_symlinks=False)
@@ -330,7 +330,7 @@ class UndoOrganize(Workflow):
         ctx.step_started("restore", "Dateien zurückverschieben")
         restored = []
         for e in restorable:
-            ctx.check_cancel()
+            await ctx.checkpoint()
             if Path(e["src"]).exists():
                 continue
             os.rename(e["dst"], e["src"])

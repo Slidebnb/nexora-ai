@@ -170,7 +170,7 @@ class DraftEmails(Workflow):
         ctx.step_started("save", "Entwürfe speichern")
         written: list[Path] = []
         for name, _r, eml in drafts:
-            ctx.check_cancel()
+            await ctx.checkpoint()
             target = out / name
             stem, n = target.stem, 1
             while target.exists():

@@ -34,6 +34,13 @@ export async function stopRun(run: RunState): Promise<void> {
   else await window.nexora.cancelTask(run.taskId)
 }
 
+/** Pause/Fortsetzen gibt es nur für echte Läufe (Demo-Läufe sind simuliert). */
+export async function togglePause(run: RunState): Promise<void> {
+  if (run.source !== 'live' || isTerminal(run.status)) return
+  if (run.paused) await window.nexora.resumeTask(run.taskId)
+  else await window.nexora.pauseTask(run.taskId)
+}
+
 export const UNDO_CAPS: Capability[] = ['files.move']
 
 /** Rückgängig machen ist möglich, wenn ein Undo-Protokoll existiert und noch kein Undo erfolgreich lief. */

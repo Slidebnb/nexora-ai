@@ -20,6 +20,8 @@ EventType = Literal[
     "run_failed",
     "run_cancelled",
     "cost_updated",
+    "run_paused",
+    "run_resumed",
 ]
 Decision = Literal["allow", "deny", "cancel"]
 TERMINAL: frozenset[str] = frozenset({"succeeded", "failed", "cancelled"})

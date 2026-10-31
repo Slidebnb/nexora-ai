@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
-import { Cpu, HardDrive, Loader2, PanelRight, Square, Wifi, WifiOff } from 'lucide-react'
+import { Cpu, HardDrive, Loader2, PanelRight, Pause, Play, Square, Wifi, WifiOff } from 'lucide-react'
 import { SCREEN_LABEL, useNexora } from '../../state/store'
 import { selectActiveRuns, selectKpis } from '../../state/selectors'
-import { stopRun } from '../../lib/actions'
+import { stopRun, togglePause } from '../../lib/actions'
 import { formatUsd } from '../../lib/format'
 
 const clock = new Intl.DateTimeFormat('de-DE', { hour: '2-digit', minute: '2-digit' })
@@ -25,6 +25,8 @@ export function TopBar() {
   }, [])
 
   const hasActive = activeRuns.length > 0
+  const liveActive = activeRuns.filter((r) => r.source === 'live')
+  const allPaused = liveActive.length > 0 && liveActive.every((r) => r.paused)
   const WorkerIcon = worker.state === 'connected' ? Wifi : worker.state === 'starting' ? Loader2 : WifiOff
   const workerLabel = expert
     ? `Worker: ${{ connected: 'verbunden', starting: 'startet …', disconnected: 'nicht verbunden', error: 'Fehler' }[worker.state]}`
@@ -61,6 +63,16 @@ export function TopBar() {
       </div>
 
       <div className="ml-auto flex items-center gap-2">
+        <button
+          type="button"
+          className="btn-ghost"
+          disabled={liveActive.length === 0}
+          onClick={() => liveActive.filter((r) => Boolean(r.paused) === allPaused).forEach((r) => void togglePause(r).catch(() => undefined))}
+          title={liveActive.length ? (allPaused ? 'Alle angehaltenen Aufgaben fortsetzen' : 'Alle laufenden Aufgaben anhalten') : 'Keine laufende Aufgabe'}
+        >
+          {allPaused ? <Play className="size-4" aria-hidden /> : <Pause className="size-4" aria-hidden />}{' '}
+          <span className="max-xl:sr-only">{allPaused ? 'Fortsetzen' : 'Pause'}</span>
+        </button>
         <button
           type="button"
           className="btn-ghost"
