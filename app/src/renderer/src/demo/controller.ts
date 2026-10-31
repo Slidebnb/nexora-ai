@@ -26,7 +26,7 @@ export function startDemoScenario(scenarioId: string): string | null {
   return scenario ? getPlayer().start(scenario) : null
 }
 
-/** Freigaben für Demo-Läufe gehen an den Player. Live-Freigaben folgen mit dem Worker (Phase 2). */
+/** Freigaben für Demo-Läufe gehen an den Player; Live-Freigaben gehen über IPC an den Worker. */
 export function respondDemoApproval(approvalId: string, decision: ApprovalDecision): boolean {
   return player?.respondApproval(approvalId, decision) ?? false
 }

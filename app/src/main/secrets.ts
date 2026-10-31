@@ -49,7 +49,7 @@ export class SecretStore {
     return this.status()
   }
 
-  /** Nur für den Main-Prozess (Weitergabe an den Worker ab Phase 2). */
+  /** Nur für den Main-Prozess (wird verschlüsselt gehalten und nur an den lokalen Worker weitergegeben). */
   get(provider: SecretName): string | undefined {
     const value = this.read()[provider]
     if (!value || !this.cipher.isEncryptionAvailable()) return undefined

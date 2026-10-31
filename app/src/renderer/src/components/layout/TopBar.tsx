@@ -4,6 +4,8 @@ import { SCREEN_LABEL, useNexora } from '../../state/store'
 import { selectActiveRuns, selectKpis } from '../../state/selectors'
 import { stopRun, togglePause } from '../../lib/actions'
 import { formatUsd } from '../../lib/format'
+import type { LicenseStatus } from '@shared/ipc-contract'
+import { STATE_LABEL } from '../settings/LicenseSection'
 
 const clock = new Intl.DateTimeFormat('de-DE', { hour: '2-digit', minute: '2-digit' })
 
@@ -18,6 +20,13 @@ export function TopBar() {
   const worker = useNexora((s) => s.worker)
   const expert = useNexora((s) => s.expertMode)
   const [now, setNow] = useState(() => new Date())
+  const setScreen = useNexora((s) => s.setScreen)
+  const [license, setLicense] = useState<LicenseStatus | null>(null)
+
+  useEffect(() => {
+    // Lizenzstatus beim Start und bei jedem Wechsel der Seite neu lesen (z. B. nach Aktivierung in den Einstellungen)
+    window.nexora.getLicenseStatus().then(setLicense, () => setLicense(null))
+  }, [screen])
 
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 15_000)
@@ -93,9 +102,18 @@ export function TopBar() {
           <span className="sr-only">Seitenleiste umschalten</span>
         </button>
         <span className="ml-2 font-mono text-sm tabular-nums text-text-2">{clock.format(now)}</span>
-        <span className="ml-2 flex size-8 items-center justify-center rounded-full bg-panel-2 text-xs font-semibold text-text-2" title="Profil (folgt mit Lizenzierung)">
-          Du
-        </span>
+        <button
+          type="button"
+          onClick={() => setScreen('settings')}
+          className={`ml-2 flex h-8 items-center gap-1.5 rounded-full border px-3 text-xs font-medium ${
+            license?.state === 'expired' || license?.state === 'trial_over' ? 'border-warning/60 text-warning' : 'border-line text-text-2 hover:text-text'
+          }`}
+          title={license?.message ?? 'Lizenz und Einstellungen'}
+          aria-label={`Lizenz: ${license ? STATE_LABEL[license.state] : 'unbekannt'} – Einstellungen öffnen`}
+          data-testid="license-chip"
+        >
+          {license ? (license.plan && license.state === 'active' ? license.plan : STATE_LABEL[license.state]) : '…'}
+        </button>
       </div>
     </header>
   )

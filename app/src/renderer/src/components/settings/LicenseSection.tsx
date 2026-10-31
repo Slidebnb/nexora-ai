@@ -3,7 +3,7 @@ import { BadgeCheck, KeySquare } from 'lucide-react'
 import type { LicenseStatus } from '@shared/ipc-contract'
 import { cleanError } from '../../lib/actions'
 
-const STATE_LABEL: Record<LicenseStatus['state'], string> = {
+export const STATE_LABEL: Record<LicenseStatus['state'], string> = {
   unconfigured: 'Entwicklungsversion',
   trial: 'Testzeitraum',
   active: 'Aktiv',

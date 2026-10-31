@@ -2,7 +2,7 @@
 
 - Standard: komplett lokal (pypdf + extraktive Zusammenfassung), keine Daten verlassen den Rechner.
 - Optional KI-Zusammenfassung: nur mit Berechtigung „ai.cloud“ UND Freigabe direkt vor dem Senden.
-- Gescannte PDFs (kaum Text) werden erkannt; OCR ist bewusst nicht aktiviert (optional, später).
+- Gescannte PDFs (kaum Text) werden erkannt; Texterkennung (OCR, lokal mit Tesseract) nur auf ausdrücklichen Wunsch.
 - Liest nur; Ergebnisse liegen im NEXORA-Datenordner.
 """
 

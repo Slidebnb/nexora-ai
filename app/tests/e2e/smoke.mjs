@@ -140,6 +140,16 @@ try {
     await nav('Start')
   })
 
+  await step('Lizenzanzeige oben rechts zeigt den echten Status und führt zu den Einstellungen', async () => {
+    await nav('Start')
+    const chip = win.getByTestId('license-chip')
+    // Entwicklungs-Build ohne hinterlegten öffentlichen Schlüssel → Status „Entwicklungsversion“
+    await win.waitForFunction(() => document.querySelector('[data-testid="license-chip"]')?.textContent === 'Entwicklungsversion')
+    await chip.click()
+    await win.getByRole('heading', { level: 1, name: 'Einstellungen' }).waitFor()
+    await nav('Start')
+  })
+
   await step('KUNDE: Befehlszeile erkennt Aufgabe und füllt den Assistenten vor', async () => {
     await nav('Start')
     const cmd = win.getByLabel('Was soll NEXORA erledigen?')
