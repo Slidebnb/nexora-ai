@@ -59,7 +59,9 @@ def api(data_dir: Path) -> Iterator[Api]:
     manager = build_manager(data_dir)
     app = create_app(manager, TOKEN)
     with TestClient(app, base_url="http://127.0.0.1") as client:
-        yield Api(client)
+        a = Api(client)
+        a.manager = manager  # type: ignore[attr-defined]
+        yield a
 
 
 @pytest.fixture

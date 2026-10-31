@@ -4,6 +4,7 @@ import type { CreateTask, PickedFolder } from '@shared/ipc-contract'
 import { useNexora, type ComposerDraft } from '../../state/store'
 import type { WorkflowTemplate } from '../../data/workflows'
 import { cleanError } from '../../lib/actions'
+import { DesktopRecorder } from './DesktopRecorder'
 
 export interface FormResult {
   request: CreateTask | null
@@ -64,6 +65,13 @@ export function buildRequest(t: WorkflowTemplate, d: ComposerDraft, folder: Pick
       return {
         request: { workflow: 'draft_emails', subject: d.subject.trim(), briefing: d.briefing.trim(), recipients, outFolderId: d.outFolder.folderId, useCloudAi: d.useCloudAi, capabilities: caps }
       }
+    }
+    case 'desktop_routine': {
+      if (!d.desktopWindow) return { request: null, missing: 'Bitte ein Programmfenster wählen' }
+      if (d.desktopSteps.length === 0) return { request: null, missing: 'Bitte mindestens einen Schritt hinzufügen' }
+      const empty = d.desktopSteps.findIndex((st) => st.action === 'type' && !st.text)
+      if (empty >= 0) return { request: null, missing: `Schritt ${empty + 1}: Bitte den Text eingeben` }
+      return { request: { workflow: 'desktop_routine', window: d.desktopWindow, steps: d.desktopSteps, capabilities } }
     }
   }
 }
@@ -160,6 +168,8 @@ export function LiveForm({ template, onError }: { template: WorkflowTemplate; on
           </label>
         </div>
       )
+    case 'desktop_routine':
+      return <DesktopRecorder />
     case 'draft_emails':
       return (
         <div className="flex min-h-16 flex-1 flex-col gap-2">

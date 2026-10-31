@@ -7,7 +7,7 @@ import type { ComposerDraft } from '../state/store'
  * Erlaubnis und Freigaben im normalen Ablauf.
  */
 export interface Intent {
-  workflowId: 'ordner' | 'recherche' | 'pdf' | 'entwurf'
+  workflowId: 'ordner' | 'recherche' | 'pdf' | 'entwurf' | 'desktop'
   prefill: Partial<ComposerDraft>
   /** Kurzer Satz, was erkannt wurde */
   reason: string
@@ -25,7 +25,8 @@ const RULES: { id: Intent['workflowId']; words: RegExp }[] = [
   { id: 'ordner', words: W('ordner\\p{L}*|aufräum\\p{L}*|aufraeum\\p{L}*|sortier\\p{L}*|downloads?|desktop|ordnung|dateien') },
   { id: 'recherche', words: W('webseiten?|websites?|internet|recherch\\p{L}*|vergleich\\p{L}*|preise?|tarife?|anbieter|online') },
   { id: 'pdf', words: W('pdfs?|rechnung\\p{L}*|dokument\\p{L}*|vertr(?:ag|äge)\\p{L}*|zusammenfass\\p{L}*|auswert\\p{L}*|analys\\p{L}*|scans?') },
-  { id: 'entwurf', words: W('e-?mails?|mails?|entw(?:urf|ürfe)\\p{L}*|anschreib\\p{L}*|antwort\\p{L}*|nachricht\\p{L}*') }
+  { id: 'entwurf', words: W('e-?mails?|mails?|entw(?:urf|ürfe)\\p{L}*|anschreib\\p{L}*|antwort\\p{L}*|nachricht\\p{L}*') },
+  { id: 'desktop', words: W('programm\\p{L}*|formular\\p{L}*|ausfüll\\p{L}*|eintrag\\p{L}*|klick\\p{L}*|fenster|bedien\\p{L}*|software') }
 ]
 
 const REPEAT = W('wiederhol\\p{L}*|vorlage\\p{L}*|nochmal|erneut')
@@ -34,7 +35,8 @@ export const INTENT_LABEL: Record<Intent['workflowId'], string> = {
   ordner: 'Ordner aufräumen',
   recherche: 'Webseiten vergleichen',
   pdf: 'PDFs zusammenfassen',
-  entwurf: 'E-Mail-Entwürfe schreiben'
+  entwurf: 'E-Mail-Entwürfe schreiben',
+  desktop: 'Programm bedienen'
 }
 
 export function parseCommand(input: string): CommandResult {
@@ -48,12 +50,12 @@ export function parseCommand(input: string): CommandResult {
   const urls = [...new Set((text.match(URL_RE) ?? []).map((u) => u.replace(/[.,;:!?)]+$/, '')))]
   const mails = [...new Set(text.match(MAIL_RE) ?? [])]
   const withoutUrls = text.replace(URL_RE, ' ').replace(MAIL_RE, ' ')
-  const score: Record<Intent['workflowId'], number> = { ordner: 0, recherche: 0, pdf: 0, entwurf: 0 }
+  const score: Record<Intent['workflowId'], number> = { ordner: 0, recherche: 0, pdf: 0, entwurf: 0, desktop: 0 }
   for (const r of RULES) score[r.id] = (withoutUrls.match(r.words) ?? []).length
   if (urls.length) score.recherche += 3
   if (mails.length) score.entwurf += 3
 
-  const order: Intent['workflowId'][] = ['ordner', 'recherche', 'pdf', 'entwurf']
+  const order: Intent['workflowId'][] = ['ordner', 'recherche', 'pdf', 'entwurf', 'desktop']
   const best = order.reduce((a, b) => (score[b] > score[a] ? b : a))
   if (score[best] === 0) return { kind: 'unknown' }
 

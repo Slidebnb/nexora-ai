@@ -39,7 +39,7 @@ export const WorkerStatusSchema = z.object({
 export type WorkerStatus = z.infer<typeof WorkerStatusSchema>
 
 /** Fähigkeiten, die der Nutzer pro Aufgabe ausdrücklich erlaubt (muss zum Worker-Workflow passen). */
-export const CapabilitySchema = z.enum(['files.read', 'files.move', 'web.read', 'files.export', 'pdf.read', 'ai.cloud', 'drafts.write', 'files.write'])
+export const CapabilitySchema = z.enum(['files.read', 'files.move', 'web.read', 'files.export', 'pdf.read', 'ai.cloud', 'drafts.write', 'files.write', 'desktop.read', 'desktop.control'])
 
 export const CAPABILITY_LABEL: Record<z.infer<typeof CapabilitySchema>, string> = {
   'files.read': 'Dateien lesen',
@@ -49,7 +49,9 @@ export const CAPABILITY_LABEL: Record<z.infer<typeof CapabilitySchema>, string> 
   'pdf.read': 'ausgewählte PDFs lesen',
   'ai.cloud': 'Inhalte an KI-Anbieter senden (mit Freigabe, Kosten)',
   'drafts.write': 'Entwürfe erstellen',
-  'files.write': 'Dateien speichern (mit Freigabe)'
+  'files.write': 'Dateien speichern (mit Freigabe)',
+  'desktop.read': 'Programmfenster lesen',
+  'desktop.control': 'Programm bedienen (mit Freigabe)'
 }
 export type Capability = z.infer<typeof CapabilitySchema>
 
@@ -59,6 +61,29 @@ export const PickedFileSchema = z.object({ fileId: z.string(), name: z.string(),
 export type PickedFile = z.infer<typeof PickedFileSchema>
 
 const Caps = z.array(CapabilitySchema).max(10)
+
+/** Element eines Programmfensters (Windows UI Automation), wie es der Worker liefert. */
+export const DesktopElementSchema = z.object({
+  control_type: z.string().min(1).max(40),
+  name: z.string().max(120),
+  automation_id: z.string().max(120),
+  parent_name: z.string().max(80),
+  left: z.number().int(),
+  top: z.number().int(),
+  right: z.number().int(),
+  bottom: z.number().int(),
+  is_password: z.boolean(),
+  label: z.string().max(200)
+})
+export type DesktopElement = z.infer<typeof DesktopElementSchema>
+export const DesktopStepSchema = z.object({
+  action: z.enum(['click', 'type']),
+  element: DesktopElementSchema.omit({ is_password: true, label: true }),
+  text: z.string().max(5000).default('')
+})
+export type DesktopStep = z.infer<typeof DesktopStepSchema>
+export const DesktopWindowSchema = z.object({ title: z.string().max(200), pid: z.number().int() })
+export type DesktopWindow = z.infer<typeof DesktopWindowSchema>
 export const CreateTaskSchema = z.discriminatedUnion('workflow', [
   z.object({ workflow: z.literal('organize_folder'), folderId: z.string().min(1), capabilities: Caps }),
   z.object({ workflow: z.literal('undo_organize'), runId: z.string().regex(/^run-[a-z0-9]+$/), capabilities: Caps }),
@@ -79,7 +104,8 @@ export const CreateTaskSchema = z.discriminatedUnion('workflow', [
     outFolderId: z.string().min(1),
     useCloudAi: z.boolean(),
     capabilities: Caps
-  })
+  }),
+  z.object({ workflow: z.literal('desktop_routine'), window: z.string().trim().min(1).max(200), steps: z.array(DesktopStepSchema).min(1).max(30), capabilities: Caps })
 ])
 export type CreateTask = z.infer<typeof CreateTaskSchema>
 
@@ -176,7 +202,9 @@ export const IPC_CHANNELS = {
   'templates:schedule': { request: z.object({ templateId: z.string().min(1), schedule: ScheduleSchema.nullable() }), response: TemplateSchema },
   'templates:delete': { request: z.object({ templateId: z.string().min(1) }), response: Ok },
   'system:status': { request: z.undefined(), response: SystemStatusSchema },
-  'ai:test': { request: z.object({ provider: ProviderSchema }), response: AiTestResultSchema }
+  'ai:test': { request: z.object({ provider: ProviderSchema }), response: AiTestResultSchema },
+  'desktop:windows': { request: z.undefined(), response: z.array(DesktopWindowSchema).max(200) },
+  'desktop:elements': { request: z.object({ window: z.string().trim().min(1).max(200) }), response: z.array(DesktopElementSchema).max(500) }
 } as const
 
 /** Kanäle, auf denen der Main-Prozess an den Renderer sendet (kein invoke). */

@@ -1,5 +1,5 @@
 import type { ApprovalDecision, NexoraEvent } from '../shared/events'
-import type { AiTestResult, AppInfo, AppSettings, CreateTask, LicenseStatus, PickedFile, PickedFolder, Provider, Schedule, SecretStatus, SystemStatus, Template, WorkerStatus } from '../shared/ipc-contract'
+import type { AiTestResult, AppInfo, DesktopElement, DesktopWindow, AppSettings, CreateTask, LicenseStatus, PickedFile, PickedFolder, Provider, Schedule, SecretStatus, SystemStatus, Template, WorkerStatus } from '../shared/ipc-contract'
 
 export interface NexoraApi {
   getAppInfo: () => Promise<AppInfo>
@@ -29,6 +29,8 @@ export interface NexoraApi {
   deleteTemplate: (templateId: string) => Promise<{ ok: boolean }>
   getSystemStatus: () => Promise<SystemStatus>
   testAiConnection: (provider: Provider) => Promise<AiTestResult>
+  desktopWindows: () => Promise<DesktopWindow[]>
+  desktopElements: (window: string) => Promise<DesktopElement[]>
   onWorkerEvent: (cb: (event: unknown) => void) => () => void
   onWorkerStatus: (cb: (status: WorkerStatus) => void) => () => void
 }

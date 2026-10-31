@@ -12,6 +12,8 @@ dependencies = [
   "pypdfium2==5.14.0",  # BSD-3-Clause/Apache-2.0 – PDF-Seiten als Bild für die optionale Texterkennung
   "pillow==13.0.0",  # MIT-CMU; Sicherheitsupdate (pip-audit: 39 Meldungen in 12.3.0)
   "websockets==15.0.1",  # browser-use (über cdp-use) verlangt diese Version
+  # Desktop-Bedienung über Windows UI Automation (BSD-3-Clause); nur unter Windows
+  "pywinauto==0.6.9; sys_platform == 'win32'",
 ]
 
 [project.optional-dependencies]

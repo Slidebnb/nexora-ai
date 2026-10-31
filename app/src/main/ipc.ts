@@ -109,6 +109,8 @@ export function registerIpcHandlers(opts: { devServerUrl?: string; secrets: Secr
         const { subject, briefing, recipients, useCloudAi } = req
         return hub.createTask('draft_emails', { subject, briefing, recipients, outFolder, useCloudAi }, req.capabilities)
       }
+      case 'desktop_routine':
+        return hub.createTask('desktop_routine', { window: req.window, steps: req.steps }, req.capabilities)
     }
   })
   handle('tasks:cancel', async ({ taskId }) => {
@@ -128,6 +130,8 @@ export function registerIpcHandlers(opts: { devServerUrl?: string; secrets: Secr
     return { ok: true }
   })
   handle('system:status', async () => (await hub.systemStatus()) as IpcResponse<'system:status'>)
+  handle('desktop:windows', async () => (await hub.desktopWindows()) as IpcResponse<'desktop:windows'>)
+  handle('desktop:elements', async ({ window }) => (await hub.desktopElements(window)) as IpcResponse<'desktop:elements'>)
   handle('ai:test', async ({ provider }) => (await hub.testAi(provider)) as IpcResponse<'ai:test'>)
   handle('templates:list', async () => (await hub.listTemplates()) as IpcResponse<'templates:list'>)
   handle('templates:create', async ({ runId, name }) => (await hub.createTemplate(runId, name)) as IpcResponse<'templates:create'>)

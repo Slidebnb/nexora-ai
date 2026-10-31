@@ -110,6 +110,14 @@ export class WorkerHub {
     return this.client.request('POST', '/api/ai/test', { provider })
   }
 
+  desktopWindows(): Promise<unknown> {
+    return this.client.request('GET', '/api/desktop/windows')
+  }
+
+  desktopElements(window: string): Promise<unknown> {
+    return this.client.request('GET', `/api/desktop/elements?window=${encodeURIComponent(window)}`)
+  }
+
   listTemplates(): Promise<unknown[]> {
     return this.client.request('GET', '/api/templates')
   }

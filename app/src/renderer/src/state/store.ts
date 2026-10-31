@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { NexoraEventSchema, type NexoraEvent } from '@shared/events'
-import type { AppSettings, PickedFile, PickedFolder } from '@shared/ipc-contract'
+import type { AppSettings, DesktopStep, PickedFile, PickedFolder } from '@shared/ipc-contract'
 import { applyEvent, initialState, type NexoraState } from './runReducer'
 
 export type Screen = 'dashboard' | 'agents' | 'automations' | 'activity' | 'files' | 'settings'
@@ -34,6 +34,9 @@ export interface ComposerDraft {
   /** Web-Recherche mit KI-Browser (nur wenn browser-use installiert ist) */
   useAiBrowser: boolean
   useOcr: boolean
+  /** Desktop-Ablauf: Fenster und aufgezeichnete Schritte */
+  desktopWindow: string
+  desktopSteps: DesktopStep[]
 }
 
 export interface WorkerConnection {
@@ -89,7 +92,7 @@ export const useNexora = create<NexoraStore>((set, get) => ({
   expertMode: readExpert(),
   wizard: null,
   settings: null,
-  composer: { question: '', urls: '', briefing: '', recipients: '', subject: '', files: [], outFolder: null, useCloudAi: false, useAiBrowser: false, useOcr: false },
+  composer: { question: '', urls: '', briefing: '', recipients: '', subject: '', files: [], outFolder: null, useCloudAi: false, useAiBrowser: false, useOcr: false, desktopWindow: '', desktopSteps: [] },
   ingest: (raw) => {
     const parsed = NexoraEventSchema.safeParse(raw)
     if (!parsed.success) return false

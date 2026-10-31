@@ -14,6 +14,7 @@ describe('Befehlszeile – lokale Erkennung', () => {
     expect(task('Vergleich die Preise der Stromanbieter').workflowId).toBe('recherche')
     expect(task('Fass mir die Rechnungen zusammen').workflowId).toBe('pdf')
     expect(task('Schreib einen E-Mail-Entwurf an die Kunden').workflowId).toBe('entwurf')
+    expect(task('Füll das Formular im Programm aus').workflowId).toBe('desktop')
   })
 
   it('übernimmt Adressen und Frage in die Web-Recherche', () => {

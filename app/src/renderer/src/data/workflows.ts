@@ -14,7 +14,7 @@ export interface WorkflowTemplate {
   livePhase: string
   /** Hinweis, wo die Funktion live genutzt wird, wenn sie kein eigenes Formular hat. */
   liveVia?: string
-  live?: { workflow: 'organize_folder' | 'web_research' | 'pdf_analysis' | 'draft_emails'; capabilities: Capability[] }
+  live?: { workflow: 'organize_folder' | 'web_research' | 'pdf_analysis' | 'draft_emails' | 'desktop_routine'; capabilities: Capability[] }
 }
 
 export const WORKFLOWS: WorkflowTemplate[] = [
@@ -60,6 +60,16 @@ export const WORKFLOWS: WorkflowTemplate[] = [
     demoScenarioId: 'entwurf',
     livePhase: 'Phase 3',
     live: { workflow: 'draft_emails', capabilities: ['drafts.write', 'files.write'] }
+  },
+  {
+    id: 'desktop',
+    title: 'Desktop-Ablauf',
+    simpleTitle: 'Programm bedienen',
+    simpleText: 'Zeig NEXORA einmal, was in einem Programm zu tun ist – Felder ausfüllen, Knöpfe drücken. Danach mit einem Klick wiederholbar.',
+    description: 'Schritte in einem Windows-Programmfenster aufzeichnen (per Auswahl) und nach Freigabe wiedergeben. Texteingaben werden zurückgelesen.',
+    capabilities: ['Programmfenster lesen', 'Programm bedienen (mit Freigabe)'],
+    livePhase: 'Phase 5',
+    live: { workflow: 'desktop_routine', capabilities: ['desktop.read', 'desktop.control'] }
   },
   {
     id: 'wiederholen',

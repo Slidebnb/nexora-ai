@@ -157,6 +157,24 @@ try {
     if ((await win.getByRole('dialog').count()) !== 0) throw new Error('Bei unbekannter Eingabe darf nichts geöffnet werden')
   })
 
+  await step('KUNDE: „Programm bedienen“ – Aufzeichnung per Auswahl (Windows) bzw. ehrlicher Hinweis', async () => {
+    await nav('Start')
+    await win.getByRole('button', { name: /Programm bedienen/ }).click()
+    const dialog = win.getByRole('dialog', { name: 'Programm bedienen' })
+    await dialog.getByTestId('desktop-recorder').waitFor()
+    if (process.platform === 'win32') {
+      // echte Fensterliste über UI Automation; NEXORA selbst taucht nicht auf
+      await win.waitForFunction(() => document.querySelectorAll('select[aria-label="Programmfenster"] option').length >= 2, null, { timeout: 15000 })
+      const titles = await dialog.getByLabel('Programmfenster').locator('option').allTextContents()
+      if (titles.some((t) => /nexora/i.test(t))) throw new Error('NEXORA darf sich nicht selbst bedienen: ' + titles.join(', '))
+    } else {
+      await dialog.getByText(/nur unter Windows verfügbar/).waitFor()
+    }
+    if (!(await dialog.getByRole('button', { name: 'Aufgabe starten' }).isDisabled())) throw new Error('Start ohne Schritte möglich')
+    await win.screenshot({ path: join(shots, '02g-programm-bedienen.png') })
+    await dialog.getByRole('button', { name: 'Schließen' }).click()
+  })
+
   await step('KUNDE: Startseite → „Ordner aufräumen“ → bestätigen → Ergebnis → Rückgängig', async () => {
     await nav('Start')
     await win.getByRole('button', { name: /Ordner aufräumen/ }).click()

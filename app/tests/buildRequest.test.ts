@@ -4,7 +4,7 @@ import { WORKFLOWS } from '../src/renderer/src/data/workflows'
 import type { ComposerDraft } from '../src/renderer/src/state/store'
 
 const draft = (p: Partial<ComposerDraft> = {}): ComposerDraft => ({
-  question: '', urls: '', briefing: '', recipients: '', subject: '', files: [], outFolder: null, useCloudAi: false, useAiBrowser: false, useOcr: false, ...p
+  question: '', urls: '', briefing: '', recipients: '', subject: '', files: [], outFolder: null, useCloudAi: false, useAiBrowser: false, useOcr: false, desktopWindow: '', desktopSteps: [], ...p
 })
 const wf = (id: string) => WORKFLOWS.find((w) => w.id === id)!
 

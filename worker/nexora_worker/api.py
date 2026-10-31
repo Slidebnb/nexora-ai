@@ -14,7 +14,7 @@ import hmac
 import json
 from typing import Any, Literal
 
-from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, Query, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
@@ -24,6 +24,7 @@ from .events import Decision
 from .runner import TaskError, TaskManager
 from .templates import Schedule, TemplateStore
 from .system import system_status, check_ai_connection
+from .desktop import DesktopError, public_element
 
 ALLOWED_HOSTS = {"127.0.0.1", "localhost"}
 
@@ -201,6 +202,27 @@ def create_app(manager: TaskManager, token: str, templates: TemplateStore | None
     @app.get("/api/system")
     async def system() -> dict[str, Any]:
         return await asyncio.to_thread(system_status, manager)
+
+    def _desktop() -> Any:
+        wf = manager.workflows.get("desktop_routine")
+        if wf is None:
+            raise HTTPException(404, "Desktop-Bedienung nicht verfügbar")
+        return wf.backend  # type: ignore[attr-defined]
+
+    @app.get("/api/desktop/windows")
+    async def desktop_windows() -> list[dict[str, Any]]:
+        try:
+            return await asyncio.to_thread(_desktop().list_windows)
+        except DesktopError as e:
+            raise HTTPException(409, str(e)) from e
+
+    @app.get("/api/desktop/elements")
+    async def desktop_elements(window: str = Query(min_length=1, max_length=200)) -> list[dict[str, Any]]:
+        try:
+            els = await asyncio.to_thread(_desktop().elements, window, 300)
+        except DesktopError as e:
+            raise HTTPException(409, str(e)) from e
+        return [public_element(e) for e in els]
 
     @app.post("/api/ai/test")
     async def ai_test(body: AiTestRequest) -> dict[str, Any]:

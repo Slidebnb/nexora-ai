@@ -26,6 +26,8 @@ Zusätzlich aus ClawBridge (Apache-2.0, Copyright (c) 2026 RomaTek AI; Änderung
 | `worker/nexora_worker/safety.py` | `clawbridge/policy/safety.py` @ a8a06c2 | ohne Permissive-Modus, Host-Suffix-Prüfung, rekursive Schwärzung, deutsche Muster |
 | `worker/nexora_worker/engines.py` | `clawbridge/engines/browser_use_engine.py`, `engines/base.py` @ a8a06c2 | enge Aufgabe je Quelle, ohne `disable_security`, eigenes Profil, Telemetrie aus |
 | `worker/nexora_worker/runner.py` (Konzept) | `clawbridge/orchestrator/manager.py` @ a8a06c2 | eigene Implementierung ohne Remote-Bridge |
+| `worker/nexora_worker/desktop.py` | `clawbridge/perception/accessibility.py`, `clawbridge/platform/_windows.py` @ a8a06c2 | Fenster per exaktem Titel statt Vordergrundfenster; Passwortfelder gesperrt; keine Selbstbedienung; Bedienschwelle 0,85 (kein Positionsraten); nur UIA-Muster statt Maus/Tasten |
+| `worker/nexora_worker/workflows/desktop_routine.py` (Konzept Recorder/Replay) | `clawbridge/recorder/capture.py`, `recorder/processor.py` @ a8a06c2 | Aufzeichnung per Auswahl statt globalem pynput-Hook (LGPL, zeichnet jede Taste auf); Freigabe vor Wiedergabe; Texteingaben werden zurückgelesen |
 
 Der vollständige Apache-2.0-Lizenztext liegt unter `licenses/Apache-2.0.txt`.
 
@@ -118,7 +120,7 @@ Electron (MIT) und Chromium bringen eigene Lizenztexte mit (`LICENSE`, `LICENSES
 
 ## Python-Abhängigkeiten des Workers (`worker/`)
 
-Erfasst am 2026-10-31 aus den installierten Paketmetadaten (`importlib.metadata`), Versionen laut `worker/uv.lock`.
+Erfasst am 2026-10-31 aus den installierten Paketmetadaten (`importlib.metadata`), Versionen laut `worker/uv.lock`. Versionen nach den Sicherheitsupdates (pypdf, pillow, anyio, mcp) nachgetragen.
 
 ### Basis (immer installiert, 19 Pakete)
 
@@ -126,7 +128,7 @@ Erfasst am 2026-10-31 aus den installierten Paketmetadaten (`importlib.metadata`
 |---|---|---|
 | annotated-doc | 0.0.5 | MIT |
 | annotated-types | 0.8.0 | MIT |
-| anyio | 4.12.1 | MIT |
+| anyio | 4.14.2 | MIT |
 | certifi | 2026.10.23 | Mozilla Public License 2.0 (MPL 2.0) |
 | click | 8.3.3 | BSD-3-Clause |
 | fastapi | 0.162.0 | MIT |
@@ -137,7 +139,7 @@ Erfasst am 2026-10-31 aus den installierten Paketmetadaten (`importlib.metadata`
 | opentelemetry-api | 1.45.2 | Apache-2.0 |
 | pydantic | 2.13.5 | MIT |
 | pydantic_core | 2.46.5 | MIT |
-| pypdf | 6.16.2 | BSD-3-Clause |
+| pypdf | 6.21.4 | BSD-3-Clause |
 | starlette | 1.10.0 | BSD-3-Clause |
 | typing-inspection | 0.4.4 | MIT |
 | typing_extensions | 4.15.0 | PSF-2.0 |
@@ -149,9 +151,20 @@ Erfasst am 2026-10-31 aus den installierten Paketmetadaten (`importlib.metadata`
 | Paket | Version | Lizenz |
 |---|---|---|
 | pypdfium2 | 5.14.0 | BSD-3-Clause, Apache-2.0 (enthält PDFium, BSD-3-Clause) |
-| pillow | 12.3.0 | MIT-CMU |
+| pillow | 13.0.0 | MIT-CMU |
 
 **Tesseract OCR** (Apache-2.0) wird **nicht** mitgeliefert. Wer Texterkennung nutzen will, installiert es selbst (Windows: Installer von UB Mannheim; Linux: Paket `tesseract-ocr`).
+
+### Ergänzt für die Desktop-Bedienung (nur Windows, 2026-10-31)
+
+Lizenzen laut PyPI-Metadaten der gesperrten Versionen.
+
+| Paket | Version | Lizenz |
+|---|---|---|
+| pywinauto | 0.6.9 | BSD-3-Clause |
+| comtypes | 1.4.17 | MIT |
+| pywin32 | 312 | PSF |
+| six | 1.17.0 | MIT |
 
 ### Optional: KI-Browser (`uv sync --extra browser`, zusätzlich 87 Pakete)
 
@@ -196,15 +209,15 @@ Erfasst am 2026-10-31 aus den installierten Paketmetadaten (`importlib.metadata`
 | lxml | 6.1.3 | BSD-3-Clause |
 | markdown-it-py | 4.2.0 | MIT License |
 | markdownify | 1.2.2 | MIT License |
-| mcp | 2.1.1 | MIT License |
-| mcp-types | 2.1.1 | MIT License |
+| mcp | 2.3.0 | MIT License |
+| mcp-types | 2.3.0 | MIT License |
 | mdurl | 0.1.2 | MIT License |
 | multidict | 7.2.1 | Apache-2.0 |
 | oauthlib | 4.0.0 | BSD-3-Clause |
 | ollama | 0.6.1 | MIT |
 | openai | 3.42.0 | Apache-2.0 |
 | pfzy | 0.3.4 | MIT License |
-| pillow | 12.3.0 | MIT-CMU |
+| pillow | 13.0.0 | MIT-CMU |
 | portalocker | 4.4.2 | BSD-3-Clause |
 | posthog | 7.7.0 | MIT License |
 | prompt_toolkit | 3.0.53 | BSD License |

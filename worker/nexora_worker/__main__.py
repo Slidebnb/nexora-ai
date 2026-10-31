@@ -29,6 +29,8 @@ from .templates import TemplateStore
 from .safety import redact_text
 from .workflows import OrganizeFolder, UndoOrganize
 from .workflows.drafts import DraftEmails
+from .desktop import default_backend
+from .workflows.desktop_routine import DesktopRoutine
 from .workflows.pdf_analysis import PdfAnalysis
 from .workflows.web_research import WebResearch
 
@@ -50,6 +52,7 @@ def build_manager(data_dir: Path) -> TaskManager:
     manager.register(WebResearch())
     manager.register(PdfAnalysis())
     manager.register(DraftEmails())
+    manager.register(DesktopRoutine(default_backend()))
     return manager
 
 

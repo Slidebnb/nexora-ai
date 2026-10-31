@@ -1,4 +1,4 @@
-import { ArrowRight, CheckCircle2, FileText, FolderOpen, FolderSync, Globe, Mail, Pause, Play, Repeat, Square, Undo2, XCircle } from 'lucide-react'
+import { ArrowRight, CheckCircle2, FileText, FolderOpen, FolderSync, Globe, Mail, MonitorCog, Pause, Play, Repeat, Square, Undo2, XCircle } from 'lucide-react'
 import { useNexora } from '../state/store'
 import { selectActiveRuns, selectAgents, selectRuns } from '../state/selectors'
 import { isTerminal, progressOf, type RunState } from '../state/runReducer'
@@ -11,7 +11,7 @@ import { formatTime } from '../lib/format'
 import { TaskWizard } from '../components/home/TaskWizard'
 import { CommandBar } from '../components/home/CommandBar'
 
-const ICON: Record<string, typeof FolderSync> = { ordner: FolderSync, recherche: Globe, pdf: FileText, entwurf: Mail, wiederholen: Repeat }
+const ICON: Record<string, typeof FolderSync> = { ordner: FolderSync, recherche: Globe, pdf: FileText, entwurf: Mail, desktop: MonitorCog, wiederholen: Repeat }
 
 /** Satz über den aktuellen Stand eines laufenden Vorgangs – ohne Fachbegriffe. */
 function currentStep(run: RunState): string {

@@ -3,7 +3,11 @@
 # Ergebnis: dist/nexora-worker/ (Ordner-Variante: schnellerer Start, weniger Fehlalarme bei Virenscannern als --onefile)
 import sys
 
+from PyInstaller.utils.hooks import collect_submodules
+
 block_cipher = None
+# Desktop-Bedienung (nur Windows): pywinauto lädt UIA-Schnittstellen dynamisch über comtypes
+desktop_imports = collect_submodules("pywinauto") + collect_submodules("comtypes") if sys.platform == "win32" else []
 
 a = Analysis(
     ["run_worker.py"],
@@ -18,9 +22,10 @@ a = Analysis(
         "nexora_worker.workflows.web_research",
         "nexora_worker.workflows.pdf_analysis",
         "nexora_worker.workflows.drafts",
+        "nexora_worker.workflows.desktop_routine",
         "pypdfium2",
         "pypdfium2_raw",
-    ],
+    ] + desktop_imports,
     excludes=["tkinter", "browser_use", "pytest"],  # KI-Browser wird nicht ins Basis-Paket gebündelt
     noarchive=False,
 )
