@@ -2,6 +2,16 @@ import { useNexora } from '../../state/store'
 import { describeEvent, EVENT_TONE } from '../../lib/describeEvent'
 import { cx, formatTime } from '../../lib/format'
 import { EmptyState, Panel } from '../common/Panel'
+import type { EventType } from '@shared/events'
+
+// Eintragsstil (farbige linke Kante) nach raheem-dotgit/cyberpunk-dashboard, app/command-center/page.tsx
+const BORDER: Partial<Record<EventType, string>> = {
+  step_failed: 'border-danger',
+  run_failed: 'border-danger',
+  approval_requested: 'border-warning',
+  run_succeeded: 'border-success',
+  run_cancelled: 'border-text-2'
+}
 
 /** Die letzten relevanten Events, neueste oben. Kosten-Updates werden ausgeblendet. */
 export function ActivityFeed({ limit = 30 }: { limit?: number }) {
@@ -13,11 +23,11 @@ export function ActivityFeed({ limit = 30 }: { limit?: number }) {
       {items.length === 0 ? (
         <EmptyState>Noch keine Aktivität. Ereignisse erscheinen hier, sobald ein Vorgang läuft.</EmptyState>
       ) : (
-        <ul className="divide-y divide-line" aria-live="polite">
+        <ul className="space-y-1.5 p-2" aria-live="polite">
           {items.map((e) => {
             const run = data.runs[e.runId]
             return (
-              <li key={e.id} className="px-4 py-2 text-xs">
+              <li key={e.id} className={cx('rounded border-l-2 py-1.5 pl-3 pr-2 text-xs transition-colors hover:bg-panel-2', BORDER[e.type] ?? 'border-accent/70')}>
                 <div className="flex items-center gap-2 font-mono text-[10px] text-text-2">
                   <span>{formatTime(e.timestamp)}</span>
                   <span className="truncate">{run?.agentName ?? e.agentId ?? '–'}</span>

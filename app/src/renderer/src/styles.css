@@ -150,3 +150,21 @@ body {
     opacity: 0.35;
   }
 }
+
+/* Bewegte Scanline (portiert aus evil-ai-viz ScanLines, Keyframes hier wegen CSP) */
+.scan-move {
+  animation: nexora-scan-move 4s linear infinite;
+}
+@keyframes nexora-scan-move {
+  0% {
+    top: -2px;
+  }
+  100% {
+    top: 100%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .scan-move {
+    display: none;
+  }
+}

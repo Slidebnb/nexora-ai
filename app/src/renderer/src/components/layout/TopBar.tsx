@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Cpu, HardDrive, PanelRight, Pause, Square, WifiOff } from 'lucide-react'
-import { useNexora } from '../../state/store'
+import { SCREEN_LABEL, useNexora } from '../../state/store'
 import { selectActiveRuns, selectKpis } from '../../state/selectors'
 import { stopAllDemoRuns } from '../../demo/controller'
 import { formatUsd } from '../../lib/format'
@@ -14,6 +14,7 @@ export function TopBar() {
   const demoMode = useNexora((s) => s.demoMode)
   const toggleRight = useNexora((s) => s.toggleRightPanel)
   const rightOpen = useNexora((s) => s.rightPanelOpen)
+  const screen = useNexora((s) => s.screen)
   const [now, setNow] = useState(() => new Date())
 
   useEffect(() => {
@@ -27,7 +28,10 @@ export function TopBar() {
     <header className="flex h-14 shrink-0 items-center gap-5 border-b border-line bg-base-2/80 px-5">
       <div className="flex items-baseline gap-3">
         <h1 className="text-base font-semibold tracking-[0.25em] text-text">NEXORA</h1>
-        <span className="hud-label max-xl:hidden">Command Center</span>
+        {/* Breadcrumb nach cyberpunk-dashboard (app/page.tsx) */}
+        <span className="text-xs text-text-2 max-xl:hidden">
+          COMMAND / <span className="text-accent-hi">{SCREEN_LABEL[screen].toUpperCase()}</span>
+        </span>
       </div>
 
       <div className="ml-2 flex items-center gap-4 whitespace-nowrap text-xs text-text-2">

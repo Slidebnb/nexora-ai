@@ -14,7 +14,7 @@ export function TaskComposer() {
   return (
     <form
       data-testid="task-composer"
-      className="panel flex flex-col gap-3 p-4"
+      className="panel flex min-w-0 flex-col gap-3 p-4"
       aria-label="Neue Aufgabe"
       onSubmit={(e) => {
         e.preventDefault()
@@ -24,7 +24,7 @@ export function TaskComposer() {
         }
       }}
     >
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="hud-label">Neue Aufgabe</h2>
         <label className="flex items-center gap-2 text-xs text-text-2">
           Vorlage
@@ -43,7 +43,7 @@ export function TaskComposer() {
         rows={2}
         placeholder={`z. B. „${workflow.description}“`}
         aria-label="Aufgabe in natürlicher Sprache"
-        className="input resize-none text-sm"
+        className="input min-h-16 flex-1 resize-none text-sm"
       />
       <div className="flex flex-wrap items-center gap-2 text-[11px] text-text-2">
         <span>Benötigt:</span>
@@ -53,7 +53,7 @@ export function TaskComposer() {
           </span>
         ))}
       </div>
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         {!demoMode && (
           <p className="flex flex-1 items-start gap-1.5 text-xs text-text-2">
             <Info className="mt-px size-3.5 shrink-0" aria-hidden />

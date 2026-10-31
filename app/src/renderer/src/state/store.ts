@@ -4,16 +4,34 @@ import { applyEvent, initialState, type NexoraState } from './runReducer'
 
 export type Screen = 'dashboard' | 'agents' | 'automations' | 'activity' | 'files' | 'settings'
 
+export const SCREEN_LABEL: Record<Screen, string> = {
+  dashboard: 'Dashboard',
+  agents: 'Agenten',
+  automations: 'Automationen',
+  activity: 'Aktivitäten',
+  files: 'Dateien',
+  settings: 'Einstellungen'
+}
+
+export interface WorkerConnection {
+  state: 'disconnected' | 'starting' | 'connected' | 'error'
+  message?: string
+}
+
 export interface NexoraStore {
   data: NexoraState
   demoMode: boolean
   screen: Screen
   rightPanelOpen: boolean
+  sidebarCollapsed: boolean
+  worker: WorkerConnection
   /** Nimmt ein Event an. Demo-Events werden nur im Demo-Modus akzeptiert. */
   ingest: (event: unknown) => boolean
   setDemoMode: (on: boolean) => void
   setScreen: (screen: Screen) => void
   toggleRightPanel: () => void
+  toggleSidebar: () => void
+  setWorker: (worker: WorkerConnection) => void
 }
 
 /** Baut den Zustand nur aus Live-Events neu auf (Demo-Daten verschwinden vollständig). */
@@ -26,6 +44,8 @@ export const useNexora = create<NexoraStore>((set, get) => ({
   demoMode: false,
   screen: 'dashboard',
   rightPanelOpen: true,
+  sidebarCollapsed: true,
+  worker: { state: 'disconnected' },
   ingest: (raw) => {
     const parsed = NexoraEventSchema.safeParse(raw)
     if (!parsed.success) return false
@@ -37,5 +57,7 @@ export const useNexora = create<NexoraStore>((set, get) => ({
   setDemoMode: (on) =>
     set((s) => (on ? { demoMode: true } : { demoMode: false, data: withoutDemo(s.data) })),
   setScreen: (screen) => set({ screen }),
-  toggleRightPanel: () => set((s) => ({ rightPanelOpen: !s.rightPanelOpen }))
+  toggleRightPanel: () => set((s) => ({ rightPanelOpen: !s.rightPanelOpen })),
+  toggleSidebar: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
+  setWorker: (worker) => set({ worker })
 }))

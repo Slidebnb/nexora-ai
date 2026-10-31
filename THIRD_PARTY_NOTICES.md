@@ -2,25 +2,49 @@
 
 Stand: 2026-10-31 (Phase 0)
 
-**Aktuell ist kein Quellcode aus den auditierten Repositories in NEXORA AI enthalten.**
-Sobald ein Fragment übernommen wird, kommt hier ein Eintrag mit Quelle, Commit, Pfad, Lizenz, Copyright und Änderungsvermerk hinzu.
+## Portierter Quellcode aus den Masterplan-Repositories
 
-Vorgemerkte, lizenzrechtlich übernehmbare Quellen:
+Die Übernahme erfolgte auf ausdrückliche Anweisung des Projektinhabers. Er hat nach eigener Angabe die Zustimmung der Autoren eingeholt. Die Projekte evil-ai-viz und cyberpunk-dashboard nennen in ihrer README die MIT-Lizenz, enthalten aber keine LICENSE-Datei. **Empfehlung:** Die Zustimmung schriftlich archivieren (E-Mail oder GitHub-Issue).
 
-| Komponente | Quelle @ Commit | SPDX | Copyright | Status |
-|---|---|---|---|---|
-| (Referenz) `artifacts/jarvis/src/components/AiCore.tsx` | Davood121/jenman @ 5a19ab9 | MIT | (c) 2025 Shaik Davood | nur Referenz, nicht kopiert |
-| (Referenz) `clawbridge/policy/safety.py` | NickRomanek/clawbridge @ a8a06c2 | Apache-2.0 / MIT (widersprüchlich) | (c) 2026 RomaTek AI | nur Konzept, nicht kopiert |
+| NEXORA-Datei | Quelle @ Commit, Originalpfad | Lizenz / Copyright | Änderungen |
+|---|---|---|---|
+| `app/src/renderer/src/components/hud/OrbitCore.tsx` | Davood121/jenman @ 5a19ab9, `artifacts/jarvis/src/components/AiCore.tsx` | MIT, (c) 2025 Shaik Davood | Branding und Fantasiewerte entfernt; Anzeigen aus echten Events; Agenten-Satelliten; Crimson; Animations-Loop |
+| `app/src/renderer/src/components/hud/MatrixRain.tsx` | ChatDSJ/evil-ai-viz @ cf22a87, `src/components/viz/MatrixRain.tsx` | MIT (laut README) | Crimson; Elterngröße; Intensität an Aktivität gekoppelt |
+| `app/src/renderer/src/components/hud/ScanLines.tsx` (+ `.scan-move` in `styles.css`) | ChatDSJ/evil-ai-viz @ cf22a87, `src/components/viz/ScanLines.tsx` | MIT (laut README) | Crimson; Keyframes in CSS (CSP) |
+| `app/src/renderer/src/components/hud/DataFlowLines.tsx` | ChatDSJ/evil-ai-viz @ cf22a87, `src/components/viz/DataFlowLines.tsx` | MIT (laut README) | Impulse je echtem Event, Farbe nach Eventart, Flug zur Mitte |
+| `app/src/renderer/src/components/hud/HexStream.tsx` | ChatDSJ/evil-ai-viz @ cf22a87, `src/components/viz/HexStream.tsx` | MIT (laut README) | echte Events statt Zufallsbytes; Text „Exfiltration“ entfernt |
+| `app/src/renderer/src/components/layout/Sidebar.tsx` | raheem-dotgit/cyberpunk-dashboard @ 8ec7ec7, `app/page.tsx` | MIT (laut README) | React/Vite statt Next.js; echter Worker-Status; Freigabe-Badge |
+| `ActivityFeed.tsx` (Eintragsstil), `TopBar.tsx` (Breadcrumb) | raheem-dotgit/cyberpunk-dashboard @ 8ec7ec7, `app/command-center/page.tsx`, `app/page.tsx` | MIT (laut README) | echte Events statt Mockdaten |
 
-Gesperrt für Codeübernahme (fehlende LICENSE-Datei): ChatDSJ/evil-ai-viz, raheem-dotgit/cyberpunk-dashboard.
+Bewusst **nicht** übernommen, weil der Masterplan (§2 A) es ausschließt: Tracking, Fingerprinting, Fake-Terminal, Convex sowie `CodeFragments` (lädt externe CVE-Feeds).
 
-## Eigenständig neu geschriebene, inspirierte Komponenten (kein kopierter Code)
+### MIT-Lizenztext (gilt für die oben genannten Übernahmen)
 
-| NEXORA-Datei | Gestaltungsidee aus |
-|---|---|
-| `app/src/renderer/src/components/hud/OrbitCore.tsx` | konzentrische Ringe / Radar-Sweep, vgl. jenman `AiCore.tsx` (MIT) |
-| `.scanlines` in `app/src/renderer/src/styles.css` | Scanline-Overlay, vgl. evil-ai-viz `ScanLines.tsx` (nur Idee) |
-| Sidebar / KPI-Raster / Agentenliste | Informationsarchitektur, vgl. cyberpunk-dashboard (nur Idee) |
+```
+MIT License
+
+Copyright (c) 2025 Shaik Davood (jenman)
+Copyright (c) the authors of ChatDSJ/evil-ai-viz
+Copyright (c) the authors of raheem-dotgit/cyberpunk-dashboard
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
 
 ## npm-Laufzeitabhängigkeiten der Desktop-App (`app/`)
 
