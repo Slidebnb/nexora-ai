@@ -5,7 +5,7 @@
 
 ## Auswahl
 - Windows 10/11, wöchentlich mindestens 1 h wiederkehrende Datei-, Recherche- oder Antwortarbeit
-- Mischung: 50 % ohne eigenen KI-Schlüssel (nur lokale Funktionen), 50 % mit Anthropic/OpenAI-Schlüssel
+- Mischung aus Nutzern ohne eigenen KI-Schlüssel (nur lokale Funktionen) und mit Anthropic-/OpenAI-Schlüssel (Verhältnis von dir festzulegen)
 
 ## Abnahme-Checkliste für den frischen Windows-PC (vor dem Pilot, manuell)
 1. Installer aus der CI herunterladen und auf frischem Windows (VM) ohne Node/Python ausführen
@@ -18,13 +18,15 @@
 8. Deinstallieren: Programm entfernt, Nutzerdaten bleiben erhalten
 
 ## Messgrößen (manuell erhoben, ohne Telemetrie)
-| Messgröße | Erhebung | Ziel |
-|---|---|---|
-| Aktivierung | Installiert und erster Vorgang erfolgreich innerhalb 24 h | ≥ 70 % |
-| Erfolgsquote | erfolgreiche ÷ gestartete Vorgänge (Nutzer exportiert die Aktivitäten-Ansicht als Screenshot) | ≥ 80 % |
-| Zeitersparnis | Selbstauskunft je Workflow: Minuten vorher und nachher | ≥ 30 min/Woche |
-| Supportvolumen | Tickets je Nutzer in 2 Wochen | ≤ 1 |
-| Zahlungsbereitschaft | Interview plus Angebot (Starter/Pro) | ≥ 30 % „würde zahlen“ |
+Zielwerte werden **nicht vorab ausgedacht**. Du legst sie vor dem Pilot selbst fest, danach werden die echten Werte eingetragen.
+
+| Messgröße | Erhebung | Ziel (von dir festzulegen) | Gemessen |
+|---|---|---|---|
+| Aktivierung | Anteil der Nutzer, die installiert haben und deren erster Vorgang erfolgreich war | [ ] | – |
+| Erfolgsquote | erfolgreiche ÷ gestartete Vorgänge (Screenshot der Aktivitäten-Ansicht) | [ ] | – |
+| Zeitersparnis | Selbstauskunft je Workflow: Minuten vorher und nachher | [ ] | – |
+| Supportvolumen | Tickets je Nutzer im Pilotzeitraum | [ ] | – |
+| Zahlungsbereitschaft | Interview plus Angebot (Starter/Pro) | [ ] | – |
 
 ## Ablauf (3 Wochen)
 - Woche 0: Einladung, 15-Minuten-Onboarding-Call (nur beobachten, nicht helfen)

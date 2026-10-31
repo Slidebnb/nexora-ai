@@ -1,6 +1,6 @@
 # Supportprozess (Beta)
 
-**Kanal:** E-Mail [support@…] und ein Formular auf der Website. Antwortziel in der Beta: 1 Werktag.
+**Kanal:** E-Mail [support@…] und ein Formular auf der Website. Antwortziel: [von dir festzulegen].
 
 **Erste Fragen an Nutzer**
 1. Welche Version (Einstellungen, ganz unten)?
