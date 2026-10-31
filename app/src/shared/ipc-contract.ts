@@ -105,7 +105,9 @@ export const CreateTaskSchema = z.discriminatedUnion('workflow', [
     useCloudAi: z.boolean(),
     capabilities: Caps
   }),
-  z.object({ workflow: z.literal('desktop_routine'), window: z.string().trim().min(1).max(200), steps: z.array(DesktopStepSchema).min(1).max(30), capabilities: Caps })
+  z.object({ workflow: z.literal('desktop_routine'), window: z.string().trim().min(1).max(200), steps: z.array(DesktopStepSchema).min(1).max(30), capabilities: Caps }),
+  /** KI-Desktop-Modus (Computer Use): Bildschirmfotos des Fensters gehen an den KI-Anbieter, jede Aktion mit Freigabe */
+  z.object({ workflow: z.literal('desktop_ai'), window: z.string().trim().min(1).max(200), goal: z.string().trim().min(5).max(1000), capabilities: Caps })
 ])
 export type CreateTask = z.infer<typeof CreateTaskSchema>
 

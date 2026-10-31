@@ -111,6 +111,8 @@ export function registerIpcHandlers(opts: { devServerUrl?: string; secrets: Secr
       }
       case 'desktop_routine':
         return hub.createTask('desktop_routine', { window: req.window, steps: req.steps }, req.capabilities)
+      case 'desktop_ai':
+        return hub.createTask('desktop_ai', { window: req.window, goal: req.goal }, req.capabilities)
     }
   })
   handle('tasks:cancel', async ({ taskId }) => {

@@ -37,6 +37,9 @@ export interface ComposerDraft {
   /** Desktop-Ablauf: Fenster und aufgezeichnete Schritte */
   desktopWindow: string
   desktopSteps: DesktopStep[]
+  /** 'steps' = aufgezeichnete Schritte (lokal), 'ai' = KI bedient das Fenster (Cloud, jede Aktion mit Freigabe) */
+  desktopMode: 'steps' | 'ai'
+  desktopGoal: string
 }
 
 export interface WorkerConnection {
@@ -92,7 +95,7 @@ export const useNexora = create<NexoraStore>((set, get) => ({
   expertMode: readExpert(),
   wizard: null,
   settings: null,
-  composer: { question: '', urls: '', briefing: '', recipients: '', subject: '', files: [], outFolder: null, useCloudAi: false, useAiBrowser: false, useOcr: false, desktopWindow: '', desktopSteps: [] },
+  composer: { question: '', urls: '', briefing: '', recipients: '', subject: '', files: [], outFolder: null, useCloudAi: false, useAiBrowser: false, useOcr: false, desktopWindow: '', desktopSteps: [], desktopMode: 'steps', desktopGoal: '' },
   ingest: (raw) => {
     const parsed = NexoraEventSchema.safeParse(raw)
     if (!parsed.success) return false

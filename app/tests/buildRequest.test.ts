@@ -4,7 +4,7 @@ import { WORKFLOWS } from '../src/renderer/src/data/workflows'
 import type { ComposerDraft } from '../src/renderer/src/state/store'
 
 const draft = (p: Partial<ComposerDraft> = {}): ComposerDraft => ({
-  question: '', urls: '', briefing: '', recipients: '', subject: '', files: [], outFolder: null, useCloudAi: false, useAiBrowser: false, useOcr: false, desktopWindow: '', desktopSteps: [], ...p
+  question: '', urls: '', briefing: '', recipients: '', subject: '', files: [], outFolder: null, useCloudAi: false, useAiBrowser: false, useOcr: false, desktopWindow: '', desktopSteps: [], desktopMode: 'steps', desktopGoal: '', ...p
 })
 const wf = (id: string) => WORKFLOWS.find((w) => w.id === id)!
 
@@ -55,5 +55,25 @@ describe('buildRequest', () => {
 
   it('Vorlagen ohne Live-Ausführung liefern keine Anfrage', () => {
     expect(buildRequest(wf('wiederholen'), draft(), null).request).toBeNull()
+  })
+})
+
+describe('Desktop-Bedienung', () => {
+  const el = { control_type: 'Edit', name: 'Kundennummer', automation_id: 'txt', parent_name: '', left: 0, top: 0, right: 10, bottom: 10 }
+  it('Schritte: verlangt Fenster, Schritte und Text', () => {
+    expect(buildRequest(wf('desktop'), draft(), null).missing).toMatch(/Programmfenster/)
+    expect(buildRequest(wf('desktop'), draft({ desktopWindow: 'Editor' }), null).missing).toMatch(/Schritt/)
+    expect(buildRequest(wf('desktop'), draft({ desktopWindow: 'Editor', desktopSteps: [{ action: 'type', element: el, text: '' }] }), null).missing).toMatch(/Schritt 1/)
+    const ok = buildRequest(wf('desktop'), draft({ desktopWindow: 'Editor', desktopSteps: [{ action: 'type', element: el, text: 'K-1' }] }), null).request
+    expect(ok).toMatchObject({ workflow: 'desktop_routine', window: 'Editor', capabilities: ['desktop.read', 'desktop.control'] })
+  })
+  it('KI-Modus: braucht Ziel und fügt ai.cloud hinzu', () => {
+    expect(buildRequest(wf('desktop'), draft({ desktopWindow: 'Editor', desktopMode: 'ai' }), null).missing).toMatch(/KI/)
+    expect(buildRequest(wf('desktop'), draft({ desktopWindow: 'Editor', desktopMode: 'ai', desktopGoal: ' Speichere die Datei ' }), null).request).toEqual({
+      workflow: 'desktop_ai',
+      window: 'Editor',
+      goal: 'Speichere die Datei',
+      capabilities: ['desktop.read', 'desktop.control', 'ai.cloud']
+    })
   })
 })

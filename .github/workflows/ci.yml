@@ -30,12 +30,12 @@ jobs:
         working-directory: worker
         run: |
           uv sync --extra browser
-          uv run pytest -q
+          uv run pytest -q -rs
       - name: Lizenzdienst testen
         working-directory: license-server
         run: |
           uv sync
-          uv run pytest -q
+          uv run pytest -q -rs
       - name: App installieren
         working-directory: app
         run: pnpm install --frozen-lockfile
@@ -72,7 +72,7 @@ jobs:
         working-directory: worker
         run: |
           uv sync --group build
-          uv run pytest -q
+          uv run pytest -q -rs
           uv run --group build python build_sidecar.py
           uv run pytest -q tests/test_process.py
       - name: App installieren und testen

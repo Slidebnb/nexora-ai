@@ -27,6 +27,7 @@ Zusätzlich aus ClawBridge (Apache-2.0, Copyright (c) 2026 RomaTek AI; Änderung
 | `worker/nexora_worker/engines.py` | `clawbridge/engines/browser_use_engine.py`, `engines/base.py` @ a8a06c2 | enge Aufgabe je Quelle, ohne `disable_security`, eigenes Profil, Telemetrie aus |
 | `worker/nexora_worker/runner.py` (Konzept) | `clawbridge/orchestrator/manager.py` @ a8a06c2 | eigene Implementierung ohne Remote-Bridge |
 | `worker/nexora_worker/desktop.py` | `clawbridge/perception/accessibility.py`, `clawbridge/platform/_windows.py` @ a8a06c2 | Fenster per exaktem Titel statt Vordergrundfenster; Passwortfelder gesperrt; keine Selbstbedienung; Bedienschwelle 0,85 (kein Positionsraten); nur UIA-Muster statt Maus/Tasten |
+| `worker/nexora_worker/computer.py`, `worker/nexora_worker/workflows/desktop_ai.py` | `clawbridge/engines/computer_use_engine.py`, `clawbridge/platform/_windows.py` (gesperrte Tastenkombinationen) @ a8a06c2 | aktuelles Werkzeug `computer_toolset_20260801`; nur Fotos eines freigegebenen Fensters; jede bedienende Aktion einzeln freigegeben; Klicks außerhalb des Fensters abgelehnt; Abschlussbild statt ungeprüfter Erfolgsmeldung |
 | `worker/nexora_worker/workflows/desktop_routine.py` (Konzept Recorder/Replay) | `clawbridge/recorder/capture.py`, `recorder/processor.py` @ a8a06c2 | Aufzeichnung per Auswahl statt globalem pynput-Hook (LGPL, zeichnet jede Taste auf); Freigabe vor Wiedergabe; Texteingaben werden zurückgelesen |
 
 Der vollständige Apache-2.0-Lizenztext liegt unter `licenses/Apache-2.0.txt`.

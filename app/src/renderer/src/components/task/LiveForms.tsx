@@ -68,6 +68,10 @@ export function buildRequest(t: WorkflowTemplate, d: ComposerDraft, folder: Pick
     }
     case 'desktop_routine': {
       if (!d.desktopWindow) return { request: null, missing: 'Bitte ein Programmfenster wählen' }
+      if (d.desktopMode === 'ai') {
+        if (d.desktopGoal.trim().length < 5) return { request: null, missing: 'Bitte beschreiben, was die KI erledigen soll' }
+        return { request: { workflow: 'desktop_ai', window: d.desktopWindow, goal: d.desktopGoal.trim(), capabilities: [...capabilities, 'ai.cloud' as const] } }
+      }
       if (d.desktopSteps.length === 0) return { request: null, missing: 'Bitte mindestens einen Schritt hinzufügen' }
       const empty = d.desktopSteps.findIndex((st) => st.action === 'type' && !st.text)
       if (empty >= 0) return { request: null, missing: `Schritt ${empty + 1}: Bitte den Text eingeben` }

@@ -159,3 +159,43 @@ Masterplan-Module „SystemStatus: echte Worker-/Browser-/Modellverbindung“ un
 
 **Teststatus:** Worker 60 Tests, Unit 59, E2E 22 Schritte (neu: Systemzustand mit Werten aus der echten Datenbank), Typprüfung grün.
 
+## Restliche Masterplan-Repos übernommen (2026-10-31) ✅ mit offenen Punkten
+
+**jenman**
+- `CommandInterface` → Befehlszeile auf der Startseite.
+  - Ein Satz öffnet die passende Aufgabe und füllt sie vor (Adressen, Empfänger).
+  - Die Erkennung läuft lokal mit Regeln, ohne KI und ohne vorgefertigte Antworten.
+
+**cyberpunk-dashboard**
+- agent-network → Agentenliste mit echten Zählwerten und einem Detail-Dialog.
+- operations → Kennzahlen und Vorgangsdetails (Schritte, Freigaben, Ergebnisse).
+- intelligence → Ergebnissuche mit Filter nach Art.
+
+**ClawBridge (Desktop, Masterplan Phase 5)**
+- Wahrnehmung und Element-Abgleich: Windows UI Automation über pywinauto (BSD-3).
+- Recorder/Replay als „Programm bedienen → Schritte zeigen“:
+  - Aufgezeichnet wird per Auswahl in NEXORA, ohne globalen Tastatur-Hook.
+  - Wiedergegeben wird nach einer Freigabe mit der vollständigen Schrittliste.
+  - Jede Texteingabe wird zurückgelesen.
+  - Passwortfelder sind gesperrt, NEXORA bedient sich nicht selbst.
+- Computer Use als „Programm bedienen → KI machen lassen“:
+  - Werkzeug `computer_toolset_20260801`.
+  - Gesendet werden nur Fotos eines freigegebenen Fensters.
+  - Jede Aktion wird einzeln freigegeben.
+  - Gesperrte Tastenkombinationen wie Win+R oder Alt+F4 werden nie ausgeführt.
+  - Am Ende steht ein Abschlussbild zur Prüfung durch den Nutzer.
+
+**Geprüft**
+- Worker: 72 Tests.
+  - Desktop-Logik mit einem Test-Backend.
+  - Computer Use mit nachgestellter API: Ablauf, Ablehnung, Sperren, Kosten aus der Nutzung, `toolset_name` in jedem Ergebnis.
+  - Echter Editor-Test unter Windows (CI).
+- Unit: 65 Tests. E2E: 25 Schritte (Linux und Windows).
+- Gebündelter Worker unter Windows: pywinauto lädt (CI-Lauf 25).
+- Dabei gefundener Fehler: die Plus-Taste („+“, „Strg++“) wurde als Trennzeichen verschluckt. Behoben, mit Test.
+
+**Nicht geprüft / offen**
+- Ein echter KI-Desktop-Lauf gegen die Anthropic-API: in der Testumgebung gibt es keinen Schlüssel.
+- Klicks über pywinauto auf einem echten Kunden-Desktop. Die CI prüft Texteingabe und Zurücklesen im Editor, keine Mausklicks.
+- Klick mit Zusatztasten, Taste halten und waagerechtes Scrollen werden bewusst abgelehnt (noch nicht umgesetzt).
+

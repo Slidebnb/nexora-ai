@@ -107,6 +107,13 @@ class DesktopBackend(Protocol):
     def invoke(self, window: str, element: ElementSnapshot) -> None: ...
     def set_text(self, window: str, element: ElementSnapshot, text: str) -> None: ...
     def read_text(self, window: str, element: ElementSnapshot) -> str: ...
+    # Bildschirmbedienung für den KI-Modus (Computer Use); Koordinaten sind Bildschirmpixel
+    def window_rect(self, window: str) -> tuple[int, int, int, int]: ...
+    def screenshot_png(self, rect: tuple[int, int, int, int], size: tuple[int, int]) -> str: ...
+    def mouse(self, action: str, x: int, y: int, start: tuple[int, int] | None = None) -> None: ...
+    def scroll(self, x: int, y: int, direction: str, amount: int) -> None: ...
+    def send_keys(self, keys: str) -> None: ...
+    def cursor(self) -> tuple[int, int]: ...
 
 
 class UnavailableBackend:
@@ -129,6 +136,24 @@ class UnavailableBackend:
         self._no()
 
     def read_text(self, window: str, element: ElementSnapshot) -> str:
+        return self._no()
+
+    def window_rect(self, window: str) -> tuple[int, int, int, int]:
+        return self._no()
+
+    def screenshot_png(self, rect: tuple[int, int, int, int], size: tuple[int, int]) -> str:
+        return self._no()
+
+    def mouse(self, action: str, x: int, y: int, start: tuple[int, int] | None = None) -> None:
+        self._no()
+
+    def scroll(self, x: int, y: int, direction: str, amount: int) -> None:
+        self._no()
+
+    def send_keys(self, keys: str) -> None:
+        self._no()
+
+    def cursor(self) -> tuple[int, int]:
         return self._no()
 
 
@@ -251,6 +276,76 @@ class WindowsBackend:  # pragma: no cover – läuft nur unter Windows (CI-Job �
                 return "\n".join(c.texts())
             except Exception as e:  # noqa: BLE001
                 raise DesktopError(f"Text aus {snap.describe()} nicht lesbar ({type(e).__name__})") from e
+
+
+    # ── Bildschirmbedienung (KI-Modus) ───────────────────────────────────
+    def window_rect(self, window: str) -> tuple[int, int, int, int]:
+        w = self._window(window)
+        try:
+            w.set_focus()
+        except Exception:  # noqa: BLE001 – Fokus ist hilfreich, aber nicht zwingend
+            pass
+        r = w.rectangle()
+        return (r.left, r.top, r.right, r.bottom)
+
+    def screenshot_png(self, rect: tuple[int, int, int, int], size: tuple[int, int]) -> str:
+        import base64  # noqa: PLC0415
+        import io  # noqa: PLC0415
+
+        from PIL import ImageGrab  # noqa: PLC0415
+
+        img = ImageGrab.grab(bbox=rect, all_screens=True)
+        if img.size != size:
+            img = img.resize(size)
+        buf = io.BytesIO()
+        img.save(buf, format="PNG")
+        return base64.b64encode(buf.getvalue()).decode("ascii")
+
+    def mouse(self, action: str, x: int, y: int, start: tuple[int, int] | None = None) -> None:
+        from pywinauto import mouse  # noqa: PLC0415
+
+        c = (x, y)
+        if action == "left_click":
+            mouse.click("left", c)
+        elif action == "right_click":
+            mouse.right_click(c)
+        elif action == "middle_click":
+            mouse.click("middle", c)
+        elif action == "double_click":
+            mouse.double_click("left", c)
+        elif action == "triple_click":
+            for _ in range(3):
+                mouse.click("left", c)
+        elif action == "mouse_move":
+            mouse.move(c)
+        elif action == "left_mouse_down":
+            mouse.press("left", c)
+        elif action == "left_mouse_up":
+            mouse.release("left", c)
+        elif action == "left_click_drag" and start:
+            mouse.press("left", start)
+            mouse.move(c)
+            mouse.release("left", c)
+        else:
+            raise DesktopError(f"Mausaktion {action} nicht unterstützt")
+
+    def scroll(self, x: int, y: int, direction: str, amount: int) -> None:
+        from pywinauto import mouse  # noqa: PLC0415
+
+        if direction not in ("up", "down"):
+            raise DesktopError("Nur senkrechtes Scrollen wird unterstützt")
+        mouse.scroll((x, y), wheel_dist=amount if direction == "up" else -amount)
+
+    def send_keys(self, keys: str) -> None:
+        from pywinauto import keyboard  # noqa: PLC0415
+
+        keyboard.send_keys(keys, with_spaces=True, with_tabs=True, with_newlines=True, pause=0.01)
+
+    def cursor(self) -> tuple[int, int]:
+        import win32api  # noqa: PLC0415
+
+        x, y = win32api.GetCursorPos()
+        return (int(x), int(y))
 
 
 def default_backend() -> DesktopBackend:

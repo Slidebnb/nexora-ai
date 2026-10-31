@@ -102,13 +102,52 @@ export function DesktopRecorder() {
           <RefreshCw className={`size-4 ${busy ? 'motion-safe:animate-spin' : ''}`} aria-hidden />
         </button>
       </div>
+      {d.desktopWindow && (
+        <div className="flex gap-1" role="radiogroup" aria-label="Art der Bedienung">
+          {(
+            [
+              ['steps', 'Schritte zeigen (lokal)'],
+              ['ai', 'KI machen lassen (Cloud)']
+            ] as const
+          ).map(([id, label]) => (
+            <button
+              key={id}
+              type="button"
+              role="radio"
+              aria-checked={d.desktopMode === id}
+              onClick={() => set({ desktopMode: id })}
+              className={`rounded px-3 py-1 text-xs ${d.desktopMode === id ? 'bg-accent/20 text-accent-hi' : 'text-text-2 hover:bg-panel'}`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
       {error && (
         <p role="alert" className="text-xs text-warning">
           {error}
         </p>
       )}
 
-      {d.desktopWindow && elements.length > 0 && (
+      {d.desktopWindow && d.desktopMode === 'ai' && (
+        <div className="flex flex-col gap-1.5">
+          <textarea
+            value={d.desktopGoal}
+            onChange={(e) => set({ desktopGoal: e.target.value })}
+            rows={2}
+            maxLength={1000}
+            placeholder="Was soll die KI in diesem Fenster erledigen? z. B. „Trage im Formular die Kundennummer K-1042 ein“"
+            aria-label="Ziel für die KI"
+            className="input resize-none text-sm"
+          />
+          <p className="text-xs text-text-2">
+            Die KI sieht nur Fotos dieses Fensters (sie gehen an deinen KI-Anbieter, es fallen API-Kosten an). Jeden Klick und jede Eingabe zeigt
+            NEXORA dir vorher zur Freigabe. Am Ende gibt es ein Abschlussbild zum Prüfen.
+          </p>
+        </div>
+      )}
+
+      {d.desktopWindow && d.desktopMode === 'steps' && elements.length > 0 && (
         <div className="rounded border border-line">
           <input value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="Element suchen …" aria-label="Element suchen" className="input w-full rounded-b-none border-0 border-b text-xs" />
           <ul className="max-h-40 overflow-y-auto text-xs" aria-label="Elemente im Fenster">
@@ -132,6 +171,7 @@ export function DesktopRecorder() {
         </div>
       )}
 
+      {d.desktopMode === 'steps' && (
       <ol className="space-y-1.5" aria-label="Aufgezeichnete Schritte">
         {steps.map((st, i) => (
           <li key={i} className="rounded border border-line px-2 py-1.5 text-xs">
@@ -162,7 +202,8 @@ export function DesktopRecorder() {
           </li>
         ))}
       </ol>
-      {d.desktopWindow && steps.length === 0 && <p className="text-xs text-text-2">Klicke oben bei einem Element auf „Klicken“ oder „Text eintragen“, um Schritte aufzuzeichnen.</p>}
+      )}
+      {d.desktopWindow && d.desktopMode === 'steps' && steps.length === 0 && <p className="text-xs text-text-2">Klicke oben bei einem Element auf „Klicken“ oder „Text eintragen“, um Schritte aufzuzeichnen.</p>}
     </div>
   )
 }
