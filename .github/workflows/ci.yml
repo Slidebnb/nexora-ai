@@ -94,6 +94,9 @@ jobs:
       - name: Gepackte App starten (eingebauter Worker, echter Vorgang)
         working-directory: app
         run: node tests/e2e/packaged.mjs
+      - name: Installationsaudit (echter Installer, installierte App, Deinstallation)
+        working-directory: app
+        run: node tests/e2e/install-audit.mjs
       - uses: actions/upload-artifact@v4
         with:
           name: nexora-ai-windows-installer
