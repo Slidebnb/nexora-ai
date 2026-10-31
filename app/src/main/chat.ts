@@ -1,9 +1,9 @@
 import type { Provider } from '../shared/ipc-contract'
 
 /**
- * Chat mit der KI direkt aus dem Hauptprozess: Der API-Schlüssel bleibt hier und wird nie
- * an die Oberfläche gegeben. Antworten werden gestreamt (Live-Tippen).
- * Anbieter wird nach hinterlegtem Schlüssel gewählt; das Modell ist einstellbar (Standard unten).
+ * Agent-Chat im Hauptprozess: Die KI antwortet und kann echte Werkzeuge aufrufen (erste Stufe:
+ * Web-Recherche). Der API-Schlüssel bleibt im Hauptprozess. Jede verändernde/sendende Aktion läuft
+ * über die normalen Freigaben des Workers; die Recherche ist nur lesend.
  */
 export interface ChatMessage {
   role: 'user' | 'assistant'
@@ -16,83 +16,121 @@ export const DEFAULT_MODEL: Record<Provider, string> = {
 }
 
 const SYSTEM =
-  'Du bist NEXORA, ein hilfreicher deutschsprachiger Assistent auf dem PC des Nutzers. ' +
-  'Antworte klar und freundlich. Erfinde keine Fakten. Wenn du etwas nicht sicher weißt, sage es. ' +
-  'Du kannst derzeit nur schreiben (noch keine Aktionen auf dem PC ausführen).'
+  'Du bist NEXORA, ein hilfreicher deutschsprachiger Assistent auf dem PC des Nutzers. Antworte klar und ehrlich; ' +
+  'erfinde nichts. Du kannst das Internet durchsuchen: Wenn der Nutzer nach aktuellen Informationen fragt oder ' +
+  'konkrete Webseiten nennt, rufe das Werkzeug „web_recherche“ mit einer kurzen Frage und den passenden Adressen auf. ' +
+  'Fasse danach das Ergebnis verständlich zusammen und nenne die Quellen. Weitere Aktionen auf dem PC folgen – diese ' +
+  'werden dem Nutzer stets vorab zur Freigabe gezeigt.'
 
 export class ChatError extends Error {}
 
-/** Streamt die Antwort des Anbieters und ruft onDelta je Textstück auf. Gibt den vollständigen Text zurück. */
-export async function streamChat(opts: {
+export interface ToolResult {
+  ok: boolean
+  summary: string
+  text: string
+}
+export type ToolExec = (name: string, args: Record<string, unknown>) => Promise<ToolResult>
+
+const TOOL_WEB = {
+  name: 'web_recherche',
+  description: 'Durchsucht öffentliche Webseiten zu einer Frage und liefert eine Zusammenfassung mit Quellen. Nur lesend.',
+  parameters: {
+    type: 'object',
+    properties: {
+      frage: { type: 'string', description: 'Die Frage, die beantwortet werden soll' },
+      urls: { type: 'array', items: { type: 'string' }, description: '1–10 öffentliche http(s)-Adressen' }
+    },
+    required: ['frage', 'urls']
+  }
+} as const
+
+const MAX_STEPS = 6
+
+export async function runAgent(opts: {
   provider: Provider
   key: string
   model: string
   messages: ChatMessage[]
   signal: AbortSignal
   onDelta: (text: string) => void
+  onTool: (label: string) => void
+  exec: ToolExec
 }): Promise<string> {
-  const { provider, key, model, messages, signal, onDelta } = opts
-  const res = await callProvider(provider, key, model, messages, signal)
-  if (!res.ok || !res.body) {
-    const detail = await res.text().catch(() => '')
-    throw new ChatError(providerError(res.status, detail))
-  }
-  const reader = res.body.getReader()
-  const decoder = new TextDecoder()
-  let buffer = ''
-  let full = ''
-  const emit = (t: string) => {
-    if (t) {
-      full += t
-      onDelta(t)
-    }
-  }
-  while (true) {
-    const { done, value } = await reader.read()
-    if (done) break
-    buffer += decoder.decode(value, { stream: true })
-    const lines = buffer.split('\n')
-    buffer = lines.pop() ?? ''
-    for (const line of lines) {
-      const trimmed = line.trim()
-      if (!trimmed.startsWith('data:')) continue
-      const data = trimmed.slice(5).trim()
-      if (data === '[DONE]') continue
-      try {
-        const json = JSON.parse(data)
-        if (provider === 'anthropic') {
-          if (json.type === 'content_block_delta' && json.delta?.type === 'text_delta') emit(json.delta.text ?? '')
-          if (json.type === 'error') throw new ChatError(providerError(400, JSON.stringify(json.error ?? {})))
-        } else {
-          emit(json.choices?.[0]?.delta?.content ?? '')
-        }
-      } catch (e) {
-        if (e instanceof ChatError) throw e
-        // unvollständige/zwischenzeilige Daten überspringen
-      }
-    }
-  }
-  return full
+  return opts.provider === 'anthropic' ? runAnthropic(opts) : runOpenai(opts)
 }
 
-function callProvider(provider: Provider, key: string, model: string, messages: ChatMessage[], signal: AbortSignal): Promise<Response> {
-  if (provider === 'anthropic') {
-    // Test-Umleitung nur in der Entwicklungsversion (E2E), nie in der gepackten App
-    const url = (!process.env['NEXORA_PACKAGED'] && process.env['NEXORA_CHAT_ANTHROPIC_URL']) || 'https://api.anthropic.com/v1/messages'
-    return fetch(url, {
-      method: 'POST',
-      signal,
-      headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
-      body: JSON.stringify({ model, max_tokens: 4096, stream: true, system: SYSTEM, messages })
-    })
+// ---------- Anthropic ----------
+async function runAnthropic(o: Parameters<typeof runAgent>[0]): Promise<string> {
+  const url = (!process.env['NEXORA_PACKAGED'] && process.env['NEXORA_CHAT_ANTHROPIC_URL']) || 'https://api.anthropic.com/v1/messages'
+  const convo: unknown[] = o.messages.map((m) => ({ role: m.role, content: m.content }))
+  for (let step = 0; step < MAX_STEPS; step++) {
+    const body = {
+      model: o.model,
+      max_tokens: 4096,
+      system: SYSTEM,
+      tools: [{ name: TOOL_WEB.name, description: TOOL_WEB.description, input_schema: TOOL_WEB.parameters }],
+      messages: convo
+    }
+    const res = await fetch(url, { method: 'POST', signal: o.signal, headers: { 'x-api-key': o.key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' }, body: JSON.stringify(body) })
+    if (!res.ok) throw new ChatError(providerError(res.status, await res.text().catch(() => '')))
+    const json: any = await res.json()
+    const content: any[] = json.content ?? []
+    const toolUses = content.filter((b) => b.type === 'tool_use')
+    const textBlocks = content.filter((b) => b.type === 'text').map((b) => b.text).join('')
+    if (json.stop_reason !== 'tool_use' || toolUses.length === 0) {
+      if (textBlocks) o.onDelta(textBlocks)
+      return textBlocks
+    }
+    convo.push({ role: 'assistant', content })
+    const results: unknown[] = []
+    for (const tu of toolUses) {
+      o.onTool(labelFor(tu.name))
+      const r = await o.exec(tu.name, tu.input ?? {})
+      results.push({ type: 'tool_result', tool_use_id: tu.id, content: toolText(r), is_error: !r.ok })
+    }
+    convo.push({ role: 'user', content: results })
   }
+  throw new ChatError('Die KI hat zu viele Schritte benötigt. Bitte die Frage genauer stellen.')
+}
+
+// ---------- OpenAI ----------
+async function runOpenai(o: Parameters<typeof runAgent>[0]): Promise<string> {
   const url = (!process.env['NEXORA_PACKAGED'] && process.env['NEXORA_CHAT_OPENAI_URL']) || 'https://api.openai.com/v1/chat/completions'
-  return fetch(url, {
-    method: 'POST',
-    signal,
-    headers: { Authorization: `Bearer ${key}`, 'content-type': 'application/json' },
-    body: JSON.stringify({ model, max_tokens: 4096, stream: true, messages: [{ role: 'system', content: SYSTEM }, ...messages] })
-  })
+  const convo: any[] = [{ role: 'system', content: SYSTEM }, ...o.messages.map((m) => ({ role: m.role, content: m.content }))]
+  const tools = [{ type: 'function', function: TOOL_WEB }]
+  for (let step = 0; step < MAX_STEPS; step++) {
+    const res = await fetch(url, { method: 'POST', signal: o.signal, headers: { Authorization: `Bearer ${o.key}`, 'content-type': 'application/json' }, body: JSON.stringify({ model: o.model, max_tokens: 4096, tools, messages: convo }) })
+    if (!res.ok) throw new ChatError(providerError(res.status, await res.text().catch(() => '')))
+    const json: any = await res.json()
+    const msg = json.choices?.[0]?.message ?? {}
+    const calls = msg.tool_calls ?? []
+    if (!calls.length) {
+      const text = msg.content ?? ''
+      if (text) o.onDelta(text)
+      return text
+    }
+    convo.push(msg)
+    for (const c of calls) {
+      o.onTool(labelFor(c.function?.name))
+      let args: Record<string, unknown> = {}
+      try {
+        args = JSON.parse(c.function?.arguments ?? '{}')
+      } catch {
+        /* ungültige Argumente → leer */
+      }
+      const r = await o.exec(c.function?.name, args)
+      convo.push({ role: 'tool', tool_call_id: c.id, content: toolText(r) })
+    }
+  }
+  throw new ChatError('Die KI hat zu viele Schritte benötigt. Bitte die Frage genauer stellen.')
+}
+
+function labelFor(name: string): string {
+  return name === 'web_recherche' ? 'Recherchiert im Web …' : `Werkzeug „${name}“ …`
+}
+function toolText(r: ToolResult): string {
+  const head = r.ok ? r.summary : `Fehlgeschlagen: ${r.summary}`
+  return `${head}\n\n${r.text}`.trim().slice(0, 6000) || (r.ok ? 'Erledigt.' : 'Fehlgeschlagen.')
 }
 
 function providerError(status: number, detail: string): string {

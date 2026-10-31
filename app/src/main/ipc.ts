@@ -4,7 +4,7 @@ import { app, BrowserWindow, dialog, ipcMain, safeStorage, shell, type IpcMainIn
 import { IPC_CHANNELS, type IpcChannel, type IpcRequest, type IpcResponse } from '@shared/ipc-contract'
 import { isAllowedNavigation } from './security'
 import { SecretStore } from './secrets'
-import { DEFAULT_MODEL, streamChat, ChatError, type ChatMessage } from './chat'
+import { DEFAULT_MODEL, runAgent, ChatError, type ChatMessage, type ToolResult } from './chat'
 import type { WorkerHub } from './worker/hub'
 import type { Feature, LicenseManager } from './license'
 import { createPracticeFolder, type AppSettingsStore } from './appSettings'
@@ -223,13 +223,28 @@ export function registerIpcHandlers(opts: { devServerUrl?: string; secrets: Secr
     chats.get(id)?.abort()
     chats.set(id, controller)
     try {
-      const text = await streamChat({
+      const exec = async (name: string, args: Record<string, unknown>): Promise<ToolResult> => {
+        if (name === 'web_recherche') {
+          const frage = String(args['frage'] ?? '').trim()
+          const urls = Array.isArray(args['urls']) ? (args['urls'] as unknown[]).map(String).filter((u) => /^https?:\/\//i.test(u)).slice(0, 10) : []
+          if (frage.length < 3 || urls.length === 0) return { ok: false, summary: 'Frage oder Adressen fehlen', text: '' }
+          try {
+            return await hub.runToCompletion('web_research', { question: frage, urls, engine: 'direct' }, ['web.read', 'files.export'])
+          } catch (err) {
+            return { ok: false, summary: err instanceof Error ? err.message : 'Fehler', text: '' }
+          }
+        }
+        return { ok: false, summary: `Unbekanntes Werkzeug: ${name}`, text: '' }
+      }
+      const text = await runAgent({
         provider,
         key,
         model,
         messages: messages as ChatMessage[],
         signal: controller.signal,
-        onDelta: (delta) => broadcast('chat:delta', { id, delta })
+        onDelta: (delta) => broadcast('chat:delta', { id, delta }),
+        onTool: (label) => broadcast('chat:delta', { id, delta: `\n🔎 ${label}\n` }),
+        exec
       })
       return { text, model, provider }
     } catch (e) {

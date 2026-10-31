@@ -1,4 +1,5 @@
 import { fileURLToPath } from 'node:url'
+import { readFileSync } from 'node:fs'
 import type { ApprovalDecision, NexoraEvent } from '../../shared/events'
 import type { WorkerStatus } from '../../shared/ipc-contract'
 import type { SecretStore } from '../secrets'
@@ -97,6 +98,47 @@ export class WorkerHub {
 
   createTask(workflow: string, input: Record<string, unknown>, capabilities: string[]): Promise<{ taskId: string; runId: string }> {
     return this.client.request('POST', '/api/tasks', { workflow, input, capabilities })
+  }
+
+  /**
+   * Startet eine Aufgabe und wartet, bis sie fertig ist (für den Agent-Chat). Freigaben erscheinen
+   * normal in der Oberfläche; hier wird nur gewartet, bis der Nutzer entschieden hat.
+   * Liefert Erfolg/Zusammenfassung und den Textinhalt erzeugter Dateien (für die Antwort der KI).
+   */
+  async runToCompletion(
+    workflow: string,
+    input: Record<string, unknown>,
+    capabilities: string[],
+    timeoutMs = 120_000
+  ): Promise<{ ok: boolean; summary: string; text: string }> {
+    const { runId } = await this.createTask(workflow, input, capabilities)
+    const terminal = new Set(['run_succeeded', 'run_failed', 'run_cancelled'])
+    const deadline = Date.now() + timeoutMs
+    while (Date.now() < deadline) {
+      const events = await this.client.request<NexoraEvent[]>('GET', `/api/runs/${encodeURIComponent(runId)}/events`)
+      const end = events.find((e) => terminal.has(e.type))
+      if (end) {
+        let text = ''
+        for (const a of events.filter((e) => e.type === 'artifact_created')) {
+          const uri = (a.payload as { uri?: unknown }).uri
+          if (typeof uri === 'string' && uri.startsWith('file:')) {
+            try {
+              text += '\n' + readFileSync(fileURLToPath(uri), 'utf8')
+            } catch {
+              /* Datei evtl. nicht lesbar – ignorieren */
+            }
+          }
+        }
+        const p = end.payload as { summary?: string; verification?: string; error?: string; reason?: string }
+        return {
+          ok: end.type === 'run_succeeded',
+          summary: p.summary || p.verification || p.error || p.reason || '',
+          text: text.trim().slice(0, 6000)
+        }
+      }
+      await new Promise((r) => setTimeout(r, 300))
+    }
+    throw new Error('Zeitüberschreitung bei der Aufgabe')
   }
 
   async cancelTask(taskId: string): Promise<void> {

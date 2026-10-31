@@ -286,3 +286,22 @@ Auf klares Nutzer-Feedback („unübersichtlich, man kann nicht mit NEXORA schre
 Aufgaben vorschlagen/ausführen können (Werkzeug-Aufrufe inkl. der Konnektoren), jede Änderung weiterhin erst nach
 deiner Freigabe. Modellwahl pro Anbieter in den Einstellungen folgt.
 
+## NEXORA wird ein Agent – Stufe 1: Werkzeug-Nutzung im Chat (2026-10-31) ✅
+
+Die KI kann jetzt aus dem Gespräch heraus **selbst ein echtes Werkzeug aufrufen** und aus dem Ergebnis antworten.
+- Erstes Werkzeug: **web_recherche** (nur lesend, sicher). Fragt der Nutzer nach aktuellen Infos oder nennt Seiten,
+  ruft die KI das Werkzeug mit Frage + Adressen auf; der Worker führt die Recherche aus; die KI fasst zusammen.
+- Agent-Ablauf im Hauptprozess (`src/main/chat.ts`): mehrstufige Werkzeug-Schleife (Anthropic Tool-Use und
+  OpenAI Function-Calling), Schlüssel bleibt im Main. `hub.runToCompletion` startet eine Aufgabe und wartet auf das
+  Ergebnis; Freigaben erscheinen dabei normal in der Oberfläche (die Schleife wartet auf die Entscheidung).
+- E2E 28: echter Agent-Test – Nachricht „Recherchiere den Tarif auf …" → KI startet die Recherche selbst →
+  antwortet „Laut den Quellen kostet der Tarif ab 9,99 Euro im Monat." Der Vorgang erscheint in „Zuletzt erledigt".
+
+**Sicherheit:** Die Recherche ist nur lesend. Weitere Werkzeuge (Ordner/Dateien, E-Mail-Entwürfe, „Programm bedienen",
+Konnektoren) kommen als nächste Stufen – jede verändernde/sendende Aktion läuft über die bestehende Freigabe des Workers.
+
+**Nächste Stufen zum vollständigen Agenten:**
+1. Weitere Werkzeuge anbinden (PDF, E-Mail-Entwurf, Ordner aufräumen mit nativer Ordnerwahl, Konnektor-Werkzeuge) – mit Freigabe.
+2. Werkzeug-Schritte im Chat sichtbarer machen (eigene „arbeitet …"-Zeilen statt nur Text).
+3. Modellwahl je Anbieter in den Einstellungen.
+

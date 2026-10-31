@@ -53,14 +53,25 @@ function mcpReply(req) {
 }
 const web = createServer(async (req, res) => {
   if (req.url === '/chat' && req.method === 'POST') {
-    // Fake-Anthropic-Stream (SSE) für den Chat-Test
-    for await (const _ of req) void _
-    res.writeHead(200, { 'Content-Type': 'text/event-stream' })
-    const delta = (t) => `event: content_block_delta\ndata: ${JSON.stringify({ type: 'content_block_delta', delta: { type: 'text_delta', text: t } })}\n\n`
-    res.write(delta('Hallo! '))
-    res.write(delta('Ich bin NEXORA.'))
-    res.write('event: message_stop\ndata: {"type":"message_stop"}\n\n')
-    res.end()
+    // Fake-Anthropic (nicht streamend) für den Agent-Chat: entweder Antwort, Werkzeugaufruf oder Abschluss.
+    const chunks = []
+    for await (const c of req) chunks.push(c)
+    const body = JSON.parse(Buffer.concat(chunks).toString() || '{}')
+    const msgs = body.messages ?? []
+    const hasToolResult = msgs.some((m) => Array.isArray(m.content) && m.content.some((b) => b.type === 'tool_result'))
+    const lastUser = [...msgs].reverse().find((m) => m.role === 'user' && typeof m.content === 'string')
+    const userText = lastUser ? lastUser.content : ''
+    let reply
+    if (hasToolResult) {
+      reply = { content: [{ type: 'text', text: 'Laut den Quellen kostet der Tarif ab 9,99 Euro im Monat.' }], stop_reason: 'end_turn' }
+    } else if (/recherch|tarif|preis/i.test(userText)) {
+      const urls = (userText.match(/https?:\/\/[^\s]+/g) || []).map((u) => u.replace(/[.,]$/, ''))
+      reply = { content: [{ type: 'text', text: 'Ich schaue das nach.' }, { type: 'tool_use', id: 'tu1', name: 'web_recherche', input: { frage: 'Was kostet der Tarif pro Monat?', urls } }], stop_reason: 'tool_use' }
+    } else {
+      reply = { content: [{ type: 'text', text: 'Hallo! Ich bin NEXORA.' }], stop_reason: 'end_turn' }
+    }
+    res.writeHead(200, { 'Content-Type': 'application/json' })
+    res.end(JSON.stringify(reply))
     return
   }
   if (req.url === '/mcp' && req.method === 'POST') {
@@ -198,6 +209,18 @@ try {
     await win.screenshot({ path: join(shots, '02a-chat.png') })
   })
 
+  await step('AGENT: KI startet selbst eine Web-Recherche und antwortet aus dem Ergebnis', async () => {
+    await nav('Dateien')
+    await nav('Start')
+    const box = win.getByLabel('Nachricht an NEXORA')
+    await box.fill(`Recherchiere den Tarif auf ${webBase}/a und ${webBase}/b`)
+    await box.press('Enter')
+    // Werkzeug-Hinweis erscheint, echte Recherche läuft, dann die Antwort aus dem Ergebnis
+    await win.getByText(/Recherchiert im Web/).waitFor({ timeout: 10_000 })
+    await win.getByText('Laut den Quellen kostet der Tarif ab 9,99 Euro im Monat.').waitFor({ timeout: 20_000 })
+    await win.screenshot({ path: join(shots, '02i-agent.png') })
+  })
+
   await step('KUNDE: „Programm bedienen“ – Aufzeichnung per Auswahl (Windows) bzw. ehrlicher Hinweis', async () => {
     await nav('Dateien')
     await nav('Start') // frischer Chat → Aufgaben-Vorschläge sichtbar
@@ -257,10 +280,10 @@ try {
     await card.getByText(/^Pausiert/).waitFor({ timeout: 5_000 })
     await new Promise((r) => setTimeout(r, 3500)) // langsame Quelle ist inzwischen fertig – Quelle 2 darf NICHT starten
     await card.getByText(/^Pausiert/).waitFor()
-    assert.equal(await win.getByText(/Webseiten ausgewertet/).count(), 0, 'pausiert: nicht fertig geworden')
+    assert.equal(await card.getByText(/ausgewertet/).count(), 0, 'pausiert: die laufende Aufgabe ist nicht fertig')
     await win.screenshot({ path: join(shots, '02e-pausiert.png') })
     await card.getByRole('button', { name: 'Fortsetzen' }).click()
-    await win.getByText('2 von 2 Webseiten ausgewertet – deine Tabelle ist fertig.').waitFor({ timeout: 15_000 })
+    await win.getByText('2 von 2 Webseiten ausgewertet – deine Tabelle ist fertig.').last().waitFor({ timeout: 15_000 })
   })
 
   await step('Farbthema wechseln (Cyan) und zurück', async () => {
@@ -527,7 +550,7 @@ try {
     await nav('Aktivitäten')
     await win.locator('tbody tr').first().waitFor()
     assert.equal(await win.locator('tbody').getByText('DEMO', { exact: true }).count(), 0)
-    assert.equal(await win.locator('tbody tr').count(), 11)
+    assert.equal(await win.locator('tbody tr').count(), 12)
   })
 
   await step('Keine Konsolenfehler', async () => {
