@@ -1,26 +1,38 @@
-import { useEffect, useState } from 'react'
-import type { AppInfo } from '@shared/ipc-contract'
+import { Sidebar } from './components/layout/Sidebar'
+import { TopBar } from './components/layout/TopBar'
+import { DemoBanner } from './components/layout/DemoBanner'
+import { ApprovalCenter } from './components/approvals/ApprovalCenter'
+import { useNexora, type Screen } from './state/store'
+import { Dashboard } from './screens/Dashboard'
+import { Agents } from './screens/Agents'
+import { Automations } from './screens/Automations'
+import { Activity } from './screens/Activity'
+import { Files } from './screens/Files'
+import { Settings } from './screens/Settings'
+
+const SCREENS: Record<Screen, () => React.JSX.Element> = {
+  dashboard: Dashboard,
+  agents: Agents,
+  automations: Automations,
+  activity: Activity,
+  files: Files,
+  settings: Settings
+}
 
 export function App() {
-  const [info, setInfo] = useState<AppInfo | null>(null)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    window.nexora
-      .getAppInfo()
-      .then(setInfo)
-      .catch((e: unknown) => setError(e instanceof Error ? e.message : String(e)))
-  }, [])
-
+  const screen = useNexora((s) => s.screen)
+  const Current = SCREENS[screen]
   return (
-    <main className="flex h-full flex-col items-center justify-center gap-4">
-      <h1 className="text-4xl font-semibold tracking-[0.3em] text-accent-hi">NEXORA AI</h1>
-      <p className="text-text-2">
-        {error ? `Fehler: ${error}` : info ? `Version ${info.version} · ${info.platform}` : 'Lade …'}
-      </p>
-      <p className="rounded border border-panel-2 bg-panel px-3 py-1 text-sm text-text-2">
-        Worker: nicht verbunden
-      </p>
-    </main>
+    <div className="flex h-full bg-base text-text">
+      <Sidebar />
+      <div className="flex min-w-0 flex-1 flex-col">
+        <TopBar />
+        <DemoBanner />
+        <main className="min-h-0 flex-1 overflow-y-auto">
+          <Current />
+        </main>
+      </div>
+      <ApprovalCenter />
+    </div>
   )
 }
