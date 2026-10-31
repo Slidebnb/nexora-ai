@@ -121,7 +121,7 @@ export function TaskComposer() {
         {!demoMode && !live && (
           <p className="flex flex-1 items-start gap-1.5 text-xs text-text-2">
             <Info className="mt-px size-3.5 shrink-0" aria-hidden />
-            Echte Ausführung dieser Vorlage folgt ab {workflow.livePhase}. Im Demo-Modus kannst du den Ablauf ansehen.
+            {workflow.liveVia ? `So geht's: ${workflow.liveVia}.` : `Echte Ausführung dieser Vorlage folgt ab ${workflow.livePhase}. Im Demo-Modus kannst du den Ablauf ansehen.`}
           </p>
         )}
         {!demoMode && live && !workerReady && (

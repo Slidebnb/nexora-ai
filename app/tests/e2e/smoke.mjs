@@ -199,6 +199,29 @@ try {
     assert.match(eml, /To: Anna Muster <anna@example.com>/)
   })
 
+  await step('LIVE: Vorgang als Vorlage speichern, erneut ausführen, Zeitplan setzen', async () => {
+    await nav('Aktivitäten')
+    const row = win.locator('tbody tr', { hasText: 'Downloads-Test' }).filter({ has: win.getByRole('button', { name: 'Als Vorlage' }) }).first()
+    await row.getByRole('button', { name: 'Als Vorlage' }).click()
+    await win.getByLabel('Name der Vorlage').fill('Testordner aufräumen')
+    await win.getByRole('button', { name: 'Speichern', exact: true }).click()
+    await win.getByText(/Vorlage „Testordner aufräumen“ \(Version 1\) gespeichert/).waitFor()
+    await nav('Automationen')
+    const card = win.getByRole('article', { name: 'Vorlage Testordner aufräumen' })
+    await card.waitFor()
+    await card.getByLabel('Zeitplan Testordner aufräumen').selectOption('interval')
+    await card.getByLabel('Minuten').fill('30')
+    await card.getByRole('button', { name: 'Übernehmen' }).click()
+    await card.getByText('alle 30 Minuten (bei geöffneter App)').waitFor()
+    await win.screenshot({ path: join(shots, '09-vorlagen.png') })
+    await card.getByRole('button', { name: 'Ausführen' }).click()
+    const dlg = win.getByRole('alertdialog')
+    await dlg.getByText('Dateien verschieben', { exact: true }).waitFor({ timeout: 15_000 })
+    await dlg.getByRole('button', { name: 'Erlauben' }).click()
+    await win.getByText(/5\/5 verschobene Dateien geprüft/).first().waitFor({ timeout: 15_000 })
+    assert.ok(listing().every((f) => f.includes('/')), 'Dateien wurden über die Vorlage einsortiert')
+  })
+
   await step('DEMO: Ordner-Szenario mit Freigabe', async () => {
     await win.getByLabel('Vorlage').selectOption('wiederholen')
     await win.getByRole('button', { name: 'Demo-Modus öffnen' }).click()
@@ -208,7 +231,7 @@ try {
     await win.getByRole('alertdialog').getByText('DEMO', { exact: true }).waitFor({ timeout: 15_000 })
     await win.getByRole('alertdialog').getByRole('button', { name: 'Erlauben' }).click()
     await win.getByText('Sortierprotokoll.csv').first().waitFor({ timeout: 15_000 })
-    await win.screenshot({ path: join(shots, '09-dashboard-demo.png') })
+    await win.screenshot({ path: join(shots, '10-dashboard-demo.png') })
   })
 
   await step('DEMO: Recherche zeigt Schrittfehler; Kostendiagramm gezeichnet', async () => {
@@ -217,7 +240,7 @@ try {
     await win.getByText(/1 Quelle fehlgeschlagen/).first().waitFor({ timeout: 15_000 })
     await nav('Aktivitäten')
     await win.getByRole('region', { name: 'API-Kosten (simuliert)' }).locator('.recharts-area').waitFor()
-    await win.screenshot({ path: join(shots, '10-aktivitaeten.png') })
+    await win.screenshot({ path: join(shots, '11-aktivitaeten.png') })
   })
 
   await step('Kein Überlauf und keine Überlappung bei 1024×640', async () => {
@@ -233,7 +256,7 @@ try {
     await win.getByRole('button', { name: 'Seitenleiste umschalten' }).click()
     assert.equal(await overflow(), 0)
     await win.getByRole('button', { name: 'Seitenleiste umschalten' }).click()
-    await win.screenshot({ path: join(shots, '11-dashboard-1024.png') })
+    await win.screenshot({ path: join(shots, '12-dashboard-1024.png') })
     await win.setViewportSize({ width: 1440, height: 900 })
   })
 
@@ -242,7 +265,7 @@ try {
     await nav('Aktivitäten')
     await win.locator('tbody tr').first().waitFor()
     assert.equal(await win.locator('tbody').getByText('DEMO', { exact: true }).count(), 0)
-    assert.equal(await win.locator('tbody tr').count(), 6)
+    assert.equal(await win.locator('tbody tr').count(), 7)
   })
 
   await step('Keine Konsolenfehler', async () => {

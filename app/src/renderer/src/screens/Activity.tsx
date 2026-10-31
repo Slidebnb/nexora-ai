@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Undo2 } from 'lucide-react'
+import { BookmarkPlus, Undo2 } from 'lucide-react'
 import type { RunStatus } from '@shared/events'
 import { useNexora } from '../state/store'
 import { selectPendingApprovals, selectRuns } from '../state/selectors'
@@ -26,6 +26,9 @@ export function Activity() {
   const data = useNexora((s) => s.data)
   const [filter, setFilter] = useState<Filter>('all')
   const [error, setError] = useState<string | null>(null)
+  const [savingRun, setSavingRun] = useState<string | null>(null)
+  const [templateName, setTemplateName] = useState('')
+  const [saved, setSaved] = useState<string | null>(null)
   const act = (p: Promise<unknown>) => {
     setError(null)
     p.catch((e: unknown) => setError(cleanError(e)))
@@ -50,6 +53,11 @@ export function Activity() {
         </section>
       )}
 
+      {saved && (
+        <p role="status" className="mb-4 text-sm text-success">
+          {saved}
+        </p>
+      )}
       {error && (
         <p role="alert" className="mb-4 text-sm text-danger">
           {error}
@@ -108,6 +116,29 @@ export function Activity() {
                   <td className="px-4 py-2 text-right">
                     {!isTerminal(r.status) && (
                       <button type="button" className="btn-ghost text-xs" onClick={() => act(stopRun(r))}>Stoppen</button>
+                    )}
+                    {r.source === 'live' && r.status === 'succeeded' && r.workflow && r.workflow !== 'undo_organize' && savingRun !== r.runId && (
+                      <button type="button" className="btn-ghost text-xs" onClick={() => { setSavingRun(r.runId); setTemplateName(r.title); setSaved(null) }}>
+                        <BookmarkPlus className="size-3.5" aria-hidden /> Als Vorlage
+                      </button>
+                    )}
+                    {savingRun === r.runId && (
+                      <form
+                        className="flex items-center gap-1"
+                        onSubmit={(e) => {
+                          e.preventDefault()
+                          act(
+                            window.nexora.createTemplate(r.runId, templateName).then((t) => {
+                              setSaved(`Vorlage „${t.name}“ (Version ${t.version}) gespeichert – unter Automationen`)
+                              setSavingRun(null)
+                            })
+                          )
+                        }}
+                      >
+                        <input value={templateName} onChange={(e) => setTemplateName(e.target.value)} aria-label="Name der Vorlage" className="input w-48 py-1 text-xs" maxLength={80} autoFocus />
+                        <button type="submit" className="btn-primary text-xs" disabled={!templateName.trim()}>Speichern</button>
+                        <button type="button" className="btn-ghost text-xs" onClick={() => setSavingRun(null)}>Abbrechen</button>
+                      </form>
                     )}
                     {canUndo(data, r) && (
                       <button type="button" className="btn-ghost text-xs" onClick={() => act(undoRun(r))}>

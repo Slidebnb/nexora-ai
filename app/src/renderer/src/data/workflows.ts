@@ -9,6 +9,8 @@ export interface WorkflowTemplate {
   /** Szenario für den DEMO-Modus, falls vorhanden. */
   demoScenarioId?: string
   livePhase: string
+  /** Hinweis, wo die Funktion live genutzt wird, wenn sie kein eigenes Formular hat. */
+  liveVia?: string
   live?: { workflow: 'organize_folder' | 'web_research' | 'pdf_analysis' | 'draft_emails'; capabilities: Capability[] }
 }
 
@@ -53,6 +55,7 @@ export const WORKFLOWS: WorkflowTemplate[] = [
     title: 'Wiederholbarer Workflow',
     description: 'Einen erfolgreich gelaufenen, genehmigten Vorgang als Vorlage speichern und erneut ausführen.',
     capabilities: ['wie Ursprungsvorgang'],
-    livePhase: 'Phase 3'
+    livePhase: 'Phase 3',
+    liveVia: 'Aktivitäten → „Als Vorlage“, dann unter Automationen ausführen oder planen'
   }
 ]

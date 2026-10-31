@@ -8,7 +8,7 @@ export class WorkerClient {
     private readonly token: string
   ) {}
 
-  async request<T>(method: 'GET' | 'POST' | 'PUT', path: string, body?: unknown): Promise<T> {
+  async request<T>(method: 'GET' | 'POST' | 'PUT' | 'DELETE', path: string, body?: unknown): Promise<T> {
     const port = this.port()
     if (port === null) throw new Error('Worker ist nicht verbunden')
     const res = await fetch(`http://127.0.0.1:${port}${path}`, {

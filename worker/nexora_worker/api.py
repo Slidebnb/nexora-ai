@@ -22,6 +22,7 @@ from . import __version__
 from .approvals import ApprovalError
 from .events import Decision
 from .runner import TaskError, TaskManager
+from .templates import Schedule, TemplateStore
 
 ALLOWED_HOSTS = {"127.0.0.1", "localhost"}
 
@@ -42,7 +43,21 @@ class SecretsRequest(BaseModel):
     openai: str | None = None
 
 
-def create_app(manager: TaskManager, token: str) -> FastAPI:
+class TemplateFromRun(BaseModel):
+    runId: str
+    name: str
+
+
+class TemplateRun(BaseModel):
+    overrides: dict[str, Any] = Field(default_factory=dict)
+
+
+class ScheduleBody(BaseModel):
+    schedule: Schedule | None
+
+
+def create_app(manager: TaskManager, token: str, templates: TemplateStore | None = None) -> FastAPI:
+    templates = templates or TemplateStore(manager)
     app = FastAPI(title="NEXORA Worker", version=__version__, docs_url=None, redoc_url=None, openapi_url=None)
 
     def _token_ok(value: str | None) -> bool:
@@ -130,6 +145,39 @@ def create_app(manager: TaskManager, token: str) -> FastAPI:
         if manager.db.query_one("SELECT 1 FROM runs WHERE id = ?", (run_id,)) is None:
             raise HTTPException(404, "Run nicht gefunden")
         return [e.model_dump(exclude_none=True) for e in manager.bus.replay(after, run_id)]
+
+    @app.get("/api/templates")
+    async def list_templates() -> list[dict[str, Any]]:
+        return templates.list()
+
+    @app.post("/api/templates", status_code=201)
+    async def create_template(body: TemplateFromRun) -> dict[str, Any]:
+        try:
+            return templates.create_from_run(body.runId, body.name)
+        except TaskError as e:
+            raise _err(e) from e
+
+    @app.post("/api/templates/{template_id}/run", status_code=201)
+    async def run_template(template_id: str, body: TemplateRun) -> dict[str, str]:
+        try:
+            task_id, run_id = await templates.run(template_id, body.overrides)
+        except TaskError as e:
+            raise _err(e) from e
+        return {"taskId": task_id, "runId": run_id}
+
+    @app.put("/api/templates/{template_id}/schedule")
+    async def schedule_template(template_id: str, body: ScheduleBody) -> dict[str, Any]:
+        try:
+            return templates.set_schedule(template_id, body.schedule)
+        except TaskError as e:
+            raise _err(e) from e
+
+    @app.delete("/api/templates/{template_id}", status_code=204)
+    async def delete_template(template_id: str) -> None:
+        try:
+            templates.delete(template_id)
+        except TaskError as e:
+            raise _err(e) from e
 
     @app.put("/api/session/secrets", status_code=204)
     async def set_secrets(body: SecretsRequest) -> None:

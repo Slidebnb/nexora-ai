@@ -3,13 +3,16 @@ import { WORKFLOWS } from '../data/workflows'
 import { useNexora } from '../state/store'
 import { startDemoScenario } from '../demo/controller'
 import { ScreenHeader } from './ScreenHeader'
+import { TemplatesPanel } from '../components/templates/TemplatesPanel'
 
 export function Automations() {
   const demoMode = useNexora((s) => s.demoMode)
   const setScreen = useNexora((s) => s.setScreen)
   return (
     <div className="h-full overflow-y-auto p-6">
-      <ScreenHeader title="Automationen" subtitle="Vorlagen für wiederkehrende Aufgaben. Echte Ausführung folgt mit dem lokalen Worker." />
+      <ScreenHeader title="Automationen" subtitle="Eigene Vorlagen für wiederkehrende Aufgaben und die mitgelieferten Workflow-Bausteine." />
+      <TemplatesPanel />
+      <h2 className="hud-label mb-3">Workflow-Bausteine</h2>
       <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4">
         {WORKFLOWS.map((w) => (
           <article key={w.id} className="panel flex flex-col p-4">
@@ -23,7 +26,7 @@ export function Automations() {
               ))}
             </ul>
             <div className="mt-4 flex items-center justify-between text-xs">
-              <span className="text-text-2">Live: ab {w.livePhase}</span>
+              <span className="text-text-2">{w.live || w.liveVia ? 'Live verfügbar' : `Live: ab ${w.livePhase}`}</span>
               {w.demoScenarioId && demoMode ? (
                 <button
                   type="button"

@@ -21,6 +21,11 @@ const api: NexoraApi = {
   cancelTask: (taskId) => ipcRenderer.invoke('tasks:cancel', { taskId }),
   respondApproval: (approvalId, decision) => ipcRenderer.invoke('approvals:respond', { approvalId, decision }),
   revealArtifact: (artifactId) => ipcRenderer.invoke('files:reveal', { artifactId }),
+  listTemplates: () => ipcRenderer.invoke('templates:list'),
+  createTemplate: (runId, name) => ipcRenderer.invoke('templates:create', { runId, name }),
+  runTemplate: (req) => ipcRenderer.invoke('templates:run', req),
+  scheduleTemplate: (templateId, schedule) => ipcRenderer.invoke('templates:schedule', { templateId, schedule }),
+  deleteTemplate: (templateId) => ipcRenderer.invoke('templates:delete', { templateId }),
   onWorkerEvent: (cb) => subscribe('worker:event', cb),
   onWorkerStatus: (cb) => subscribe('worker:status', cb)
 }

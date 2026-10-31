@@ -25,6 +25,7 @@ from .approvals import ApprovalBroker
 from .bus import EventBus
 from .db import Database
 from .runner import TaskManager
+from .templates import TemplateStore
 from .safety import redact_text
 from .workflows import OrganizeFolder, UndoOrganize
 from .workflows.drafts import DraftEmails
@@ -71,7 +72,8 @@ def main() -> int:
 
     manager = build_manager(data_dir)
     manager.recover_interrupted()
-    app = create_app(manager, token)
+    templates = TemplateStore(manager)
+    app = create_app(manager, token, templates)
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.bind(("127.0.0.1", 0))
@@ -87,6 +89,7 @@ def main() -> int:
                 loop.call_soon_threadsafe(setattr, server, "should_exit", True)
             threading.Thread(target=watch, daemon=True).start()
         task = asyncio.create_task(server.serve(sockets=[sock]))
+        scheduler = asyncio.create_task(templates.scheduler_loop())
         while not server.started:
             if task.done():
                 await task  # Startfehler sichtbar machen
@@ -94,6 +97,7 @@ def main() -> int:
             await asyncio.sleep(0.02)
         print("NEXORA_WORKER_READY " + json.dumps({"port": port}), flush=True)
         await task
+        scheduler.cancel()
         await manager.shutdown()
 
     asyncio.run(serve())

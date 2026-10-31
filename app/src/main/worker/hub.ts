@@ -102,6 +102,26 @@ export class WorkerHub {
     await this.client.request('POST', `/api/tasks/${encodeURIComponent(taskId)}/cancel`)
   }
 
+  listTemplates(): Promise<unknown[]> {
+    return this.client.request('GET', '/api/templates')
+  }
+
+  createTemplate(runId: string, name: string): Promise<unknown> {
+    return this.client.request('POST', '/api/templates', { runId, name })
+  }
+
+  runTemplate(templateId: string, overrides: Record<string, unknown>): Promise<{ taskId: string; runId: string }> {
+    return this.client.request('POST', `/api/templates/${encodeURIComponent(templateId)}/run`, { overrides })
+  }
+
+  scheduleTemplate(templateId: string, schedule: unknown): Promise<unknown> {
+    return this.client.request('PUT', `/api/templates/${encodeURIComponent(templateId)}/schedule`, { schedule })
+  }
+
+  async deleteTemplate(templateId: string): Promise<void> {
+    await this.client.request('DELETE', `/api/templates/${encodeURIComponent(templateId)}`)
+  }
+
   async respondApproval(approvalId: string, decision: ApprovalDecision): Promise<void> {
     await this.client.request('POST', `/api/approvals/${encodeURIComponent(approvalId)}/respond`, { decision })
   }

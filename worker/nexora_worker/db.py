@@ -58,6 +58,23 @@ MIGRATIONS: list[str] = [
         created_at TEXT NOT NULL
     );
     """,
+    # 2: Vorlagen (versioniert) mit optionalem Zeitplan
+    """
+    CREATE TABLE templates (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        version INTEGER NOT NULL,
+        workflow TEXT NOT NULL,
+        input_json TEXT NOT NULL,
+        capabilities_json TEXT NOT NULL,
+        source_run_id TEXT NOT NULL,
+        schedule_json TEXT,
+        last_run_at TEXT,
+        created_at TEXT NOT NULL,
+        UNIQUE(name, version)
+    );
+    CREATE INDEX templates_name ON templates(name, version)
+    """,
 ]
 
 

@@ -107,6 +107,33 @@ export function registerIpcHandlers(opts: { devServerUrl?: string; secrets: Secr
     await hub.respondApproval(approvalId, decision)
     return { ok: true }
   })
+  handle('templates:list', async () => (await hub.listTemplates()) as IpcResponse<'templates:list'>)
+  handle('templates:create', async ({ runId, name }) => (await hub.createTemplate(runId, name)) as IpcResponse<'templates:create'>)
+  handle('templates:run', async ({ templateId, folderId, fileIds, outFolderId }) => {
+    const overrides: Record<string, unknown> = {}
+    if (folderId) {
+      const folder = pickedFolders.get(folderId)
+      if (!folder) throw new Error('Bitte den Ordner erneut auswählen')
+      overrides['folder'] = folder
+    }
+    if (outFolderId) {
+      const out = pickedFolders.get(outFolderId)
+      if (!out) throw new Error('Bitte den Zielordner erneut auswählen')
+      overrides['outFolder'] = out
+    }
+    if (fileIds?.length) {
+      const files = fileIds.map((id) => pickedFiles.get(id))
+      if (files.some((f) => !f)) throw new Error('Bitte die Dateien erneut auswählen')
+      overrides['files'] = files
+    }
+    return hub.runTemplate(templateId, overrides)
+  })
+  handle('templates:schedule', async ({ templateId, schedule }) => (await hub.scheduleTemplate(templateId, schedule)) as IpcResponse<'templates:schedule'>)
+  handle('templates:delete', async ({ templateId }) => {
+    await hub.deleteTemplate(templateId)
+    return { ok: true }
+  })
+
   handle('files:reveal', ({ artifactId }) => {
     const path = hub.artifactPath(artifactId)
     if (!path) return { ok: false }

@@ -81,6 +81,27 @@ export type CreateTask = z.infer<typeof CreateTaskSchema>
 
 const Ok = z.object({ ok: z.boolean() })
 
+export const ScheduleSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('daily'), time: z.string().regex(/^\d{1,2}:\d{2}$/) }),
+  z.object({ type: z.literal('interval'), minutes: z.number().int().min(15).max(10080) })
+])
+export type Schedule = z.infer<typeof ScheduleSchema>
+
+export const TemplateSchema = z.object({
+  templateId: z.string(),
+  name: z.string(),
+  version: z.number(),
+  versions: z.number(),
+  workflow: z.string(),
+  input: z.record(z.string(), z.unknown()),
+  capabilities: z.array(z.string()),
+  sourceRunId: z.string(),
+  schedule: ScheduleSchema.nullable(),
+  lastRunAt: z.string().nullable(),
+  createdAt: z.string()
+})
+export type Template = z.infer<typeof TemplateSchema>
+
 export const IPC_CHANNELS = {
   'app:getInfo': { request: z.undefined(), response: AppInfoSchema },
   'secrets:status': { request: z.undefined(), response: SecretStatusSchema },
@@ -96,7 +117,20 @@ export const IPC_CHANNELS = {
   'tasks:create': { request: CreateTaskSchema, response: z.object({ taskId: z.string(), runId: z.string() }) },
   'tasks:cancel': { request: z.object({ taskId: z.string().min(1) }), response: Ok },
   'approvals:respond': { request: z.object({ approvalId: z.string().min(1), decision: ApprovalDecisionSchema }), response: Ok },
-  'files:reveal': { request: z.object({ artifactId: z.string().min(1) }), response: Ok }
+  'files:reveal': { request: z.object({ artifactId: z.string().min(1) }), response: Ok },
+  'templates:list': { request: z.undefined(), response: z.array(TemplateSchema) },
+  'templates:create': { request: z.object({ runId: z.string().regex(/^run-[a-z0-9]+$/), name: z.string().trim().min(1).max(80) }), response: TemplateSchema },
+  'templates:run': {
+    request: z.object({
+      templateId: z.string().min(1),
+      folderId: z.string().optional(),
+      fileIds: z.array(z.string()).max(20).optional(),
+      outFolderId: z.string().optional()
+    }),
+    response: z.object({ taskId: z.string(), runId: z.string() })
+  },
+  'templates:schedule': { request: z.object({ templateId: z.string().min(1), schedule: ScheduleSchema.nullable() }), response: TemplateSchema },
+  'templates:delete': { request: z.object({ templateId: z.string().min(1) }), response: Ok }
 } as const
 
 /** Kanäle, auf denen der Main-Prozess an den Renderer sendet (kein invoke). */

@@ -11,4 +11,4 @@ def test_interrupted_runs_are_marked_failed(data_dir):
     ev = m2.bus.replay(0, "run-1")[-1]
     assert ev.type == "run_failed" and "beendet" in ev.payload["error"]
     assert m2.db.query_one("SELECT status, ended_at FROM runs WHERE id='run-1'")["status"] == "failed"
-    assert m2.db.schema_version == 1
+    assert m2.db.schema_version == 2
