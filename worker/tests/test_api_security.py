@@ -1,3 +1,5 @@
+import time
+
 import pytest
 from starlette.websockets import WebSocketDisconnect
 
@@ -45,6 +47,13 @@ def test_websocket_requires_auth_and_replays(api, folder):
             msgs.append(m)
         assert [m["seq"] for m in msgs] == sorted(m["seq"] for m in msgs)
         assert any(m["type"] == "approval_requested" for m in msgs)
+        # Sauber trennen und warten, bis der Server aufgeräumt hat: Der Testclient bricht den
+        # Server-Task sonst direkt nach dem Schließen ab (Zeitfenster-Fehler im Test, nicht im Produkt).
+        ws.close(1000)
+        end = time.monotonic() + 5
+        while api.manager.bus._subscribers and time.monotonic() < end:
+            time.sleep(0.01)
+        assert not api.manager.bus._subscribers, "Abo muss nach dem Trennen entfernt sein"
 
 
 def test_websocket_rejects_browser_origin(api):
