@@ -222,5 +222,7 @@ class PdfAnalysis(Workflow):
             f"{len(files) - failed} von {len(files)} PDF(s) ausgewertet"
             + (f", {failed} nicht lesbar" if failed else "")
             + (f", {scanned} ohne Textebene" if scanned else "")
-            + f". Tabelle ({len(rows) - 1} Zeilen) und Bericht geprüft: jede Datei ist referenziert."
+            + f". Tabelle ({len(rows) - 1} Zeilen) und Bericht geprüft: jede Datei ist referenziert.",
+            f"{len(files) - failed} PDF{'s' if len(files) - failed != 1 else ''} ausgewertet – deine Übersicht ist fertig."
+            + (f" {failed} konnte{'n' if failed != 1 else ''} nicht gelesen werden." if failed else ""),
         )

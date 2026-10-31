@@ -4,6 +4,7 @@ import { DemoBanner } from './components/layout/DemoBanner'
 import { ApprovalCenter } from './components/approvals/ApprovalCenter'
 import { useNexora, type Screen } from './state/store'
 import { Dashboard } from './screens/Dashboard'
+import { Home } from './screens/Home'
 import { Agents } from './screens/Agents'
 import { Automations } from './screens/Automations'
 import { Activity } from './screens/Activity'
@@ -11,12 +12,17 @@ import { Files } from './screens/Files'
 import { Settings } from './screens/Settings'
 
 const SCREENS: Record<Screen, () => React.JSX.Element> = {
-  dashboard: Dashboard,
+  dashboard: StartScreen,
   agents: Agents,
   automations: Automations,
   activity: Activity,
   files: Files,
   settings: Settings
+}
+
+/** Start: einfache Kundenansicht, technische Ansicht nur im Expertenmodus. */
+function StartScreen() {
+  return useNexora((s) => s.expertMode) ? <Dashboard /> : <Home />
 }
 
 export function App() {

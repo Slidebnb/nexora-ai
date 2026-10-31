@@ -74,7 +74,7 @@ export const PAYLOAD_SCHEMAS = {
     name: z.string(),
     uri: z.string().optional()
   }),
-  run_succeeded: z.object({ verification: z.string().min(1) }),
+  run_succeeded: z.object({ verification: z.string().min(1), summary: z.string().optional() }),
   run_failed: z.object({ error: z.string() }),
   run_cancelled: z.object({ reason: z.string().optional() }),
   cost_updated: z.object({ totalUsd: z.number().nonnegative() })

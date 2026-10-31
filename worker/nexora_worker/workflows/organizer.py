@@ -181,7 +181,7 @@ class OrganizeFolder(Workflow):
             for sid, title in (("plan", "Sortiervorschlag erstellen"), ("move", "Dateien verschieben"), ("verify", "Ergebnis prüfen")):
                 ctx.step_started(sid, title)
                 ctx.step_succeeded(sid, "nichts zu tun")
-            ctx.succeed(f"Geprüft: Im Ordner {root} liegen keine Dateien zum Sortieren. Es wurde nichts verändert.")
+            ctx.succeed(f"Geprüft: Im Ordner {root} liegen keine Dateien zum Sortieren. Es wurde nichts verändert.", "Keine Dateien zum Sortieren – nichts verändert.")
             return
 
         ctx.step_started("plan", "Sortiervorschlag erstellen")
@@ -257,7 +257,12 @@ class OrganizeFolder(Workflow):
             return
         ctx.step_succeeded("verify", "alle Dateien am Ziel")
         skipped = f" {len(journal['skipped'])} übersprungen (verändert/fehlend)." if journal["skipped"] else ""
-        ctx.succeed(f"{len(journal['entries'])}/{len(journal['entries'])} verschobene Dateien geprüft (Ziel vorhanden, Quelle leer, Größe gleich).{skipped} Undo-Protokoll gespeichert.")
+        moved = len(journal["entries"])
+        folders = len({Path(e["dst"]).parent.name for e in journal["entries"]})
+        ctx.succeed(
+            f"{moved}/{moved} verschobene Dateien geprüft (Ziel vorhanden, Quelle leer, Größe gleich).{skipped} Undo-Protokoll gespeichert.",
+            f"{moved} Datei{'en' if moved != 1 else ''} in {folders} Ordner sortiert." + (f" {len(journal['skipped'])} übersprungen." if journal["skipped"] else ""),
+        )
 
 
 class UndoInput(BaseModel):
@@ -347,4 +352,7 @@ class UndoOrganize(Workflow):
             ctx.fail(f"Verifikation fehlgeschlagen für {len(bad)} Datei(en)")
             return
         ctx.step_succeeded("verify", "alle Dateien am Ursprungsort")
-        ctx.succeed(f"{len(restored)} Dateien am Ursprungsort geprüft; {len(removed_dirs)} leere Unterordner entfernt.")
+        ctx.succeed(
+            f"{len(restored)} Dateien am Ursprungsort geprüft; {len(removed_dirs)} leere Unterordner entfernt.",
+            f"{len(restored)} Datei{'en' if len(restored) != 1 else ''} wieder an ihrem ursprünglichen Platz.",
+        )

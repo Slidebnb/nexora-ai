@@ -73,6 +73,8 @@ function ApiKeyRow({ provider, configured, disabled, onChange }: { provider: Pro
 
 export function Settings() {
   const demoMode = useNexora((s) => s.demoMode)
+  const expertMode = useNexora((s) => s.expertMode)
+  const setExpertMode = useNexora((s) => s.setExpertMode)
   const [status, setStatus] = useState<SecretStatus | null>(null)
   const [info, setInfo] = useState<AppInfo | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -119,6 +121,19 @@ export function Settings() {
           <button type="button" className="btn-secondary mt-3" onClick={demoMode ? exitDemo : enterDemo}>
             <FlaskConical className="size-4" aria-hidden /> {demoMode ? 'Demo-Modus beenden' : 'Demo-Modus starten'}
           </button>
+        </section>
+
+        <section className="panel p-5" aria-labelledby="expert-title">
+          <h2 id="expert-title" className="hud-label">Ansicht</h2>
+          <label className="mt-3 flex items-start gap-3 text-sm text-text">
+            <input type="checkbox" checked={expertMode} onChange={(e) => setExpertMode(e.target.checked)} className="mt-1 accent-[var(--color-accent)]" aria-label="Expertenansicht" />
+            <span>
+              Expertenansicht
+              <span className="block text-xs text-text-2">
+                Zeigt auf der Startseite das technische Kontrollzentrum: Ereignisprotokoll, Event-Stream, Kennzahlen und Agenten-Details.
+              </span>
+            </span>
+          </label>
         </section>
 
         <section className="panel p-5" aria-labelledby="data-title">

@@ -48,18 +48,20 @@ interface OrbitCoreProps {
   /** Fortschritt 0..1 des wichtigsten aktiven Laufs, null = unbekannt, undefined = kein Lauf. */
   progress?: number | null
   readouts: OrbitReadouts
+  /** Kompakt für die Startseite: ohne Messwerte und ohne Textüberlagerung */
+  compact?: boolean
 }
 
 const TAU = Math.PI * 2
 
-export function OrbitCore({ agents, progress, readouts }: OrbitCoreProps) {
+export function OrbitCore({ agents, progress, readouts, compact = false }: OrbitCoreProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const reduced = useReducedMotion()
   const state = overallState(agents)
   const active = agents.filter((a) => a.state === 'planning' || a.state === 'executing' || a.state === 'waiting').length
 
-  const scene = useRef({ agents, state, progress, readouts })
-  scene.current = { agents, state, progress, readouts }
+  const scene = useRef({ agents, state, progress, readouts, compact })
+  scene.current = { agents, state, progress, readouts, compact }
   const redraw = useRef<() => void>(() => undefined)
 
   useAnimationLoop(
@@ -112,11 +114,11 @@ export function OrbitCore({ agents, progress, readouts }: OrbitCoreProps) {
       }
 
       const draw = (ts: number) => {
-        const { agents: list, state: st, progress: prog, readouts: ro } = scene.current
+        const { agents: list, state: st, progress: prog, readouts: ro, compact: small } = scene.current
         const col = STATE_COLOR[st]
         const cx = w / 2
         const cy = h / 2
-        const base = Math.max(40, Math.min(w, h) / 2 - 34) // Rand für Labels
+        const base = Math.max(30, Math.min(w, h) / 2 - (small ? 6 : 34)) // Rand für Labels
         const t = phase
         ctx.clearRect(0, 0, w, h)
 
@@ -157,7 +159,7 @@ export function OrbitCore({ agents, progress, readouts }: OrbitCoreProps) {
         for (let i = 0; i < 8; i++) tick(cx, cy, r3 - 10, r3 + 5, (TAU / 8) * i + t * 0.22, 1, 0.55)
         const labels = [`AKTIV ${ro.active}`, `FREIGABE ${ro.pendingApprovals}`, ro.steps, ro.cost]
         const fs = Math.max(9, Math.round(base * 0.06))
-        labels.forEach((l, i) => {
+        if (!small) labels.forEach((l, i) => {
           // Diagonal, damit die Satelliten (oben/rechts/unten/links) frei bleiben
           const a = (TAU / 4) * i - (3 * Math.PI) / 4
           text(l, cx + Math.cos(a) * (r3 + 26), cy + Math.sin(a) * (r3 + 26), fs, 0.65)
@@ -234,7 +236,7 @@ export function OrbitCore({ agents, progress, readouts }: OrbitCoreProps) {
         ctx.fill()
 
         // 8. Agenten als Satelliten auf dem Segmentring
-        list.forEach((agent, i) => {
+        if (!small) list.forEach((agent, i) => {
           const a = (i / Math.max(1, list.length)) * TAU - Math.PI / 2 + t * 0.05
           const x = cx + Math.cos(a) * r2
           const y = cy + Math.sin(a) * r2
@@ -278,6 +280,7 @@ export function OrbitCore({ agents, progress, readouts }: OrbitCoreProps) {
   return (
     <div className="relative size-full">
       <canvas ref={canvasRef} aria-hidden className="absolute inset-0" />
+      {!compact && (
       <div className="pointer-events-none absolute left-1 top-0 flex flex-col" aria-live="polite">
         <span className="hud-label">System</span>
         <span className="mt-0.5 text-base font-semibold text-text">{AGENT_STATE_LABEL[state]}</span>
@@ -285,6 +288,7 @@ export function OrbitCore({ agents, progress, readouts }: OrbitCoreProps) {
           {agents.length === 0 ? 'Keine Agenten aktiv' : `${active} von ${agents.length} Agenten aktiv`}
         </span>
       </div>
+      )}
     </div>
   )
 }

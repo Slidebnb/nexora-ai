@@ -12,7 +12,7 @@ import { selectPendingApprovals } from '../../state/selectors'
 import { cx } from '../../lib/format'
 
 const NAV: { id: Screen; label: string; icon: typeof Bot }[] = [
-  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { id: 'dashboard', label: 'Start', icon: LayoutDashboard },
   { id: 'agents', label: 'Agenten', icon: Bot },
   { id: 'automations', label: 'Automationen', icon: Workflow },
   { id: 'activity', label: 'Aktivitäten', icon: Activity },

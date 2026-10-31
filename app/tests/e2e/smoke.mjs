@@ -81,7 +81,8 @@ const step = async (name, fn) => {
 
 try {
   await step('Start: echter Worker verbindet sich', async () => {
-    await win.getByText('Worker: verbunden').waitFor({ timeout: 30_000 })
+    await win.getByText('Bereit', { exact: true }).waitFor({ timeout: 30_000 })
+    await win.getByRole('heading', { name: 'Was soll ich für dich erledigen?' }).waitFor()
     assert.equal(await win.getByText('DEMO-MODUS', { exact: true }).count(), 0)
     await win.screenshot({ path: join(shots, '01-dashboard-live.png') })
   })
@@ -93,7 +94,41 @@ try {
     }
     await win.getByText(/Sichere Speicherung/).waitFor()
     await win.screenshot({ path: join(shots, '02-einstellungen.png') })
-    await nav('Dashboard')
+    await nav('Start')
+  })
+
+  await step('KUNDE: Startseite → „Ordner aufräumen“ → bestätigen → Ergebnis → Rückgängig', async () => {
+    await nav('Start')
+    await win.getByRole('button', { name: /Ordner aufräumen/ }).click()
+    const wizard = win.getByRole('dialog', { name: 'Ordner aufräumen' })
+    await wizard.getByRole('button', { name: 'Ordner wählen' }).click()
+    await wizard.getByTestId('picked-folder').getByText(folder).waitFor()
+    await wizard.getByLabel('Erlaubnis für diese Aufgabe').check()
+    await wizard.getByRole('button', { name: 'Aufgabe starten' }).click()
+    const dlg = win.getByRole('alertdialog')
+    await dlg.getByText('Dateien verschieben', { exact: true }).waitFor({ timeout: 15_000 })
+    assert.deepEqual(listing(), [...original].sort(), 'vor der Bestätigung unverändert')
+    await win.screenshot({ path: join(shots, '02b-kunde-freigabe.png') })
+    await dlg.getByRole('button', { name: 'Erlauben' }).click()
+    const doneList = win.getByRole('region', { name: 'Zuletzt erledigt' })
+    await win.getByRole('heading', { name: 'Zuletzt erledigt' }).waitFor()
+    await win.getByText('5 Dateien in 5 Ordner sortiert.').waitFor({ timeout: 15_000 })
+    assert.ok(listing().every((f) => f.includes('/')))
+    await win.screenshot({ path: join(shots, '02c-kunde-fertig.png') })
+    await win.getByRole('button', { name: 'Rückgängig machen' }).click()
+    await win.getByRole('alertdialog').getByRole('button', { name: 'Erlauben' }).click()
+    const deadline = Date.now() + 15_000
+    while (listing().some((f) => f.includes('/')) && Date.now() < deadline) await new Promise((r) => setTimeout(r, 200))
+    assert.deepEqual(listing(), [...original].sort(), 'Rückgängig stellt alles wieder her')
+    void doneList
+  })
+
+  await step('Expertenansicht einschalten (technisches Kontrollzentrum)', async () => {
+    await nav('Einstellungen')
+    await win.getByLabel('Expertenansicht').check()
+    await nav('Start')
+    await win.getByTestId('orbit-panel').waitFor()
+    await win.getByText('Worker: verbunden').waitFor()
   })
 
   await step('LIVE: Ordner wählen, Erlaubnis geben, Aufgabe starten', async () => {
@@ -135,7 +170,7 @@ try {
   })
 
   await step('LIVE: Ablehnen verändert nichts', async () => {
-    await nav('Dashboard')
+    await nav('Start')
     await win.getByLabel('Erlaubnis für diese Aufgabe').check()
     await win.getByRole('button', { name: 'Aufgabe starten' }).click()
     const dlg = win.getByRole('alertdialog')
@@ -163,7 +198,7 @@ try {
   })
 
   await step('LIVE: PDF-Analyse lokal mit Tabelle und Bericht', async () => {
-    await nav('Dashboard')
+    await nav('Start')
     await win.getByLabel('Vorlage').selectOption('pdf')
     await win.getByRole('button', { name: 'PDFs wählen' }).click()
     await win.getByTestId('picked-files').getByText('Angebot.pdf').waitFor()
@@ -246,7 +281,7 @@ try {
   })
 
   await step('Kein Überlauf und keine Überlappung bei 1024×640', async () => {
-    await nav('Dashboard')
+    await nav('Start')
     await win.setViewportSize({ width: 1024, height: 640 })
     const overflow = () => win.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
     assert.equal(await overflow(), 0)
@@ -267,7 +302,7 @@ try {
     await nav('Aktivitäten')
     await win.locator('tbody tr').first().waitFor()
     assert.equal(await win.locator('tbody').getByText('DEMO', { exact: true }).count(), 0)
-    assert.equal(await win.locator('tbody tr').count(), 7)
+    assert.equal(await win.locator('tbody tr').count(), 9)
   })
 
   await step('Keine Konsolenfehler', async () => {

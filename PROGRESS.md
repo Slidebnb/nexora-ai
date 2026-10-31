@@ -106,5 +106,16 @@ Außerdem: Berechtigungen je Aufgabe mit ausdrücklicher Zustimmung (Cloud-KI nu
 - **Rechtstexte** anwaltlich prüfen lassen; Marken- und Domainprüfung „NEXORA AI“
 - Pilot mit 10–20 Nutzern durchführen und auswerten
 
+## Kundenfreundliche Oberfläche (2026-10-31) ✅
+
+**Implementiert**
+- **Startseite „Was soll ich für dich erledigen?“:** vier große Aufgabenkarten (Ordner aufräumen, Webseiten vergleichen, PDFs zusammenfassen, E-Mail-Entwürfe schreiben) mit je einem Satz zum Nutzen; „Gespeicherte Aufgaben wiederholen“
+- **Geführter Assistent** je Aufgabe: Auswählen → Erlauben → Starten, ohne Fachbegriffe
+- **„Läuft gerade“** in Klartext („Schritt 2 von 4: …“, „Wartet auf deine Bestätigung“), **„Zuletzt erledigt“** mit kurzem Ergebnissatz aus echten Zahlen, „Ergebnis anzeigen“ und „Rückgängig machen“
+- Freigabe-Fenster mit „Wo / Was genau / Was passiert“, Statusleiste „Bereit · Läuft auf deinem PC“
+- **Expertenansicht** (Einstellungen → Ansicht): technisches Kontrollzentrum mit Ereignisprotokoll, Event-Stream, Kennzahlen und HUD; standardmäßig aus
+
+**Teststatus:** E2E 19 Schritte grün, darunter der komplette Kundenweg auf der Startseite mit Prüfung auf der Festplatte; gepackte App startet mit dem neuen Ablauf; Worker 49 und Unit 55 Tests grün.
+
 **Nächster Schritt**
 Pilot nach `docs/PILOT.md`. Phase 5 (Recorder/Replay, weitere Integrationen, Teamfunktionen …) laut Masterplan erst nach positiver Beta.

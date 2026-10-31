@@ -16,6 +16,7 @@ export function TopBar() {
   const rightOpen = useNexora((s) => s.rightPanelOpen)
   const screen = useNexora((s) => s.screen)
   const worker = useNexora((s) => s.worker)
+  const expert = useNexora((s) => s.expertMode)
   const [now, setNow] = useState(() => new Date())
 
   useEffect(() => {
@@ -25,16 +26,20 @@ export function TopBar() {
 
   const hasActive = activeRuns.length > 0
   const WorkerIcon = worker.state === 'connected' ? Wifi : worker.state === 'starting' ? Loader2 : WifiOff
-  const workerLabel = { connected: 'verbunden', starting: 'startet …', disconnected: 'nicht verbunden', error: 'Fehler' }[worker.state]
+  const workerLabel = expert
+    ? `Worker: ${{ connected: 'verbunden', starting: 'startet …', disconnected: 'nicht verbunden', error: 'Fehler' }[worker.state]}`
+    : { connected: 'Bereit', starting: 'Startet …', disconnected: 'Nicht bereit', error: 'Problem beim Start' }[worker.state]
 
   return (
     <header className="flex h-14 shrink-0 items-center gap-5 border-b border-line bg-base-2/80 px-5">
       <div className="flex items-baseline gap-3">
         <h1 className="text-base font-semibold tracking-[0.25em] text-text">NEXORA</h1>
         {/* Breadcrumb nach cyberpunk-dashboard (app/page.tsx) */}
-        <span className="text-xs text-text-2 max-xl:hidden">
-          COMMAND / <span className="text-accent-hi">{SCREEN_LABEL[screen].toUpperCase()}</span>
-        </span>
+        {expert && (
+          <span className="text-xs text-text-2 max-xl:hidden">
+            COMMAND / <span className="text-accent-hi">{SCREEN_LABEL[screen].toUpperCase()}</span>
+          </span>
+        )}
       </div>
 
       <div className="ml-2 flex items-center gap-4 whitespace-nowrap text-xs text-text-2">
@@ -42,15 +47,17 @@ export function TopBar() {
           className={`inline-flex items-center gap-1.5 ${worker.state === 'connected' ? 'text-success' : worker.state === 'error' ? 'text-danger' : ''}`}
           title={worker.message ?? 'Lokaler Worker (127.0.0.1)'}
         >
-          <WorkerIcon className={`size-3.5 ${worker.state === 'starting' ? 'motion-safe:animate-spin' : ''}`} aria-hidden /> Worker: {workerLabel}
+          <WorkerIcon className={`size-3.5 ${worker.state === 'starting' ? 'motion-safe:animate-spin' : ''}`} aria-hidden /> {workerLabel}
         </span>
-        <span className="inline-flex items-center gap-1.5" title="Es ist keine Cloud-Verarbeitung aktiv.">
-          <HardDrive className="size-3.5" aria-hidden /> <span className="max-xl:hidden">Verarbeitung:</span> lokal
+        <span className="inline-flex items-center gap-1.5" title="Deine Daten bleiben auf deinem PC, außer du erlaubst ausdrücklich Cloud-KI.">
+          <HardDrive className="size-3.5" aria-hidden /> {expert ? <><span className="max-xl:hidden">Verarbeitung:</span> lokal</> : 'Läuft auf deinem PC'}
         </span>
-        <span className="inline-flex items-center gap-1.5" title="Summe aus cost_updated-Events">
+        {(expert || kpis.costUsd > 0) && (
+        <span className="inline-flex items-center gap-1.5" title="Summe der von den KI-Anbietern gemeldeten Kosten">
           <Cpu className="size-3.5" aria-hidden /> <span className="max-xl:hidden">API-Kosten:</span> {formatUsd(kpis.costUsd)}
           {demoMode && kpis.costUsd > 0 && <span className="text-warning">(simuliert)</span>}
         </span>
+        )}
       </div>
 
       <div className="ml-auto flex items-center gap-2">

@@ -193,4 +193,7 @@ class DraftEmails(Workflow):
             return
         ctx.artifact("file", written[0].name, written[0])
         ctx.step_succeeded("verify", "Empfänger, Betreff und Entwurfskennzeichen geprüft")
-        ctx.succeed(f"{len(written)} Entwürfe in {out} gespeichert und geprüft (Empfänger, Betreff, X-Unsent). Nichts wurde versendet.")
+        ctx.succeed(
+            f"{len(written)} Entwürfe in {out} gespeichert und geprüft (Empfänger, Betreff, X-Unsent). Nichts wurde versendet.",
+            f"{len(written)} Entwurf{'e' if len(written) != 1 else ''} gespeichert – nichts wurde gesendet.",
+        )

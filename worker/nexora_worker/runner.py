@@ -92,10 +92,11 @@ class RunContext:
             raise RunCancelled()
         return decision
 
-    def succeed(self, verification: str) -> None:
+    def succeed(self, verification: str, summary: str = "") -> None:
+        """verification: nachprüfbarer Prüfbericht; summary: kurzer Satz für Kunden (aus denselben echten Zahlen)."""
         if not verification.strip():
             raise WorkflowError("Erfolg ohne Verifikation ist nicht zulässig")
-        self._emit("run_succeeded", "succeeded", {"verification": verification})
+        self._emit("run_succeeded", "succeeded", {"verification": verification, **({"summary": summary} if summary else {})})
         self.finished = True
 
     def fail(self, error: str) -> None:

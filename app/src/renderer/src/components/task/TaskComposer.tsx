@@ -7,11 +7,19 @@ import { cleanError } from '../../lib/actions'
 import { CAPABILITY_LABEL } from '@shared/ipc-contract'
 import { buildRequest, LiveForm } from './LiveForms'
 
+interface TaskComposerProps {
+  /** Feste Vorlage (Assistent auf der Startseite) – ohne Auswahlliste */
+  fixedWorkflowId?: string
+  /** Kundenansicht: weniger Fachbegriffe */
+  simple?: boolean
+  onStarted?: () => void
+}
+
 /** Startet echte Aufgaben über den Worker (Live) oder simulierte Abläufe (Demo). */
-export function TaskComposer() {
+export function TaskComposer({ fixedWorkflowId, simple = false, onStarted }: TaskComposerProps = {}) {
   const demoMode = useNexora((s) => s.demoMode)
   const worker = useNexora((s) => s.worker)
-  const [workflowId, setWorkflowId] = useState(WORKFLOWS[0]!.id)
+  const [workflowId, setWorkflowId] = useState(fixedWorkflowId ?? WORKFLOWS[0]!.id)
   const [text, setText] = useState('')
   const folder = useNexora((s) => s.pickedFolder)
   const [consent, setConsent] = useState(false)
@@ -36,6 +44,7 @@ export function TaskComposer() {
     try {
       await window.nexora.createTask(built.request)
       setConsent(false)
+      onStarted?.()
     } catch (e) {
       setError(cleanError(e))
     } finally {
@@ -49,15 +58,19 @@ export function TaskComposer() {
   return (
     <form
       data-testid="task-composer"
-      className="panel flex min-w-0 flex-col gap-3 p-4"
+      className={simple ? 'flex min-w-0 flex-col gap-4' : 'panel flex min-w-0 flex-col gap-3 p-4'}
       aria-label="Neue Aufgabe"
       onSubmit={(e) => {
         e.preventDefault()
         if (demoMode) {
-          if (canStartDemo && workflow.demoScenarioId) startDemoScenario(workflow.demoScenarioId)
+          if (canStartDemo && workflow.demoScenarioId) {
+            startDemoScenario(workflow.demoScenarioId)
+            onStarted?.()
+          }
         } else void startLive()
       }}
     >
+      {!fixedWorkflowId && (
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="hud-label">Neue Aufgabe</h2>
         <label className="flex items-center gap-2 text-xs text-text-2">
@@ -78,6 +91,7 @@ export function TaskComposer() {
           </select>
         </label>
       </div>
+      )}
 
       {!demoMode && live ? (
         <LiveForm template={workflow} onError={setError} />
@@ -92,6 +106,7 @@ export function TaskComposer() {
         />
       )}
 
+      {!simple && (
       <div className="flex flex-wrap items-center gap-2 text-[11px] text-text-2">
         <span>Benötigt:</span>
         {workflow.capabilities.map((c) => (
@@ -100,13 +115,15 @@ export function TaskComposer() {
           </span>
         ))}
       </div>
+      )}
 
       {!demoMode && live && (
         <label className="flex items-start gap-2 text-xs text-text">
           <input type="checkbox" aria-label="Erlaubnis für diese Aufgabe" checked={consent} onChange={(e) => setConsent(e.target.checked)} className="mt-0.5 accent-[var(--color-accent)]" />
           <span>
-            Ich erlaube NEXORA für diese Aufgabe: {(built.request?.capabilities ?? live.capabilities).map((c) => CAPABILITY_LABEL[c]).join(', ')}. Jede
-            verändernde Aktion wird vorher einzeln zur Freigabe angezeigt.
+            {simple ? 'Ja, NEXORA darf diese Aufgabe erledigen' : 'Ich erlaube NEXORA für diese Aufgabe'}:{' '}
+            {(built.request?.capabilities ?? live.capabilities).map((c) => CAPABILITY_LABEL[c]).join(', ')}.{' '}
+            {simple ? 'Bevor etwas verändert wird, fragt NEXORA dich noch einmal.' : 'Jede verändernde Aktion wird vorher einzeln zur Freigabe angezeigt.'}
           </span>
         </label>
       )}
@@ -125,7 +142,9 @@ export function TaskComposer() {
           </p>
         )}
         {!demoMode && live && !workerReady && (
-          <p className="flex-1 text-xs text-warning">Worker ist nicht verbunden{worker.message ? `: ${worker.message}` : ''}.</p>
+          <p className="flex-1 text-xs text-warning">
+            {simple ? 'NEXORA startet noch – bitte einen Moment warten.' : `Worker ist nicht verbunden${worker.message ? `: ${worker.message}` : ''}.`}
+          </p>
         )}
         {demoMode && !workflow.demoScenarioId && <p className="flex-1 text-xs text-text-2">Für diese Vorlage gibt es noch keine Demo.</p>}
         {demoMode && workflow.demoScenarioId && <p className="flex-1 text-xs text-warning">Startet einen simulierten DEMO-Lauf.</p>}

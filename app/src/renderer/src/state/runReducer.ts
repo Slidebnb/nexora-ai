@@ -62,6 +62,8 @@ export interface RunState {
   costUsd: number
   error?: string
   verification?: string
+  /** Kurzer Ergebnissatz für Kunden (falls der Worker ihn liefert) */
+  summary?: string
   /** Events, die gegen den Vertrag verstoßen (z. B. Erfolg ohne Verifikation). */
   protocolErrors: string[]
 }
@@ -246,8 +248,8 @@ export function applyEvent(state: NexoraState, event: NexoraEvent): NexoraState 
       }
     }
     case 'run_succeeded': {
-      const { verification } = PAYLOAD_SCHEMAS.run_succeeded.parse(event.payload)
-      return withRun(next, { ...run, status: 'succeeded', verification, endedAt: event.timestamp, currentStepId: undefined })
+      const { verification, summary } = PAYLOAD_SCHEMAS.run_succeeded.parse(event.payload)
+      return withRun(next, { ...run, status: 'succeeded', verification, summary, endedAt: event.timestamp, currentStepId: undefined })
     }
     case 'run_failed': {
       const { error } = PAYLOAD_SCHEMAS.run_failed.parse(event.payload)

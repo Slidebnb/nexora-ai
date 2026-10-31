@@ -5,8 +5,16 @@ import { applyEvent, initialState, type NexoraState } from './runReducer'
 
 export type Screen = 'dashboard' | 'agents' | 'automations' | 'activity' | 'files' | 'settings'
 
+function readExpert(): boolean {
+  try {
+    return typeof localStorage !== 'undefined' && localStorage.getItem('nexora.expert') === '1'
+  } catch {
+    return false
+  }
+}
+
 export const SCREEN_LABEL: Record<Screen, string> = {
-  dashboard: 'Dashboard',
+  dashboard: 'Start',
   agents: 'Agenten',
   automations: 'Automationen',
   activity: 'Aktivitäten',
@@ -41,6 +49,10 @@ export interface NexoraStore {
   pickedFolder: PickedFolder | null
   /** Eingaben des Aufgabenfelds je Workflow (bleiben beim Bereichswechsel erhalten). */
   composer: ComposerDraft
+  /** Technische Ansicht (Ereignisprotokoll, Event-Stream, Kennzahlen). Standard: aus. */
+  expertMode: boolean
+  /** Geöffneter Aufgaben-Assistent (Vorlagen-ID aus data/workflows) */
+  wizard: string | null
   /** Nimmt ein Event an. Demo-Events werden nur im Demo-Modus akzeptiert. */
   ingest: (event: unknown) => boolean
   setDemoMode: (on: boolean) => void
@@ -50,6 +62,8 @@ export interface NexoraStore {
   setWorker: (worker: WorkerConnection) => void
   setPickedFolder: (folder: PickedFolder | null) => void
   setComposer: (patch: Partial<ComposerDraft>) => void
+  setExpertMode: (on: boolean) => void
+  setWizard: (id: string | null) => void
 }
 
 /** Baut den Zustand nur aus Live-Events neu auf (Demo-Daten verschwinden vollständig). */
@@ -65,6 +79,8 @@ export const useNexora = create<NexoraStore>((set, get) => ({
   sidebarCollapsed: true,
   worker: { state: 'disconnected' },
   pickedFolder: null,
+  expertMode: readExpert(),
+  wizard: null,
   composer: { question: '', urls: '', briefing: '', recipients: '', subject: '', files: [], outFolder: null, useCloudAi: false },
   ingest: (raw) => {
     const parsed = NexoraEventSchema.safeParse(raw)
@@ -81,5 +97,14 @@ export const useNexora = create<NexoraStore>((set, get) => ({
   toggleSidebar: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
   setWorker: (worker) => set({ worker }),
   setPickedFolder: (pickedFolder) => set({ pickedFolder }),
-  setComposer: (patch) => set((s) => ({ composer: { ...s.composer, ...patch } }))
+  setComposer: (patch) => set((s) => ({ composer: { ...s.composer, ...patch } })),
+  setExpertMode: (on) => {
+    try {
+      localStorage.setItem('nexora.expert', on ? '1' : '0')
+    } catch {
+      /* ohne Speicher: nur für diese Sitzung */
+    }
+    set({ expertMode: on })
+  },
+  setWizard: (wizard) => set({ wizard })
 }))

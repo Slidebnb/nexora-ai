@@ -118,5 +118,6 @@ class WebResearch(Workflow):
         ctx.succeed(
             f"{len(ok)} von {len(data.urls)} Quellen gelesen ({engine.label})"
             + (f", {failed} fehlgeschlagen" if failed else "")
-            + f". CSV mit {len(rows) - 1} Zeilen geschrieben und erneut eingelesen."
+            + f". CSV mit {len(rows) - 1} Zeilen geschrieben und erneut eingelesen.",
+            f"{len(ok)} von {len(data.urls)} Webseiten ausgewertet – deine Tabelle ist fertig.",
         )
