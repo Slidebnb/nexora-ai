@@ -192,6 +192,7 @@ Masterplan-Module „SystemStatus: echte Worker-/Browser-/Modellverbindung“ un
   - Echter Editor-Test unter Windows (CI).
 - Unit: 65 Tests. E2E: 25 Schritte (Linux und Windows).
 - Gebündelter Worker unter Windows: pywinauto lädt (CI-Lauf 25).
+- Echter Editor-Test unter Windows **ausgeführt, nicht übersprungen** (CI-Lauf 26, `pytest -rs`): 68 bestanden, 5 übersprungen. Die übersprungenen Tests sind nur für andere Systeme gedacht oder brauchen OCR, Symlinks bzw. den gebauten Sidecar.
 - Dabei gefundener Fehler: die Plus-Taste („+“, „Strg++“) wurde als Trennzeichen verschluckt. Behoben, mit Test.
 
 **Nicht geprüft / offen**
