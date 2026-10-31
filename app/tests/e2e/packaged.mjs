@@ -32,6 +32,7 @@ try {
   await app.evaluate(({ dialog }, p) => {
     dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [p] })
   }, folder)
+  await win.getByRole('button', { name: 'Überspringen' }).click() // Begrüßung beim Erststart
   await win.getByRole('button', { name: /Ordner aufräumen/ }).click()
   await win.getByRole('button', { name: 'Ordner wählen' }).click()
   await win.getByLabel('Erlaubnis für diese Aufgabe').check()

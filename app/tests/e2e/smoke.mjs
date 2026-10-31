@@ -42,7 +42,7 @@ const webBase = `http://127.0.0.1:${web.address().port}`
 
 const args = [appDir]
 if (process.platform === 'linux') args.push('--no-sandbox')
-const app = await _electron.launch({ executablePath: require('electron'), args, cwd: appDir, env: { ...process.env, NEXORA_USER_DATA: userData, NEXORA_ALLOW_PRIVATE_URLS: '1' } })
+const app = await _electron.launch({ executablePath: require('electron'), args, cwd: appDir, env: { ...process.env, NEXORA_USER_DATA: userData, NEXORA_ALLOW_PRIVATE_URLS: '1', NEXORA_PRACTICE_DIR: sandbox } })
 const errors = []
 const win = await app.firstWindow()
 win.on('console', (m) => m.type() === 'error' && errors.push(m.text()))
@@ -87,6 +87,27 @@ try {
     await win.screenshot({ path: join(shots, '01-dashboard-live.png') })
   })
 
+  await step('ERSTSTART: Begrüßung → Übungsordner → aufräumen (erster echter Erfolg)', async () => {
+    const onb = win.getByRole('dialog', { name: 'Willkommen bei NEXORA' })
+    await onb.waitFor({ timeout: 10_000 })
+    await win.screenshot({ path: join(shots, '00-onboarding.png') })
+    await win.getByRole('button', { name: 'Weiter' }).click()
+    await win.getByRole('button', { name: 'Weiter' }).click()
+    await win.getByRole('button', { name: 'Übungsordner anlegen und loslegen' }).click()
+    const wizard = win.getByRole('dialog', { name: 'Ordner aufräumen' })
+    await wizard.getByTestId('picked-folder').getByText('NEXORA Übungsordner').waitFor()
+    const practice = join(sandbox, 'NEXORA Übungsordner')
+    const before = readdirSync(practice).length
+    assert.ok(before > 0)
+    await wizard.getByLabel('Erlaubnis für diese Aufgabe').check()
+    await wizard.getByRole('button', { name: 'Aufgabe starten' }).click()
+    await win.getByRole('alertdialog').getByRole('button', { name: 'Erlauben' }).click()
+    await win.getByText(new RegExp(`^${before} Dateien in \\d+ Ordner sortiert\\.$`)).waitFor({ timeout: 15_000 })
+    const loose = readdirSync(practice, { withFileTypes: true }).filter((d) => d.isFile())
+    assert.equal(loose.length, 0, 'alle Übungsdateien liegen in Unterordnern')
+    await win.screenshot({ path: join(shots, '00b-onboarding-erfolg.png') })
+  })
+
   await step('Alle sechs Bereiche erreichbar', async () => {
     for (const name of ['Agenten', 'Automationen', 'Aktivitäten', 'Dateien', 'Einstellungen']) {
       await nav(name)
@@ -115,7 +136,7 @@ try {
     await win.getByText('5 Dateien in 5 Ordner sortiert.').waitFor({ timeout: 15_000 })
     assert.ok(listing().every((f) => f.includes('/')))
     await win.screenshot({ path: join(shots, '02c-kunde-fertig.png') })
-    await win.getByRole('button', { name: 'Rückgängig machen' }).click()
+    await win.locator('li', { hasText: 'Downloads-Test' }).getByRole('button', { name: 'Rückgängig machen' }).click()
     await win.getByRole('alertdialog').getByRole('button', { name: 'Erlauben' }).click()
     const deadline = Date.now() + 15_000
     while (listing().some((f) => f.includes('/')) && Date.now() < deadline) await new Promise((r) => setTimeout(r, 200))
@@ -158,14 +179,15 @@ try {
 
   await step('LIVE: Rückgängig mit Freigabe stellt Originalzustand her', async () => {
     await nav('Aktivitäten')
-    await win.getByRole('button', { name: 'Rückgängig' }).click()
+    const testRows = win.locator('tbody tr', { hasText: 'Downloads-Test' })
+    await testRows.getByRole('button', { name: 'Rückgängig' }).click()
     const dlg = win.getByRole('alertdialog')
     await dlg.getByText('Sortierung rückgängig machen', { exact: true }).waitFor({ timeout: 15_000 })
     await dlg.getByRole('button', { name: 'Erlauben' }).click()
     await win.getByText(/5 Dateien am Ursprungsort geprüft/).first().waitFor({ timeout: 15_000 })
     assert.deepEqual(listing(), [...original].sort())
     assert.equal(existsSync(join(folder, 'Bilder')), false)
-    assert.equal(await win.getByRole('button', { name: 'Rückgängig' }).count(), 0, 'kein zweites Undo anbieten')
+    assert.equal(await testRows.getByRole('button', { name: 'Rückgängig' }).count(), 0, 'kein zweites Undo anbieten')
     await win.screenshot({ path: join(shots, '05-live-undo.png') })
   })
 
@@ -302,7 +324,7 @@ try {
     await nav('Aktivitäten')
     await win.locator('tbody tr').first().waitFor()
     assert.equal(await win.locator('tbody').getByText('DEMO', { exact: true }).count(), 0)
-    assert.equal(await win.locator('tbody tr').count(), 9)
+    assert.equal(await win.locator('tbody tr').count(), 10)
   })
 
   await step('Keine Konsolenfehler', async () => {

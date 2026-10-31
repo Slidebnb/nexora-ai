@@ -2,6 +2,7 @@ import { Sidebar } from './components/layout/Sidebar'
 import { TopBar } from './components/layout/TopBar'
 import { DemoBanner } from './components/layout/DemoBanner'
 import { ApprovalCenter } from './components/approvals/ApprovalCenter'
+import { Onboarding } from './components/onboarding/Onboarding'
 import { useNexora, type Screen } from './state/store'
 import { Dashboard } from './screens/Dashboard'
 import { Home } from './screens/Home'
@@ -39,6 +40,7 @@ export function App() {
         </main>
       </div>
       <ApprovalCenter />
+      <Onboarding />
     </div>
   )
 }

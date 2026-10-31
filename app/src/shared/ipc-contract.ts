@@ -83,6 +83,14 @@ export type CreateTask = z.infer<typeof CreateTaskSchema>
 
 const Ok = z.object({ ok: z.boolean() })
 
+export const THEMES = ['crimson', 'cyan', 'violet', 'minimal'] as const
+export const AppSettingsSchema = z.object({
+  onboarded: z.boolean(),
+  theme: z.enum(THEMES),
+  notifications: z.boolean()
+})
+export type AppSettings = z.infer<typeof AppSettingsSchema>
+
 export const LicenseStatusSchema = z.object({
   state: z.enum(['unconfigured', 'trial', 'active', 'expired', 'trial_over']),
   plan: z.string().optional(),
@@ -130,6 +138,9 @@ export const IPC_CHANNELS = {
   'tasks:cancel': { request: z.object({ taskId: z.string().min(1) }), response: Ok },
   'approvals:respond': { request: z.object({ approvalId: z.string().min(1), decision: ApprovalDecisionSchema }), response: Ok },
   'files:reveal': { request: z.object({ artifactId: z.string().min(1) }), response: Ok },
+  'settings:get': { request: z.undefined(), response: AppSettingsSchema },
+  'settings:update': { request: AppSettingsSchema.partial(), response: AppSettingsSchema },
+  'onboarding:practiceFolder': { request: z.undefined(), response: PickedFolderSchema },
   'license:status': { request: z.undefined(), response: LicenseStatusSchema },
   'license:activate': { request: z.object({ licenseKey: z.string().trim().regex(/^NXR(-[A-Za-z2-9]{5}){4}$/, 'Format: NXR-XXXXX-XXXXX-XXXXX-XXXXX') }), response: LicenseStatusSchema },
   'license:clear': { request: z.undefined(), response: LicenseStatusSchema },

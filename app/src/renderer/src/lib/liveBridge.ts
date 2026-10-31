@@ -9,7 +9,8 @@ export async function resyncFromWorker(): Promise<void> {
 }
 
 export function initLiveBridge(): () => void {
-  const { ingest, setWorker } = useNexora.getState()
+  const { ingest, setWorker, setSettings } = useNexora.getState()
+  void window.nexora.getSettings().then(setSettings, () => undefined)
   const offStatus = window.nexora.onWorkerStatus(setWorker)
   const offEvent = window.nexora.onWorkerEvent((e) => {
     ingest(e)

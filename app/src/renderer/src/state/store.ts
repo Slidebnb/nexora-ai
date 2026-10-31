@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { NexoraEventSchema, type NexoraEvent } from '@shared/events'
-import type { PickedFile, PickedFolder } from '@shared/ipc-contract'
+import type { AppSettings, PickedFile, PickedFolder } from '@shared/ipc-contract'
 import { applyEvent, initialState, type NexoraState } from './runReducer'
 
 export type Screen = 'dashboard' | 'agents' | 'automations' | 'activity' | 'files' | 'settings'
@@ -53,6 +53,8 @@ export interface NexoraStore {
   expertMode: boolean
   /** Geöffneter Aufgaben-Assistent (Vorlagen-ID aus data/workflows) */
   wizard: string | null
+  /** App-Einstellungen aus dem Main-Prozess (null bis geladen) */
+  settings: AppSettings | null
   /** Nimmt ein Event an. Demo-Events werden nur im Demo-Modus akzeptiert. */
   ingest: (event: unknown) => boolean
   setDemoMode: (on: boolean) => void
@@ -64,6 +66,8 @@ export interface NexoraStore {
   setComposer: (patch: Partial<ComposerDraft>) => void
   setExpertMode: (on: boolean) => void
   setWizard: (id: string | null) => void
+  setSettings: (settings: AppSettings) => void
+  saveSettings: (patch: Partial<AppSettings>) => Promise<void>
 }
 
 /** Baut den Zustand nur aus Live-Events neu auf (Demo-Daten verschwinden vollständig). */
@@ -81,6 +85,7 @@ export const useNexora = create<NexoraStore>((set, get) => ({
   pickedFolder: null,
   expertMode: readExpert(),
   wizard: null,
+  settings: null,
   composer: { question: '', urls: '', briefing: '', recipients: '', subject: '', files: [], outFolder: null, useCloudAi: false },
   ingest: (raw) => {
     const parsed = NexoraEventSchema.safeParse(raw)
@@ -106,5 +111,9 @@ export const useNexora = create<NexoraStore>((set, get) => ({
     }
     set({ expertMode: on })
   },
-  setWizard: (wizard) => set({ wizard })
+  setWizard: (wizard) => set({ wizard }),
+  setSettings: (settings) => set({ settings }),
+  saveSettings: async (patch) => {
+    set({ settings: await window.nexora.updateSettings(patch) })
+  }
 }))

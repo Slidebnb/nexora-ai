@@ -3,6 +3,7 @@ import { app, BrowserWindow, session, shell } from 'electron'
 import { buildCsp, isAllowedNavigation, secureWebPreferences } from './security'
 import { createSecretStore, registerIpcHandlers } from './ipc'
 import { LICENSE_PUBLIC_KEY_PEM, LicenseManager } from './license'
+import { AppSettingsStore } from './appSettings'
 import { WorkerHub } from './worker/hub'
 import { resolveWorkerLaunch } from './worker/supervisor'
 
@@ -72,7 +73,8 @@ app.whenReady().then(() => {
     serverUrl: process.env['NEXORA_LICENSE_URL'] ?? 'https://license.nexora.example'
   })
   void license.refreshIfDue(secrets.get('license'))
-  registerIpcHandlers({ devServerUrl, secrets, hub, license })
+  const settings = new AppSettingsStore(join(app.getPath('userData'), 'settings.json'))
+  registerIpcHandlers({ devServerUrl, secrets, hub, license, settings })
   createWindow()
   hub.start()
 

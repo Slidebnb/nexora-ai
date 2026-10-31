@@ -6,6 +6,7 @@ import { isAllowedNavigation } from './security'
 import { SecretStore } from './secrets'
 import type { WorkerHub } from './worker/hub'
 import type { Feature, LicenseManager } from './license'
+import { createPracticeFolder, type AppSettingsStore } from './appSettings'
 
 function assertTrustedSender(event: IpcMainInvokeEvent, devServerUrl?: string): void {
   const url = event.senderFrame?.url
@@ -18,8 +19,8 @@ export function createSecretStore(): SecretStore {
   return new SecretStore(join(app.getPath('userData'), 'secrets.json'), safeStorage)
 }
 
-export function registerIpcHandlers(opts: { devServerUrl?: string; secrets: SecretStore; hub: WorkerHub; license: LicenseManager }): void {
-  const { devServerUrl, secrets, hub, license } = opts
+export function registerIpcHandlers(opts: { devServerUrl?: string; secrets: SecretStore; hub: WorkerHub; license: LicenseManager; settings: AppSettingsStore }): void {
+  const { devServerUrl, secrets, hub, license, settings } = opts
 
   /** Lizenzprüfung im Main-Prozess (der Renderer kann sie nicht umgehen). */
   function requireFeature(feature: Feature): void {
@@ -143,6 +144,16 @@ export function registerIpcHandlers(opts: { devServerUrl?: string; secrets: Secr
   handle('templates:schedule', async ({ templateId, schedule }) => {
     if (schedule) requireFeature('schedules')
     return (await hub.scheduleTemplate(templateId, schedule)) as IpcResponse<'templates:schedule'>
+  })
+  handle('settings:get', () => settings.get())
+  handle('settings:update', (patch) => settings.update(patch))
+  handle('onboarding:practiceFolder', () => {
+    // Testumgebung darf einen eigenen Basisordner setzen (nur Entwicklungsversion)
+    const base = (!app.isPackaged && process.env['NEXORA_PRACTICE_DIR']) || app.getPath('documents')
+    const path = createPracticeFolder(base)
+    const folderId = randomUUID()
+    pickedFolders.set(folderId, path)
+    return { folderId, name: basename(path), path }
   })
   handle('license:status', () => license.status())
   handle('license:activate', async ({ licenseKey }) => {
