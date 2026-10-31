@@ -374,6 +374,36 @@ try {
     assert.ok(listing().every((f) => f.includes('/')), `Dateien wurden über die Vorlage einsortiert: ${listing()}`)
   })
 
+  await step('Agenten, Aktivitäten, Dateien: Übersichten mit echten Zählwerten und Details', async () => {
+    await nav('Agenten')
+    const table = win.getByRole('region', { name: 'Agentenliste' })
+    await table.waitFor()
+    const done = Number(await win.getByRole('group', { name: 'Erledigt' }).locator('p').nth(1).textContent())
+    if (!(done >= 3)) throw new Error(`Erledigt-Zähler unplausibel: ${done}`)
+    await table.getByRole('button', { name: 'Sortierer' }).first().click()
+    const agentDialog = win.getByRole('dialog', { name: 'Sortierer' })
+    await agentDialog.waitFor()
+    await win.screenshot({ path: join(shots, '10-agenten-detail.png') })
+    await agentDialog.getByRole('button', { name: 'Schließen' }).click()
+
+    await nav('Aktivitäten')
+    await win.getByRole('group', { name: 'Erfolgsquote' }).waitFor()
+    await win.getByRole('button', { name: /Recherche:/ }).first().click()
+    const runDialog = win.getByRole('dialog', { name: /Recherche:/ })
+    await runDialog.getByText(/Schritte \(/).waitFor()
+    await runDialog.getByText('Recherche.csv').waitFor()
+    await win.screenshot({ path: join(shots, '11-vorgang-detail.png') })
+    await runDialog.getByRole('button', { name: 'Schließen' }).click()
+
+    await nav('Dateien')
+    await win.getByLabel('Ergebnisse durchsuchen').fill('Recherche.csv')
+    await win.getByText('Recherche.csv').first().waitFor()
+    await win.getByLabel('Ergebnisse durchsuchen').fill('gibt-es-nicht-xyz')
+    await win.getByText('Kein Ergebnis passt zur Suche.').waitFor()
+    await win.getByLabel('Ergebnisse durchsuchen').fill('')
+    await nav('Start')
+  })
+
   await step('DEMO: Ordner-Szenario mit Freigabe', async () => {
     await win.getByLabel('Vorlage').selectOption('wiederholen')
     await win.getByRole('button', { name: 'Demo-Modus öffnen' }).click()

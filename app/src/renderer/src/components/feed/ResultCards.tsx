@@ -5,17 +5,21 @@ import { formatTime } from '../../lib/format'
 import { DemoTag, EmptyState, Panel } from '../common/Panel'
 
 const ICON: Record<ArtifactKind, typeof FileText> = { table: Sheet, file: FileText, link: Link2, export: Download }
-const KIND: Record<ArtifactKind, string> = { table: 'Tabelle', file: 'Datei', link: 'Link', export: 'Export' }
+export const KIND: Record<ArtifactKind, string> = { table: 'Tabelle', file: 'Datei', link: 'Link', export: 'Export' }
 
-export function ResultCards({ limit }: { limit?: number }) {
+export function ResultCards({ limit, query = '', kind }: { limit?: number; query?: string; kind?: ArtifactKind }) {
   const artifacts = useNexora((s) => s.data.artifacts)
   const runs = useNexora((s) => s.data.runs)
-  const list = [...artifacts].reverse().slice(0, limit)
+  const q = query.trim().toLowerCase()
+  const list = [...artifacts]
+    .reverse()
+    .filter((a) => (!kind || a.kind === kind) && (!q || a.name.toLowerCase().includes(q) || (runs[a.runId]?.title ?? '').toLowerCase().includes(q)))
+    .slice(0, limit)
 
   return (
     <Panel title="Ergebnisse" bodyClassName="overflow-y-auto p-3">
       {list.length === 0 ? (
-        <EmptyState>Noch keine Ergebnisse.</EmptyState>
+        <EmptyState>{artifacts.length ? 'Kein Ergebnis passt zur Suche.' : 'Noch keine Ergebnisse.'}</EmptyState>
       ) : (
         <ul className="grid grid-cols-[minmax(0,1fr)] gap-2">
           {list.map((a) => {

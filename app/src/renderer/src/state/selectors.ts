@@ -52,6 +52,29 @@ export function selectAgents(state: NexoraState): AgentView[] {
   }))
 }
 
+export interface AgentStats {
+  runs: number
+  succeeded: number
+  failed: number
+  lastActive?: string
+}
+
+/** Echte Zählwerte je Agent über alle Vorgänge (für die Agenten-Übersicht). */
+export function selectAgentStats(state: NexoraState): Record<string, AgentStats> {
+  const out: Record<string, AgentStats> = {}
+  for (const runId of state.runOrder) {
+    const run = state.runs[runId]
+    if (!run?.agentId) continue
+    const s = (out[run.agentId] ??= { runs: 0, succeeded: 0, failed: 0 })
+    s.runs++
+    if (run.status === 'succeeded') s.succeeded++
+    if (run.status === 'failed') s.failed++
+    const t = run.endedAt ?? run.createdAt
+    if (!s.lastActive || t > s.lastActive) s.lastActive = t
+  }
+  return out
+}
+
 export function selectRuns(state: NexoraState): RunState[] {
   return state.runOrder.map((id) => state.runs[id]).filter((r): r is RunState => !!r)
 }

@@ -16,6 +16,7 @@ Die Übernahme erfolgte auf ausdrückliche Anweisung des Projektinhabers. Er hat
 | `app/src/renderer/src/components/hud/DataFlowLines.tsx` | ChatDSJ/evil-ai-viz @ cf22a87, `src/components/viz/DataFlowLines.tsx` | MIT (laut README) | Impulse je echtem Event, Farbe nach Eventart, Flug zur Mitte |
 | `app/src/renderer/src/components/hud/HexStream.tsx` | ChatDSJ/evil-ai-viz @ cf22a87, `src/components/viz/HexStream.tsx` | MIT (laut README) | echte Events statt Zufallsbytes; Text „Exfiltration“ entfernt |
 | `app/src/renderer/src/components/layout/Sidebar.tsx` | raheem-dotgit/cyberpunk-dashboard @ 8ec7ec7, `app/page.tsx` | MIT (laut README) | React/Vite statt Next.js; echter Worker-Status; Freigabe-Badge |
+| `components/common/Cyber.tsx`, `screens/Agents.tsx`, `screens/Activity.tsx` (Kennzahlen), `screens/Files.tsx`, `components/feed/RunDetail.tsx` | raheem-dotgit/cyberpunk-dashboard @ 8ec7ec7, `app/agent-network/page.tsx`, `app/operations/page.tsx`, `app/intelligence/page.tsx` | MIT (laut README) | Kennzahlkarten, Suche, Liste und Detail-Dialog mit echten Werten statt Mockzahlen; deutsche Texte; NEXORA-Farben |
 | `ActivityFeed.tsx` (Eintragsstil), `TopBar.tsx` (Breadcrumb) | raheem-dotgit/cyberpunk-dashboard @ 8ec7ec7, `app/command-center/page.tsx`, `app/page.tsx` | MIT (laut README) | echte Events statt Mockdaten |
 
 Zusätzlich aus ClawBridge (Apache-2.0, Copyright (c) 2026 RomaTek AI; Änderungen nach §4b in den Dateiköpfen vermerkt):
