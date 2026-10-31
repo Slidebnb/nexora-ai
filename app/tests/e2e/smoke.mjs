@@ -61,9 +61,18 @@ const web = createServer(async (req, res) => {
     const hasToolResult = msgs.some((m) => Array.isArray(m.content) && m.content.some((b) => b.type === 'tool_result'))
     const lastUser = [...msgs].reverse().find((m) => m.role === 'user' && typeof m.content === 'string')
     const userText = lastUser ? lastUser.content : ''
+    const usedTool = () => {
+      for (const m of msgs) if (Array.isArray(m.content)) for (const b of m.content) if (b.type === 'tool_use') return b.name
+      return ''
+    }
     let reply
     if (hasToolResult) {
-      reply = { content: [{ type: 'text', text: 'Laut den Quellen kostet der Tarif ab 9,99 Euro im Monat.' }], stop_reason: 'end_turn' }
+      const t = usedTool()
+      const text = t === 'email_entwurf' ? 'Ich habe den Entwurf gespeichert.' : t === 'web_recherche' ? 'Laut den Quellen kostet der Tarif ab 9,99 Euro im Monat.' : 'Erledigt.'
+      reply = { content: [{ type: 'text', text }], stop_reason: 'end_turn' }
+    } else if (/e-?mail|entwurf|schreib/i.test(userText)) {
+      const mail = (userText.match(/[^@\s]+@[^@\s]+\.[^@\s]+/) || ['kunde@example.com'])[0]
+      reply = { content: [{ type: 'tool_use', id: 'tu2', name: 'email_entwurf', input: { betreff: 'Angebot', text: 'Hallo, anbei unser Angebot. Viele Grüße, NEXORA', empfaenger: [mail] } }], stop_reason: 'tool_use' }
     } else if (/recherch|tarif|preis/i.test(userText)) {
       const urls = (userText.match(/https?:\/\/[^\s]+/g) || []).map((u) => u.replace(/[.,]$/, ''))
       reply = { content: [{ type: 'text', text: 'Ich schaue das nach.' }, { type: 'tool_use', id: 'tu1', name: 'web_recherche', input: { frage: 'Was kostet der Tarif pro Monat?', urls } }], stop_reason: 'tool_use' }
@@ -219,6 +228,19 @@ try {
     await win.getByText(/Recherchiert im Web/).waitFor({ timeout: 10_000 })
     await win.getByText('Laut den Quellen kostet der Tarif ab 9,99 Euro im Monat.').waitFor({ timeout: 20_000 })
     await win.screenshot({ path: join(shots, '02i-agent.png') })
+  })
+
+  await step('AGENT: KI erstellt einen E-Mail-Entwurf – erst nach Freigabe gespeichert', async () => {
+    await nav('Dateien')
+    await nav('Start')
+    const box = win.getByLabel('Nachricht an NEXORA')
+    await box.fill('Schreib einen E-Mail-Entwurf an kunde@example.com')
+    await box.press('Enter')
+    // Die KI ruft das Werkzeug auf → der Worker fragt vor dem Speichern um Freigabe
+    const dlg = win.getByRole('alertdialog')
+    await dlg.getByRole('button', { name: 'Erlauben' }).click({ timeout: 15_000 })
+    await win.getByText('Ich habe den Entwurf gespeichert.').waitFor({ timeout: 20_000 })
+    await win.screenshot({ path: join(shots, '02j-agent-entwurf.png') })
   })
 
   await step('KUNDE: „Programm bedienen“ – Aufzeichnung per Auswahl (Windows) bzw. ehrlicher Hinweis', async () => {
@@ -550,7 +572,7 @@ try {
     await nav('Aktivitäten')
     await win.locator('tbody tr').first().waitFor()
     assert.equal(await win.locator('tbody').getByText('DEMO', { exact: true }).count(), 0)
-    assert.equal(await win.locator('tbody tr').count(), 12)
+    assert.equal(await win.locator('tbody tr').count(), 13)
   })
 
   await step('Keine Konsolenfehler', async () => {

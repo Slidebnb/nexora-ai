@@ -20,7 +20,10 @@ const SYSTEM =
   'erfinde nichts. Du kannst das Internet durchsuchen: Wenn der Nutzer nach aktuellen Informationen fragt oder ' +
   'konkrete Webseiten nennt, rufe das Werkzeug „web_recherche“ mit einer kurzen Frage und den passenden Adressen auf. ' +
   'Fasse danach das Ergebnis verständlich zusammen und nenne die Quellen. Weitere Aktionen auf dem PC folgen – diese ' +
-  'werden dem Nutzer stets vorab zur Freigabe gezeigt.'
+  'werden dem Nutzer stets vorab zur Freigabe gezeigt. Du kannst außerdem: E-Mail-Entwürfe erstellen ' +
+  '(Werkzeug „email_entwurf“ – es wird nichts gesendet, nur ein Entwurf gespeichert, und der Nutzer gibt das Speichern frei); ' +
+  'und die verbundenen Dienste des Nutzers nutzen: rufe „konnektoren_auflisten“ auf, um verfügbare Dienste und ihre ' +
+  'Werkzeuge zu sehen, und „konnektor_aufrufen“, um ein Werkzeug auszuführen (jeder Aufruf wird einzeln freigegeben).'
 
 export class ChatError extends Error {}
 
@@ -44,7 +47,43 @@ const TOOL_WEB = {
   }
 } as const
 
-const MAX_STEPS = 6
+const TOOL_EMAIL = {
+  name: 'email_entwurf',
+  description: 'Erstellt E-Mail-Entwürfe (sendet nichts; speichert .eml-Dateien). Der Nutzer gibt das Speichern frei.',
+  parameters: {
+    type: 'object',
+    properties: {
+      betreff: { type: 'string', description: 'Betreff der E-Mail' },
+      text: { type: 'string', description: 'Der Nachrichtentext (mind. 10 Zeichen)' },
+      empfaenger: { type: 'array', items: { type: 'string' }, description: 'E-Mail-Adressen der Empfänger' }
+    },
+    required: ['betreff', 'text', 'empfaenger']
+  }
+} as const
+
+const TOOL_CONN_LIST = {
+  name: 'konnektoren_auflisten',
+  description: 'Listet die vom Nutzer verbundenen Dienste (Konnektoren) und ihre verfügbaren Werkzeuge auf. Nur lesend.',
+  parameters: { type: 'object', properties: {}, required: [] }
+} as const
+
+const TOOL_CONN_CALL = {
+  name: 'konnektor_aufrufen',
+  description: 'Führt ein Werkzeug eines verbundenen Dienstes aus. Jeder Aufruf wird dem Nutzer vorab zur Freigabe gezeigt.',
+  parameters: {
+    type: 'object',
+    properties: {
+      connectorId: { type: 'string' },
+      werkzeug: { type: 'string', description: 'Name des Werkzeugs (aus konnektoren_auflisten)' },
+      argumente: { type: 'object', description: 'Eingabe für das Werkzeug' }
+    },
+    required: ['connectorId', 'werkzeug']
+  }
+} as const
+
+const ALL_TOOLS = [TOOL_WEB, TOOL_EMAIL, TOOL_CONN_LIST, TOOL_CONN_CALL]
+
+const MAX_STEPS = 8
 
 export async function runAgent(opts: {
   provider: Provider
@@ -68,7 +107,7 @@ async function runAnthropic(o: Parameters<typeof runAgent>[0]): Promise<string> 
       model: o.model,
       max_tokens: 4096,
       system: SYSTEM,
-      tools: [{ name: TOOL_WEB.name, description: TOOL_WEB.description, input_schema: TOOL_WEB.parameters }],
+      tools: ALL_TOOLS.map((t) => ({ name: t.name, description: t.description, input_schema: t.parameters })),
       messages: convo
     }
     const res = await fetch(url, { method: 'POST', signal: o.signal, headers: { 'x-api-key': o.key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' }, body: JSON.stringify(body) })
@@ -97,7 +136,7 @@ async function runAnthropic(o: Parameters<typeof runAgent>[0]): Promise<string> 
 async function runOpenai(o: Parameters<typeof runAgent>[0]): Promise<string> {
   const url = (!process.env['NEXORA_PACKAGED'] && process.env['NEXORA_CHAT_OPENAI_URL']) || 'https://api.openai.com/v1/chat/completions'
   const convo: any[] = [{ role: 'system', content: SYSTEM }, ...o.messages.map((m) => ({ role: m.role, content: m.content }))]
-  const tools = [{ type: 'function', function: TOOL_WEB }]
+  const tools = ALL_TOOLS.map((t) => ({ type: 'function', function: t }))
   for (let step = 0; step < MAX_STEPS; step++) {
     const res = await fetch(url, { method: 'POST', signal: o.signal, headers: { Authorization: `Bearer ${o.key}`, 'content-type': 'application/json' }, body: JSON.stringify({ model: o.model, max_tokens: 4096, tools, messages: convo }) })
     if (!res.ok) throw new ChatError(providerError(res.status, await res.text().catch(() => '')))
@@ -126,7 +165,14 @@ async function runOpenai(o: Parameters<typeof runAgent>[0]): Promise<string> {
 }
 
 function labelFor(name: string): string {
-  return name === 'web_recherche' ? 'Recherchiert im Web …' : `Werkzeug „${name}“ …`
+  return (
+    {
+      web_recherche: 'Recherchiert im Web …',
+      email_entwurf: 'Erstellt E-Mail-Entwürfe …',
+      konnektoren_auflisten: 'Sieht die verbundenen Dienste durch …',
+      konnektor_aufrufen: 'Nutzt einen verbundenen Dienst …'
+    }[name] ?? `Werkzeug „${name}“ …`
+  )
 }
 function toolText(r: ToolResult): string {
   const head = r.ok ? r.summary : `Fehlgeschlagen: ${r.summary}`

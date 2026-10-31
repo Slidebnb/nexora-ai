@@ -305,3 +305,19 @@ Konnektoren) kommen als nächste Stufen – jede verändernde/sendende Aktion l�
 2. Werkzeug-Schritte im Chat sichtbarer machen (eigene „arbeitet …"-Zeilen statt nur Text).
 3. Modellwahl je Anbieter in den Einstellungen.
 
+## Agent Stufe 2: Aktionen mit Freigabe + Konnektoren (2026-10-31) ✅
+
+Der Agent hat jetzt mehrere Werkzeuge, die er aus dem Chat selbst nutzt:
+- **email_entwurf** (schreibend): Die KI erstellt E-Mail-Entwürfe aus dem Gespräch. Es wird nichts gesendet,
+  nur .eml-Dateien gespeichert – und das Speichern wird vom Nutzer **freigegeben** (Worker-Workflow draft_emails).
+- **konnektoren_auflisten** / **konnektor_aufrufen**: Die KI sieht die verbundenen Dienste und ruft deren
+  Werkzeuge auf – jeder Aufruf wird einzeln freigegeben (Worker-Workflow connector_action).
+- web_recherche (Stufe 1) bleibt.
+
+E2E 29: echter Agent-Entwurf – „Schreib einen E-Mail-Entwurf an …" → KI ruft das Werkzeug auf → Freigabe →
+„1 Entwurf gespeichert – nichts wurde gesendet.". Unit 68.
+
+**Noch offen:** Ordner aufräumen/PDF als Agent-Werkzeuge (brauchen native Datei-/Ordnerwahl), Werkzeug-Schritte
+im Chat deutlicher anzeigen, Modellwahl je Anbieter. Der Kern „NEXORA ist ein Agent" steht: die KI entscheidet
+selbst, nutzt echte Werkzeuge und hält sich an die Freigaben.
+

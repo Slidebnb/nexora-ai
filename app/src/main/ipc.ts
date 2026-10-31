@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { basename, join } from 'node:path'
+import { mkdirSync } from 'node:fs'
 import { app, BrowserWindow, dialog, ipcMain, safeStorage, shell, type IpcMainInvokeEvent } from 'electron'
 import { IPC_CHANNELS, type IpcChannel, type IpcRequest, type IpcResponse } from '@shared/ipc-contract'
 import { isAllowedNavigation } from './security'
@@ -230,6 +231,52 @@ export function registerIpcHandlers(opts: { devServerUrl?: string; secrets: Secr
           if (frage.length < 3 || urls.length === 0) return { ok: false, summary: 'Frage oder Adressen fehlen', text: '' }
           try {
             return await hub.runToCompletion('web_research', { question: frage, urls, engine: 'direct' }, ['web.read', 'files.export'])
+          } catch (err) {
+            return { ok: false, summary: err instanceof Error ? err.message : 'Fehler', text: '' }
+          }
+        }
+        if (name === 'email_entwurf') {
+          const subject = String(args['betreff'] ?? '').trim()
+          const briefing = String(args['text'] ?? '').trim()
+          const emails = Array.isArray(args['empfaenger']) ? (args['empfaenger'] as unknown[]).map(String) : []
+          const recipients = emails.filter((e) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)).map((email) => ({ name: '', email }))
+          if (subject.length < 1 || briefing.length < 10 || recipients.length === 0) return { ok: false, summary: 'Betreff, Text (mind. 10 Zeichen) oder gültige Empfänger fehlen', text: '' }
+          const base = (!app.isPackaged && process.env['NEXORA_PRACTICE_DIR']) || app.getPath('documents')
+          const outFolder = join(base, 'NEXORA Entwürfe')
+          try {
+            mkdirSync(outFolder, { recursive: true })
+            return await hub.runToCompletion('draft_emails', { subject, briefing, recipients, outFolder, useCloudAi: false }, ['drafts.write', 'files.write'])
+          } catch (err) {
+            return { ok: false, summary: err instanceof Error ? err.message : 'Fehler', text: '' }
+          }
+        }
+        if (name === 'konnektoren_auflisten') {
+          try {
+            const list = (await hub.listConnectors()) as { id: string; name: string }[]
+            if (list.length === 0) return { ok: true, summary: 'Es sind keine Dienste verbunden.', text: '' }
+            const lines: string[] = []
+            for (const c of list) {
+              let tools = ''
+              try {
+                const t = (await hub.connectorTools(c.id)) as { name: string }[]
+                tools = t.map((x) => x.name).join(', ') || '(keine Werkzeuge)'
+              } catch (e) {
+                tools = `(nicht erreichbar: ${e instanceof Error ? e.message : 'Fehler'})`
+              }
+              lines.push(`- ${c.name} [connectorId: ${c.id}] → Werkzeuge: ${tools}`)
+            }
+            return { ok: true, summary: `${list.length} verbundene(r) Dienst(e)`, text: lines.join('\n') }
+          } catch (err) {
+            return { ok: false, summary: err instanceof Error ? err.message : 'Fehler', text: '' }
+          }
+        }
+        if (name === 'konnektor_aufrufen') {
+          const connectorId = String(args['connectorId'] ?? '')
+          const tool = String(args['werkzeug'] ?? '')
+          const argumente = (args['argumente'] && typeof args['argumente'] === 'object') ? (args['argumente'] as Record<string, unknown>) : {}
+          if (!connectorId || !tool) return { ok: false, summary: 'connectorId oder Werkzeug fehlt', text: '' }
+          try {
+            return await hub.runToCompletion('connector_action', { connectorId, tool, arguments: argumente }, ['connectors.use'])
           } catch (err) {
             return { ok: false, summary: err instanceof Error ? err.message : 'Fehler', text: '' }
           }
