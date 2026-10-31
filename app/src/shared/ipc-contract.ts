@@ -13,6 +13,8 @@ export const AppInfoSchema = z.object({
 export type AppInfo = z.infer<typeof AppInfoSchema>
 
 export const PROVIDERS = ['anthropic', 'openai'] as const
+/** Zusätzlicher, nicht als API-Anbieter angezeigter Eintrag im verschlüsselten Speicher. */
+export const LICENSE_SECRET = 'license' as const
 export const ProviderSchema = z.enum(PROVIDERS)
 export type Provider = z.infer<typeof ProviderSchema>
 
@@ -81,6 +83,16 @@ export type CreateTask = z.infer<typeof CreateTaskSchema>
 
 const Ok = z.object({ ok: z.boolean() })
 
+export const LicenseStatusSchema = z.object({
+  state: z.enum(['unconfigured', 'trial', 'active', 'expired', 'trial_over']),
+  plan: z.string().optional(),
+  features: z.array(z.string()),
+  expiresAt: z.string().optional(),
+  keyHint: z.string().optional(),
+  message: z.string().optional()
+})
+export type LicenseStatus = z.infer<typeof LicenseStatusSchema>
+
 export const ScheduleSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('daily'), time: z.string().regex(/^\d{1,2}:\d{2}$/) }),
   z.object({ type: z.literal('interval'), minutes: z.number().int().min(15).max(10080) })
@@ -118,6 +130,9 @@ export const IPC_CHANNELS = {
   'tasks:cancel': { request: z.object({ taskId: z.string().min(1) }), response: Ok },
   'approvals:respond': { request: z.object({ approvalId: z.string().min(1), decision: ApprovalDecisionSchema }), response: Ok },
   'files:reveal': { request: z.object({ artifactId: z.string().min(1) }), response: Ok },
+  'license:status': { request: z.undefined(), response: LicenseStatusSchema },
+  'license:activate': { request: z.object({ licenseKey: z.string().trim().regex(/^NXR(-[A-Za-z2-9]{5}){4}$/, 'Format: NXR-XXXXX-XXXXX-XXXXX-XXXXX') }), response: LicenseStatusSchema },
+  'license:clear': { request: z.undefined(), response: LicenseStatusSchema },
   'templates:list': { request: z.undefined(), response: z.array(TemplateSchema) },
   'templates:create': { request: z.object({ runId: z.string().regex(/^run-[a-z0-9]+$/), name: z.string().trim().min(1).max(80) }), response: TemplateSchema },
   'templates:run': {

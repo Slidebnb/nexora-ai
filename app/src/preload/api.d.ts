@@ -1,5 +1,5 @@
 import type { ApprovalDecision, NexoraEvent } from '../shared/events'
-import type { AppInfo, CreateTask, PickedFile, PickedFolder, Provider, Schedule, SecretStatus, Template, WorkerStatus } from '../shared/ipc-contract'
+import type { AppInfo, CreateTask, LicenseStatus, PickedFile, PickedFolder, Provider, Schedule, SecretStatus, Template, WorkerStatus } from '../shared/ipc-contract'
 
 export interface NexoraApi {
   getAppInfo: () => Promise<AppInfo>
@@ -14,6 +14,9 @@ export interface NexoraApi {
   cancelTask: (taskId: string) => Promise<{ ok: boolean }>
   respondApproval: (approvalId: string, decision: ApprovalDecision) => Promise<{ ok: boolean }>
   revealArtifact: (artifactId: string) => Promise<{ ok: boolean }>
+  getLicenseStatus: () => Promise<LicenseStatus>
+  activateLicense: (licenseKey: string) => Promise<LicenseStatus>
+  clearLicense: () => Promise<LicenseStatus>
   listTemplates: () => Promise<Template[]>
   createTemplate: (runId: string, name: string) => Promise<Template>
   runTemplate: (req: { templateId: string; folderId?: string; fileIds?: string[]; outFolderId?: string }) => Promise<{ taskId: string; runId: string }>

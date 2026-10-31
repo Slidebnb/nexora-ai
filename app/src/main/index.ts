@@ -2,6 +2,7 @@ import { join } from 'node:path'
 import { app, BrowserWindow, session, shell } from 'electron'
 import { buildCsp, isAllowedNavigation, secureWebPreferences } from './security'
 import { createSecretStore, registerIpcHandlers } from './ipc'
+import { LICENSE_PUBLIC_KEY_PEM, LicenseManager } from './license'
 import { WorkerHub } from './worker/hub'
 import { resolveWorkerLaunch } from './worker/supervisor'
 
@@ -65,7 +66,13 @@ app.whenReady().then(() => {
       for (const w of BrowserWindow.getAllWindows()) if (!w.isDestroyed()) w.webContents.send(channel, payload)
     }
   )
-  registerIpcHandlers({ devServerUrl, secrets, hub })
+  const license = new LicenseManager({
+    file: join(app.getPath('userData'), 'license.json'),
+    publicKeyPem: LICENSE_PUBLIC_KEY_PEM,
+    serverUrl: process.env['NEXORA_LICENSE_URL'] ?? 'https://license.nexora.example'
+  })
+  void license.refreshIfDue(secrets.get('license'))
+  registerIpcHandlers({ devServerUrl, secrets, hub, license })
   createWindow()
   hub.start()
 

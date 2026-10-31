@@ -5,6 +5,7 @@ import { IPC_CHANNELS, type IpcChannel, type IpcRequest, type IpcResponse } from
 import { isAllowedNavigation } from './security'
 import { SecretStore } from './secrets'
 import type { WorkerHub } from './worker/hub'
+import type { Feature, LicenseManager } from './license'
 
 function assertTrustedSender(event: IpcMainInvokeEvent, devServerUrl?: string): void {
   const url = event.senderFrame?.url
@@ -17,8 +18,16 @@ export function createSecretStore(): SecretStore {
   return new SecretStore(join(app.getPath('userData'), 'secrets.json'), safeStorage)
 }
 
-export function registerIpcHandlers(opts: { devServerUrl?: string; secrets: SecretStore; hub: WorkerHub }): void {
-  const { devServerUrl, secrets, hub } = opts
+export function registerIpcHandlers(opts: { devServerUrl?: string; secrets: SecretStore; hub: WorkerHub; license: LicenseManager }): void {
+  const { devServerUrl, secrets, hub, license } = opts
+
+  /** Lizenzprüfung im Main-Prozess (der Renderer kann sie nicht umgehen). */
+  function requireFeature(feature: Feature): void {
+    if (license.has(feature)) return
+    const s = license.status()
+    const label = { workflows: 'Echte Aufgaben', schedules: 'Zeitpläne', cloud_ai: 'Cloud-KI' }[feature]
+    throw new Error(`${label}: in deiner Lizenz nicht enthalten${s.message ? ` (${s.message})` : ''}`)
+  }
   /** Ordner, die der Nutzer im nativen Dialog gewählt hat. Der Renderer kennt nur die ID. */
   const pickedFolders = new Map<string, string>()
   /** Einzeln gewählte Dateien (nur über den nativen Dialog). */
@@ -76,6 +85,8 @@ export function registerIpcHandlers(opts: { devServerUrl?: string; secrets: Secr
   })
 
   handle('tasks:create', async (req) => {
+    requireFeature('workflows')
+    if (req.capabilities.includes('ai.cloud')) requireFeature('cloud_ai')
     switch (req.workflow) {
       case 'organize_folder': {
         const folder = pickedFolders.get(req.folderId)
@@ -110,6 +121,7 @@ export function registerIpcHandlers(opts: { devServerUrl?: string; secrets: Secr
   handle('templates:list', async () => (await hub.listTemplates()) as IpcResponse<'templates:list'>)
   handle('templates:create', async ({ runId, name }) => (await hub.createTemplate(runId, name)) as IpcResponse<'templates:create'>)
   handle('templates:run', async ({ templateId, folderId, fileIds, outFolderId }) => {
+    requireFeature('workflows')
     const overrides: Record<string, unknown> = {}
     if (folderId) {
       const folder = pickedFolders.get(folderId)
@@ -128,7 +140,21 @@ export function registerIpcHandlers(opts: { devServerUrl?: string; secrets: Secr
     }
     return hub.runTemplate(templateId, overrides)
   })
-  handle('templates:schedule', async ({ templateId, schedule }) => (await hub.scheduleTemplate(templateId, schedule)) as IpcResponse<'templates:schedule'>)
+  handle('templates:schedule', async ({ templateId, schedule }) => {
+    if (schedule) requireFeature('schedules')
+    return (await hub.scheduleTemplate(templateId, schedule)) as IpcResponse<'templates:schedule'>
+  })
+  handle('license:status', () => license.status())
+  handle('license:activate', async ({ licenseKey }) => {
+    const status = await license.activate(licenseKey.toUpperCase())
+    secrets.set('license', licenseKey.toUpperCase())
+    return status
+  })
+  handle('license:clear', () => {
+    license.clear()
+    secrets.clear('license')
+    return license.status()
+  })
   handle('templates:delete', async ({ templateId }) => {
     await hub.deleteTemplate(templateId)
     return { ok: true }

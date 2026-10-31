@@ -4,6 +4,7 @@ import { PROVIDERS, type AppInfo, type Provider, type SecretStatus } from '@shar
 import { useNexora } from '../state/store'
 import { enterDemo, exitDemo } from '../demo/controller'
 import { ScreenHeader } from './ScreenHeader'
+import { LicenseSection } from '../components/settings/LicenseSection'
 
 const PROVIDER_LABEL: Record<Provider, string> = { anthropic: 'Anthropic (Claude)', openai: 'OpenAI' }
 
@@ -85,6 +86,8 @@ export function Settings() {
     <div className="h-full overflow-y-auto p-6">
       <ScreenHeader title="Einstellungen" />
       <div className="grid max-w-3xl gap-5">
+        <LicenseSection />
+
         <section className="panel p-5" aria-labelledby="keys-title">
           <h2 id="keys-title" className="hud-label">API-Schlüssel (BYOK)</h2>
           <p className="mt-2 text-sm text-text-2">

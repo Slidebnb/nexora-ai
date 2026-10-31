@@ -1,6 +1,9 @@
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { dirname } from 'node:path'
-import { PROVIDERS, type Provider, type SecretStatus } from '../shared/ipc-contract'
+import { LICENSE_SECRET, PROVIDERS, type Provider, type SecretStatus } from '../shared/ipc-contract'
+
+type SecretName = Provider | typeof LICENSE_SECRET
+const NAMES: readonly SecretName[] = [...PROVIDERS, LICENSE_SECRET]
 
 /** Abstraktion über Electron safeStorage (Windows: DPAPI), damit die Logik testbar ist. */
 export interface SecretCipher {
@@ -9,7 +12,7 @@ export interface SecretCipher {
   decryptString(encrypted: Buffer): string
 }
 
-type StoredFile = Partial<Record<Provider, string>>
+type StoredFile = Partial<Record<SecretName, string>>
 
 /**
  * Speichert API-Schlüssel ausschließlich verschlüsselt. Ist keine OS-Verschlüsselung
@@ -29,7 +32,7 @@ export class SecretStore {
     }
   }
 
-  set(provider: Provider, key: string): SecretStatus {
+  set(provider: SecretName, key: string): SecretStatus {
     if (!this.cipher.isEncryptionAvailable()) {
       throw new Error('Sichere Speicherung ist auf diesem System nicht verfügbar. Schlüssel wurde nicht gespeichert.')
     }
@@ -39,7 +42,7 @@ export class SecretStore {
     return this.status()
   }
 
-  clear(provider: Provider): SecretStatus {
+  clear(provider: SecretName): SecretStatus {
     const data = this.read()
     delete data[provider]
     this.write(data)
@@ -47,7 +50,7 @@ export class SecretStore {
   }
 
   /** Nur für den Main-Prozess (Weitergabe an den Worker ab Phase 2). */
-  get(provider: Provider): string | undefined {
+  get(provider: SecretName): string | undefined {
     const value = this.read()[provider]
     if (!value || !this.cipher.isEncryptionAvailable()) return undefined
     return this.cipher.decryptString(Buffer.from(value, 'base64'))
@@ -59,7 +62,7 @@ export class SecretStore {
       const parsed: unknown = JSON.parse(readFileSync(this.file, 'utf8'))
       if (!parsed || typeof parsed !== 'object') return {}
       const out: StoredFile = {}
-      for (const p of PROVIDERS) {
+      for (const p of NAMES) {
         const v = (parsed as Record<string, unknown>)[p]
         if (typeof v === 'string') out[p] = v
       }
