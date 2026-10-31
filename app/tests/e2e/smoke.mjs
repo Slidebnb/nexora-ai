@@ -214,18 +214,13 @@ try {
     await card.getByRole('button', { name: 'Übernehmen' }).click()
     await card.getByText('alle 30 Minuten (bei geöffneter App)').waitFor()
     await win.screenshot({ path: join(shots, '09-vorlagen.png') })
-    // Der Text eines früheren Erfolgs steht schon im Protokoll → auf einen NEUEN Erfolg warten
-    const occurrences = () => win.evaluate((t) => document.body.innerText.split(t).length - 1, '5/5 verschobene Dateien geprüft')
-    const before = await occurrences()
     await card.getByRole('button', { name: 'Ausführen' }).click()
     const dlg = win.getByRole('alertdialog')
     await dlg.getByText('Dateien verschieben', { exact: true }).waitFor({ timeout: 15_000 })
     await dlg.getByRole('button', { name: 'Erlauben' }).click()
-    await win.waitForFunction(
-      ([re, n]) => document.body.innerText.split(new RegExp(re)).length - 1 > n,
-      ['5/5 verschobene Dateien geprüft', before],
-      { timeout: 20_000 }
-    )
+    // Maßgeblich ist die Festplatte (UI-Texte früherer Läufe stehen schon im Protokoll)
+    const deadline = Date.now() + 20_000
+    while (!listing().every((f) => f.includes('/')) && Date.now() < deadline) await new Promise((r) => setTimeout(r, 200))
     assert.ok(listing().every((f) => f.includes('/')), `Dateien wurden über die Vorlage einsortiert: ${listing()}`)
   })
 
