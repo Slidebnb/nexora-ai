@@ -14,7 +14,7 @@ function cspMetaPlugin(): Plugin {
     name: 'nexora-csp-meta',
     apply: 'build',
     transformIndexHtml: () => [
-      { tag: 'meta', attrs: { 'http-equiv': 'Content-Security-Policy', content: buildCsp() }, injectTo: 'head-prepend' }
+      { tag: 'meta', attrs: { 'http-equiv': 'Content-Security-Policy', content: buildCsp(undefined, { forMeta: true }) }, injectTo: 'head-prepend' }
     ]
   }
 }

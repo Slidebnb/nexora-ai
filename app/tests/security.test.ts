@@ -26,6 +26,11 @@ describe('buildCsp', () => {
     expect(csp).toContain("connect-src 'self';")
     expect(csp).toContain("object-src 'none'")
     expect(csp).not.toContain('unsafe-eval')
+    expect(csp).toContain("frame-ancestors 'none'")
+  })
+
+  it('lässt frame-ancestors im Meta-Tag weg (würde dort nur eine Warnung erzeugen)', () => {
+    expect(buildCsp(undefined, { forMeta: true })).not.toContain('frame-ancestors')
   })
 
   it('erlaubt im Dev-Modus nur den lokalen Dev-Server zusätzlich', () => {

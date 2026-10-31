@@ -21,7 +21,7 @@ export function secureWebPreferences(preloadPath: string): WebPreferences {
  * Content-Security-Policy. Im Dev-Modus braucht Vite HMR eine WebSocket-Verbindung
  * zum lokalen Dev-Server und Inline-Styles; im Produktionsbuild ist alles auf 'self' begrenzt.
  */
-export function buildCsp(devServerUrl?: string): string {
+export function buildCsp(devServerUrl?: string, opts: { forMeta?: boolean } = {}): string {
   const connect = ["'self'"]
   const script = ["'self'"]
   if (devServerUrl) {
@@ -39,7 +39,8 @@ export function buildCsp(devServerUrl?: string): string {
     "object-src 'none'",
     "base-uri 'none'",
     "form-action 'none'",
-    "frame-ancestors 'none'"
+    // frame-ancestors wirkt nur als HTTP-Header; im <meta>-Tag ignoriert der Browser sie mit Warnung
+    ...(opts.forMeta ? [] : ["frame-ancestors 'none'"])
   ].join('; ')
 }
 
