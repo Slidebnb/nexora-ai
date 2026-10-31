@@ -4,13 +4,33 @@
  * connector_action). Das Token wird im sicheren Speicher des Betriebssystems gehalten, nie im Klartext.
  */
 import { useCallback, useEffect, useState } from 'react'
-import { Link2, Plug, RefreshCw, Trash2, Wrench } from 'lucide-react'
+import { Boxes, Calendar, FolderOpen, Link2, Mail, MessageSquare, Plug, RefreshCw, Trash2, Wrench } from 'lucide-react'
 import type { Connector, ConnectorTool } from '@shared/ipc-contract'
 import { useNexora } from '../../state/store'
 import { cleanError } from '../../lib/actions'
 
-function AddForm({ onAdded, disabled }: { onAdded: () => void; disabled: boolean }) {
-  const [name, setName] = useState('')
+interface Template {
+  id: string
+  name: string
+  icon: typeof Mail
+  desc: string
+  urlPlaceholder: string
+  hint: string
+  needsToken: boolean
+}
+
+// Vorlagen für die Galerie. Ehrlich: Es gibt keine universelle Adresse je Dienst – jede Vorlage füllt die
+// Maske vor und sagt, wo du die MCP-Adresse deines Dienstes bekommst. Kein automatisches „Fake-Verbinden“.
+const CATALOG: Template[] = [
+  { id: 'email', name: 'E-Mail', icon: Mail, desc: 'Gmail, Outlook u. a. über einen MCP-Dienst', urlPlaceholder: 'https://…/mcp', hint: 'Füge die MCP-Adresse deines E-Mail-Dienstes ein (vom Anbieter oder deinem selbst betriebenen MCP-Server). Meist mit Zugangstoken.', needsToken: true },
+  { id: 'calendar', name: 'Kalender', icon: Calendar, desc: 'Google/Outlook-Kalender über MCP', urlPlaceholder: 'https://…/mcp', hint: 'Adresse des Kalender-MCP-Dienstes einfügen. Meist mit Zugangstoken.', needsToken: true },
+  { id: 'files', name: 'Dateien / Cloud', icon: FolderOpen, desc: 'Drive, OneDrive u. a. über MCP', urlPlaceholder: 'https://…/mcp', hint: 'Adresse des Datei-/Cloud-MCP-Dienstes einfügen.', needsToken: true },
+  { id: 'chat', name: 'Chat / Messaging', icon: MessageSquare, desc: 'Slack, Teams u. a. über MCP', urlPlaceholder: 'https://…/mcp', hint: 'Adresse des Chat-MCP-Dienstes einfügen.', needsToken: true },
+  { id: 'custom', name: 'Eigener Dienst', icon: Boxes, desc: 'Beliebiger MCP-Server per Adresse', urlPlaceholder: 'https://…/mcp oder http://127.0.0.1:…/mcp', hint: 'Adresse eines beliebigen MCP-Servers. Lokale Server (127.0.0.1) dürfen http sein.', needsToken: false }
+]
+
+function AddForm({ onAdded, disabled, template }: { onAdded: () => void; disabled: boolean; template: Template | null }) {
+  const [name, setName] = useState(template && template.id !== 'custom' ? template.name : '')
   const [url, setUrl] = useState('')
   const [token, setToken] = useState('')
   const [busy, setBusy] = useState(false)
@@ -37,9 +57,10 @@ function AddForm({ onAdded, disabled }: { onAdded: () => void; disabled: boolean
     >
       <div className="grid gap-2 sm:grid-cols-2">
         <input className="input text-sm" placeholder="Name, z. B. „Mein Kalender“" aria-label="Name des Dienstes" value={name} onChange={(e) => setName(e.target.value)} maxLength={80} />
-        <input className="input text-sm" placeholder="Adresse (https://…/mcp)" aria-label="Adresse des Dienstes" value={url} onChange={(e) => setUrl(e.target.value)} maxLength={2000} />
+        <input className="input text-sm" placeholder={template ? template.urlPlaceholder : 'Adresse (https://…/mcp)'} aria-label="Adresse des Dienstes" value={url} onChange={(e) => setUrl(e.target.value)} maxLength={2000} />
       </div>
       <input className="input font-mono text-sm" type="password" autoComplete="off" placeholder="Zugangstoken (optional)" aria-label="Zugangstoken" value={token} onChange={(e) => setToken(e.target.value)} maxLength={4000} />
+      {template && <p className="text-xs text-text-2">{template.hint}</p>}
       {error && <p role="alert" className="text-xs text-danger">{error}</p>}
       <div className="flex items-center justify-between gap-2">
         <p className="text-xs text-text-2">Für entfernte Dienste ist HTTPS nötig. Das Token wird verschlüsselt gespeichert.</p>
@@ -125,6 +146,7 @@ export function ConnectorsSection() {
   const connected = worker.state === 'connected'
   const [list, setList] = useState<Connector[]>([])
   const [error, setError] = useState<string | null>(null)
+  const [pick, setPick] = useState<Template | null>(null)
 
   const load = useCallback(() => {
     if (!connected) return
@@ -150,9 +172,29 @@ export function ConnectorsSection() {
               ))}
             </ul>
           ) : (
-            <p className="mt-3 text-sm text-text-2">Noch keine Verbindung. Füge unten einen Dienst hinzu.</p>
+            <p className="mt-3 text-sm text-text-2">Noch keine Verbindung. Wähle unten einen Dienst zum Verbinden.</p>
           )}
-          <AddForm onAdded={load} disabled={!connected} />
+
+          <p className="mt-4 text-xs uppercase tracking-wider text-text-2/70">Dienst verbinden</p>
+          <div className="mt-2 grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-2" aria-label="Verfügbare Dienste">
+            {CATALOG.map((t) => {
+              const Icon = t.icon
+              const activeCard = pick?.id === t.id
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => setPick(t)}
+                  className={`flex flex-col items-start gap-1.5 rounded-md border p-3 text-left transition-colors ${activeCard ? 'border-accent bg-accent/10' : 'border-line hover:border-accent/60 hover:bg-panel-2'}`}
+                >
+                  <Icon className="size-5 text-accent-hi" aria-hidden />
+                  <span className="text-sm font-medium text-text">{t.name}</span>
+                  <span className="text-[11px] text-text-2">{t.desc}</span>
+                </button>
+              )
+            })}
+          </div>
+          {pick && <AddForm key={pick.id} onAdded={() => { load(); setPick(null) }} disabled={!connected} template={pick} />}
         </>
       )}
     </section>

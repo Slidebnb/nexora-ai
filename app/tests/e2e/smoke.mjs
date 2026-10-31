@@ -359,6 +359,7 @@ try {
     await nav('Einstellungen')
     const sec = win.getByRole('region', { name: 'Verbindungen' })
     await sec.waitFor()
+    await sec.getByRole('button', { name: /Eigener Dienst/ }).click() // Galerie: Vorlage wählen
     await sec.getByLabel('Name des Dienstes').fill('Test-Dienst')
     await sec.getByLabel('Adresse des Dienstes').fill(`${webBase}/mcp`)
     await sec.getByRole('button', { name: 'Hinzufügen' }).click()
@@ -369,7 +370,7 @@ try {
     await sec.getByText('echo', { exact: true }).waitFor()
     await win.screenshot({ path: join(shots, '02h-verbindungen.png') })
     await sec.getByRole('button', { name: 'Test-Dienst entfernen' }).click()
-    await sec.getByText('Noch keine Verbindung. Füge unten einen Dienst hinzu.').waitFor()
+    await sec.getByText('Noch keine Verbindung. Wähle unten einen Dienst zum Verbinden.').waitFor()
     await nav('Start')
   })
 

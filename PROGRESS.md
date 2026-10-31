@@ -337,3 +337,14 @@ selbst, nutzt echte Werkzeuge und hält sich an die Freigaben.
 - **Visuelle Konnektor-Einrichtung:** eine Galerie zum Auswählen und Verbinden von Diensten (statt nur Adresse eintragen).
 - **Sichtbare Agent-Schritte** im Chat/Sprachmodus (eigene „arbeitet …"-Karten).
 
+## Visuelle Konnektor-Galerie (2026-10-31) ✅
+
+- Einstellungen → „Verbindungen" → „Dienst verbinden": Karten für E-Mail, Kalender, Dateien/Cloud, Chat/Messaging
+  und „Eigener Dienst". Klick füllt die Verbinden-Maske vor und erklärt, wo die MCP-Adresse des Dienstes herkommt.
+- Ehrlich: Es gibt keine universelle Adresse je Dienst, daher führt jede Karte zur Eingabe der echten MCP-Adresse
+  (kein automatisches Fake-Verbinden). Verbinden/Testen/Werkzeuge/Entfernen wie zuvor; Token verschlüsselt (DPAPI).
+- E2E 30 (Galerie-Karte wählen → verbinden → testen → Werkzeuge → entfernen). Unit 68.
+
+Offen Richtung „alles erledigen": echtes Senden über verbundene Dienste (mit Freigabe), Echtzeit-Sprache (OpenAI Realtime),
+geführte Komplett-Einrichtung, sichtbare Agent-Schritte.
+
