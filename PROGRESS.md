@@ -242,3 +242,16 @@ Auf Kundenwunsch die restlichen **rein dekorativen** Visualisierungen übernomme
 Nächste Schritte (mit dem Inhaber abgestimmt): (1) Sprachmodus einfach & lokal (Mikrofon → Befehlszeile,
 Antwort mit der System-Stimme), (2) Konnektoren über MCP (wie in Claude), mit Freigabe vor verändernden Aktionen.
 
+## Sprachmodus einfach & lokal (2026-10-31) ✅
+
+- Mikrofon-Knopf in der Befehlszeile: Gesprochenes wird zu Text und öffnet die passende Aufgabe
+  (gleiche lokale Erkennung wie beim Tippen – keine KI, keine erfundenen Antworten).
+- NEXORA antwortet mit der System-Stimme (speechSynthesis, vollständig lokal); abschaltbar über den Lautsprecher-Knopf.
+- Ehrlich zu den Grenzen: Die Spracherkennung nutzt die Web-Speech-API des Browsers. Ist sie nicht verfügbar
+  oder braucht sie gerade eine Verbindung, erscheint eine klare Meldung und man tippt weiter. Von NEXORA aus
+  wird nichts an fremde Dienste gesendet; es fallen keine API-Kosten an.
+- Tests: Unit 68 (inkl. useVoice: ehrliche Meldung ohne Erkennung, deutsche Sprachausgabe, erkannter Text),
+  E2E 26 (Mikrofon-Knopf vorhanden).
+
+Nächster Schritt: Konnektoren über MCP (wie in Claude), mit Freigabe vor verändernden Aktionen – größeres Projekt, Aufbau folgt.
+

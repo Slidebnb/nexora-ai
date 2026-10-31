@@ -2,13 +2,15 @@
  * Befehlszeile „Sag einfach, was du brauchst“.
  * Aufbau (Kopfzeile, Verlauf mit Absender/Zeit, Eingabe mit Prompt-Zeichen) portiert aus jenman
  * `CommandInterface.tsx` (MIT, Copyright (c) 2025 Shaik Davood, siehe THIRD_PARTY_NOTICES.md).
- * Geändert: kein JARVIS-Branding, keine vorgefertigten Antworten, kein Mikrofon; die Antworten
+ * Geändert: kein JARVIS-Branding, keine vorgefertigten Antworten; die Antworten
  * stammen aus der lokalen Erkennung (`lib/intent.ts`) und öffnen nur den normalen Assistenten.
+ * Sprachmodus einfach und lokal (`lib/useVoice.ts`): Mikrofon → Text, Antwort über die System-Stimme.
  */
-import { useEffect, useRef, useState } from 'react'
-import { ArrowRight, Send } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { ArrowRight, Mic, Send, Volume2, VolumeX } from 'lucide-react'
 import { useNexora } from '../../state/store'
 import { INTENT_LABEL, parseCommand, type Intent } from '../../lib/intent'
+import { useVoice, type Voice } from '../../lib/useVoice'
 
 interface Entry {
   id: number
@@ -24,6 +26,7 @@ let nextId = 1
 export function CommandBar({ disabled }: { disabled: boolean }) {
   const [input, setInput] = useState('')
   const [log, setLog] = useState<Entry[]>([])
+  const [speakReplies, setSpeakReplies] = useState(true)
   const scrollRef = useRef<HTMLDivElement>(null)
   const openWizard = useNexora((s) => s.setWizard)
   const setComposer = useNexora((s) => s.setComposer)
@@ -33,31 +36,45 @@ export function CommandBar({ disabled }: { disabled: boolean }) {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight
   }, [log])
 
+  const voiceRef = useRef<Voice | null>(null)
+
   const open = (intent: Intent) => {
     setComposer(intent.prefill)
     openWizard(intent.workflowId)
   }
 
+  const run = useCallback(
+    (raw: string, spoken: boolean) => {
+      const text = raw.trim()
+      if (!text) return
+      const res = parseCommand(text)
+      const now = new Date()
+      const reply: Entry =
+        res.kind === 'task'
+          ? { id: nextId++, sender: 'NEXORA', text: res.intent.reason, at: now, intent: res.intent }
+          : res.kind === 'repeat'
+            ? { id: nextId++, sender: 'NEXORA', text: 'Gespeicherte Aufgaben findest du unter „Automationen“.', at: now, repeat: true }
+            : {
+                id: nextId++,
+                sender: 'NEXORA',
+                text: `Dafür habe ich noch keine passende Aufgabe. Ich kann: ${Object.values(INTENT_LABEL).join(', ')}.`,
+                at: now
+              }
+      setLog((l) => [...l.slice(-8), { id: nextId++, sender: 'DU', text, at: now }, reply])
+      setInput('')
+      if (spoken && speakReplies) voiceRef.current?.speak(reply.text)
+      if (res.kind === 'task') open(res.intent)
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [speakReplies]
+  )
+
+  const voice = useVoice((text) => run(text, true))
+  voiceRef.current = voice
+
   const submit = (e: React.FormEvent) => {
     e.preventDefault()
-    const text = input.trim()
-    if (!text) return
-    const res = parseCommand(text)
-    const now = new Date()
-    const reply: Entry =
-      res.kind === 'task'
-        ? { id: nextId++, sender: 'NEXORA', text: res.intent.reason, at: now, intent: res.intent }
-        : res.kind === 'repeat'
-          ? { id: nextId++, sender: 'NEXORA', text: 'Gespeicherte Aufgaben findest du unter „Automationen“.', at: now, repeat: true }
-          : {
-              id: nextId++,
-              sender: 'NEXORA',
-              text: `Dafür habe ich noch keine passende Aufgabe. Ich kann: ${Object.values(INTENT_LABEL).join(', ')}.`,
-              at: now
-            }
-    setLog((l) => [...l.slice(-8), { id: nextId++, sender: 'DU', text, at: now }, reply])
-    setInput('')
-    if (res.kind === 'task') open(res.intent)
+    run(input, false)
   }
 
   return (
@@ -103,10 +120,38 @@ export function CommandBar({ disabled }: { disabled: boolean }) {
             className="flex-1 bg-transparent py-2.5 text-sm text-text outline-none placeholder:text-text-2/60"
           />
         </div>
+        {voice.ttsSupported && (
+          <button
+            type="button"
+            className="btn-ghost"
+            aria-pressed={speakReplies}
+            title={speakReplies ? 'Gesprochene Antworten aus' : 'Gesprochene Antworten an'}
+            aria-label={speakReplies ? 'Gesprochene Antworten ausschalten' : 'Gesprochene Antworten einschalten'}
+            onClick={() => setSpeakReplies((v) => !v)}
+          >
+            {speakReplies ? <Volume2 className="size-4" aria-hidden /> : <VolumeX className="size-4" aria-hidden />}
+          </button>
+        )}
+        <button
+          type="button"
+          className={voice.listening ? 'btn-secondary' : 'btn-ghost'}
+          disabled={disabled}
+          aria-pressed={voice.listening}
+          aria-label={voice.listening ? 'Zuhören beenden' : 'Sprechen'}
+          title={voice.listening ? 'Zuhören beenden' : 'Sprechen'}
+          onClick={() => (voice.listening ? voice.stop() : voice.start())}
+        >
+          <Mic className={`size-4 ${voice.listening ? 'text-accent-hi motion-safe:animate-pulse' : ''}`} aria-hidden />
+        </button>
         <button type="submit" className="btn-primary" disabled={disabled || !input.trim()}>
           Los <Send className="size-4" aria-hidden />
         </button>
       </form>
+      {(voice.listening || voice.error) && (
+        <p className={`px-4 pb-2 text-xs ${voice.error ? 'text-warning' : 'text-text-2'}`} role={voice.error ? 'alert' : 'status'}>
+          {voice.error ?? 'Ich höre zu … sprich jetzt.'}
+        </p>
+      )}
     </section>
   )
 }

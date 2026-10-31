@@ -161,6 +161,8 @@ try {
     if ((await dialog.getByLabel('Recherchefrage').inputValue()) !== 'Was kostet der Basistarif?') throw new Error('Frage nicht übernommen')
     await win.screenshot({ path: join(shots, '02a-befehlszeile.png') })
     await dialog.getByRole('button', { name: 'Schließen' }).click()
+    // Sprachmodus: Mikrofon-Knopf vorhanden (Spracherkennung selbst hängt vom System ab)
+    await win.getByRole('button', { name: /Sprechen|Zuhören beenden/ }).waitFor()
     await cmd.fill('Wie wird das Wetter morgen?')
     await cmd.press('Enter')
     await win.getByText(/Dafür habe ich noch keine passende Aufgabe/).waitFor()
