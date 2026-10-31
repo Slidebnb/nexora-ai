@@ -8,9 +8,9 @@ dependencies = [
   "uvicorn==0.54.0",
   "pydantic==2.13.5",  # browser-use 0.13.14 verlangt genau diese Version
   "httpx==0.28.1",
-  "pypdf==6.16.2",  # BSD-3-Clause; gleiche Version wie in browser-use
+  "pypdf==6.21.4",  # BSD-3-Clause; Sicherheitsupdate (pip-audit: 26 Meldungen in 6.16.2)
   "pypdfium2==5.14.0",  # BSD-3-Clause/Apache-2.0 – PDF-Seiten als Bild für die optionale Texterkennung
-  "pillow==12.3.0",  # MIT-CMU; gleiche Version wie in browser-use
+  "pillow==13.0.0",  # MIT-CMU; Sicherheitsupdate (pip-audit: 39 Meldungen in 12.3.0)
   "websockets==15.0.1",  # browser-use (über cdp-use) verlangt diese Version
 ]
 
@@ -32,3 +32,10 @@ testpaths = ["tests"]
 
 [tool.uv]
 package = false
+# Sicherheitsupdates auch dort erzwingen, wo browser-use ältere Versionen fest vorgibt (Audit 2026-10-31)
+override-dependencies = [
+  "pypdf==6.21.4",
+  "pillow==13.0.0",
+  "anyio==4.14.2",
+  "mcp==2.3.0",
+]
