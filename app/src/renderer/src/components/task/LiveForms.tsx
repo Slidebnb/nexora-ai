@@ -49,7 +49,7 @@ export function buildRequest(t: WorkflowTemplate, d: ComposerDraft, folder: Pick
     case 'pdf_analysis': {
       if (d.files.length === 0) return { request: null, missing: 'Bitte PDF-Dateien wählen' }
       const caps = d.useCloudAi ? [...capabilities, 'ai.cloud' as const] : capabilities
-      return { request: { workflow: 'pdf_analysis', fileIds: d.files.map((f) => f.fileId), useCloudAi: d.useCloudAi, capabilities: caps } }
+      return { request: { workflow: 'pdf_analysis', fileIds: d.files.map((f) => f.fileId), useCloudAi: d.useCloudAi, useOcr: d.useOcr, capabilities: caps } }
     }
     case 'draft_emails': {
       const { recipients, invalid } = parseRecipients(d.recipients)
@@ -150,6 +150,10 @@ export function LiveForm({ template, onError }: { template: WorkflowTemplate; on
             <span>
               Zusätzlich KI-Zusammenfassung (Cloud). Vor dem Senden wird einzeln gefragt; es fallen API-Kosten an. Ohne Häkchen bleibt alles lokal.
             </span>
+          </label>
+          <label className="flex items-start gap-2 text-xs text-text-2">
+            <input type="checkbox" checked={d.useOcr} onChange={(e) => set({ useOcr: e.target.checked })} className="mt-0.5 accent-[var(--color-accent)]" aria-label="Texterkennung für gescannte PDFs" />
+            <span>Gescannte PDFs per Texterkennung lesen (lokal, dauert länger; benötigt das kostenlose Programm „Tesseract OCR“).</span>
           </label>
         </div>
       )

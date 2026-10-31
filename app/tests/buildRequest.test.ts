@@ -4,7 +4,7 @@ import { WORKFLOWS } from '../src/renderer/src/data/workflows'
 import type { ComposerDraft } from '../src/renderer/src/state/store'
 
 const draft = (p: Partial<ComposerDraft> = {}): ComposerDraft => ({
-  question: '', urls: '', briefing: '', recipients: '', subject: '', files: [], outFolder: null, useCloudAi: false, ...p
+  question: '', urls: '', briefing: '', recipients: '', subject: '', files: [], outFolder: null, useCloudAi: false, useOcr: false, ...p
 })
 const wf = (id: string) => WORKFLOWS.find((w) => w.id === id)!
 
@@ -28,7 +28,7 @@ describe('buildRequest', () => {
   it('PDF: verlangt Dateien; Cloud-KI fügt die Berechtigung ai.cloud hinzu', () => {
     expect(buildRequest(wf('pdf'), draft(), null).missing).toMatch(/PDF/)
     const files = [{ fileId: 'a', name: 'a.pdf', path: '/a.pdf' }]
-    expect(buildRequest(wf('pdf'), draft({ files }), null).request).toEqual({ workflow: 'pdf_analysis', fileIds: ['a'], useCloudAi: false, capabilities: ['pdf.read', 'files.export'] })
+    expect(buildRequest(wf('pdf'), draft({ files }), null).request).toEqual({ workflow: 'pdf_analysis', fileIds: ['a'], useCloudAi: false, useOcr: false, capabilities: ['pdf.read', 'files.export'] })
     expect(buildRequest(wf('pdf'), draft({ files, useCloudAi: true }), null).request?.capabilities).toContain('ai.cloud')
   })
 

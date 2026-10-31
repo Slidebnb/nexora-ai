@@ -18,6 +18,8 @@ a = Analysis(
         "nexora_worker.workflows.web_research",
         "nexora_worker.workflows.pdf_analysis",
         "nexora_worker.workflows.drafts",
+        "pypdfium2",
+        "pypdfium2_raw",
     ],
     excludes=["tkinter", "browser_use", "pytest"],  # KI-Browser wird nicht ins Basis-Paket gebündelt
     noarchive=False,

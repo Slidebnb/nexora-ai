@@ -31,6 +31,7 @@ export interface ComposerDraft {
   files: PickedFile[]
   outFolder: PickedFolder | null
   useCloudAi: boolean
+  useOcr: boolean
 }
 
 export interface WorkerConnection {
@@ -86,7 +87,7 @@ export const useNexora = create<NexoraStore>((set, get) => ({
   expertMode: readExpert(),
   wizard: null,
   settings: null,
-  composer: { question: '', urls: '', briefing: '', recipients: '', subject: '', files: [], outFolder: null, useCloudAi: false },
+  composer: { question: '', urls: '', briefing: '', recipients: '', subject: '', files: [], outFolder: null, useCloudAi: false, useOcr: false },
   ingest: (raw) => {
     const parsed = NexoraEventSchema.safeParse(raw)
     if (!parsed.success) return false

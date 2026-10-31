@@ -141,6 +141,15 @@ Erfasst am 2026-10-31 aus den installierten Paketmetadaten (`importlib.metadata`
 | uvicorn | 0.54.0 | BSD-3-Clause |
 | websockets | 15.0.1 | BSD License |
 
+### Ergänzt für die optionale Texterkennung (2026-10-31)
+
+| Paket | Version | Lizenz |
+|---|---|---|
+| pypdfium2 | 5.14.0 | BSD-3-Clause, Apache-2.0 (enthält PDFium, BSD-3-Clause) |
+| pillow | 12.3.0 | MIT-CMU |
+
+**Tesseract OCR** (Apache-2.0) wird **nicht** mitgeliefert. Wer Texterkennung nutzen will, installiert es selbst (Windows: Installer von UB Mannheim; Linux: Paket `tesseract-ocr`).
+
 ### Optional: KI-Browser (`uv sync --extra browser`, zusätzlich 87 Pakete)
 
 | Paket | Version | Lizenz |

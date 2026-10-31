@@ -19,6 +19,7 @@ from pypdf import PdfReader
 from pypdf.errors import PdfReadError
 
 from ..llm import LlmError, provider_for, summarize
+from ..ocr import OcrError, ocr_pdf
 from ..runner import RunContext, Workflow, WorkflowError
 from ..safety import redact_text, scan_for_prompt_injection
 from ..textutil import extractive_summary, key_terms
@@ -30,6 +31,7 @@ COLUMNS = ["Nr.", "Datei", "Pfad", "Seiten", "Wörter", "Titel", "Autor", "Kernb
 class PdfInput(BaseModel):
     files: list[str] = Field(min_length=1, max_length=20)
     useCloudAi: bool = False
+    useOcr: bool = False  # gescannte PDFs lokal per Tesseract lesen (falls installiert)
 
     @field_validator("files")
     @classmethod
@@ -133,6 +135,14 @@ class PdfAnalysis(Workflow):
             ctx.step_started(sid, title)
             try:
                 info = await asyncio.to_thread(read_pdf, path)
+                if data.useOcr and info.words == 0 and info.pages > 0:
+                    try:
+                        text, done = await asyncio.to_thread(ocr_pdf, path)
+                        text = redact_text(text)
+                        info.text, info.words = text, len(text.split())
+                        info.notes = [n for n in info.notes if "OCR" not in n] + [f"Text per Texterkennung (OCR) erkannt, {done} Seite(n) – bitte stichprobenartig prüfen"]
+                    except OcrError as e:
+                        info.notes.append(str(e))
                 infos.append((i, info, ""))
                 ctx.step_succeeded(sid, f"{info.pages} Seiten, {info.words} Wörter" + (f" – {info.notes[0]}" if info.notes else ""))
             except WorkflowError as e:

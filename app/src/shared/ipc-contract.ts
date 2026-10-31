@@ -68,7 +68,7 @@ export const CreateTaskSchema = z.discriminatedUnion('workflow', [
     urls: z.array(z.url({ protocol: /^https?$/ })).min(1).max(10),
     capabilities: Caps
   }),
-  z.object({ workflow: z.literal('pdf_analysis'), fileIds: z.array(z.string().min(1)).min(1).max(20), useCloudAi: z.boolean(), capabilities: Caps }),
+  z.object({ workflow: z.literal('pdf_analysis'), fileIds: z.array(z.string().min(1)).min(1).max(20), useCloudAi: z.boolean(), useOcr: z.boolean().default(false), capabilities: Caps }),
   z.object({
     workflow: z.literal('draft_emails'),
     subject: z.string().trim().min(1).max(200),

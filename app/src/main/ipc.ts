@@ -101,7 +101,7 @@ export function registerIpcHandlers(opts: { devServerUrl?: string; secrets: Secr
       case 'pdf_analysis': {
         const files = req.fileIds.map((id) => pickedFiles.get(id))
         if (files.some((f) => !f)) throw new Error('Bitte die Dateien erneut auswählen')
-        return hub.createTask('pdf_analysis', { files, useCloudAi: req.useCloudAi }, req.capabilities)
+        return hub.createTask('pdf_analysis', { files, useCloudAi: req.useCloudAi, useOcr: req.useOcr }, req.capabilities)
       }
       case 'draft_emails': {
         const outFolder = pickedFolders.get(req.outFolderId)

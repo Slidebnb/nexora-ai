@@ -9,6 +9,8 @@ dependencies = [
   "pydantic==2.13.5",  # browser-use 0.13.14 verlangt genau diese Version
   "httpx==0.28.1",
   "pypdf==6.16.2",  # BSD-3-Clause; gleiche Version wie in browser-use
+  "pypdfium2==5.14.0",  # BSD-3-Clause/Apache-2.0 – PDF-Seiten als Bild für die optionale Texterkennung
+  "pillow==12.3.0",  # MIT-CMU; gleiche Version wie in browser-use
   "websockets==15.0.1",  # browser-use (über cdp-use) verlangt diese Version
 ]
 
