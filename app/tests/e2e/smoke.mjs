@@ -140,6 +140,23 @@ try {
     await nav('Start')
   })
 
+  await step('KUNDE: Befehlszeile erkennt Aufgabe und füllt den Assistenten vor', async () => {
+    await nav('Start')
+    const cmd = win.getByLabel('Was soll NEXORA erledigen?')
+    await cmd.fill('Was kostet der Basistarif? https://a.example/tarif https://b.example')
+    await cmd.press('Enter')
+    const dialog = win.getByRole('dialog', { name: 'Webseiten vergleichen' })
+    await dialog.waitFor()
+    if ((await dialog.getByLabel('Adressen').inputValue()) !== 'https://a.example/tarif\nhttps://b.example') throw new Error('Adressen nicht übernommen')
+    if ((await dialog.getByLabel('Recherchefrage').inputValue()) !== 'Was kostet der Basistarif?') throw new Error('Frage nicht übernommen')
+    await win.screenshot({ path: join(shots, '02a-befehlszeile.png') })
+    await dialog.getByRole('button', { name: 'Schließen' }).click()
+    await cmd.fill('Wie wird das Wetter morgen?')
+    await cmd.press('Enter')
+    await win.getByText(/Dafür habe ich noch keine passende Aufgabe/).waitFor()
+    if ((await win.getByRole('dialog').count()) !== 0) throw new Error('Bei unbekannter Eingabe darf nichts geöffnet werden')
+  })
+
   await step('KUNDE: Startseite → „Ordner aufräumen“ → bestätigen → Ergebnis → Rückgängig', async () => {
     await nav('Start')
     await win.getByRole('button', { name: /Ordner aufräumen/ }).click()

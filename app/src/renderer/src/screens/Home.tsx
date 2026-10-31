@@ -9,6 +9,7 @@ import { DemoTag } from '../components/common/Panel'
 import { canUndo, stopRun, togglePause, undoRun } from '../lib/actions'
 import { formatTime } from '../lib/format'
 import { TaskWizard } from '../components/home/TaskWizard'
+import { CommandBar } from '../components/home/CommandBar'
 
 const ICON: Record<string, typeof FolderSync> = { ordner: FolderSync, recherche: Globe, pdf: FileText, entwurf: Mail, wiederholen: Repeat }
 
@@ -116,6 +117,9 @@ export function Home() {
 
       <section aria-labelledby="tasks-title">
         <h2 id="tasks-title" className="sr-only">Aufgaben</h2>
+        <div className="mb-4">
+          <CommandBar disabled={!ready} />
+        </div>
         <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-4">
           {cards.map((w) => {
             const Icon = ICON[w.id] ?? FolderSync
