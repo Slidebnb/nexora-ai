@@ -1,7 +1,8 @@
 // End-to-End-Test der gebauten App mit echtem Worker: `pnpm build && pnpm e2e`
 // Voraussetzung: im Ordner ../worker einmal `uv sync`. Linux ohne Display: `xvfb-run -a pnpm e2e`
 import assert from 'node:assert/strict'
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { createServer } from 'node:http'
 import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
@@ -25,9 +26,22 @@ const listing = () =>
     .map((d) => join(d.parentPath ?? d.path, d.name).slice(folder.length + 1).replaceAll('\\', '/'))
     .sort()
 
+// Lokaler Testserver für die Web-Recherche (Worker erlaubt localhost nur mit NEXORA_ALLOW_PRIVATE_URLS=1)
+const pages = {
+  '/a': '<html><head><title>Anbieter A</title></head><body><p>Der Tarif kostet 9,99 Euro im Monat.</p></body></html>',
+  '/b': '<html><head><title>Anbieter B</title></head><body><p>Monatlicher Tarif: 12 Euro.</p></body></html>'
+}
+const web = createServer((req, res) => {
+  const body = pages[req.url]
+  res.writeHead(body ? 200 : 404, { 'Content-Type': 'text/html; charset=utf-8' })
+  res.end(body ?? '')
+})
+await new Promise((r) => web.listen(0, '127.0.0.1', r))
+const webBase = `http://127.0.0.1:${web.address().port}`
+
 const args = [appDir]
 if (process.platform === 'linux') args.push('--no-sandbox')
-const app = await _electron.launch({ executablePath: require('electron'), args, cwd: appDir, env: { ...process.env, NEXORA_USER_DATA: userData } })
+const app = await _electron.launch({ executablePath: require('electron'), args, cwd: appDir, env: { ...process.env, NEXORA_USER_DATA: userData, NEXORA_ALLOW_PRIVATE_URLS: '1' } })
 const errors = []
 const win = await app.firstWindow()
 win.on('console', (m) => m.type() === 'error' && errors.push(m.text()))
@@ -111,6 +125,23 @@ try {
     assert.deepEqual(listing(), [...original].sort())
   })
 
+  await step('LIVE: Web-Recherche liest Quellen und exportiert geprüfte CSV', async () => {
+    await win.getByLabel('Vorlage').selectOption('recherche')
+    await win.getByLabel('Recherchefrage').fill('Was kostet der Tarif im Monat?')
+    await win.getByLabel('Adressen').fill(`${webBase}/a\n${webBase}/b`)
+    await win.getByRole('checkbox').check()
+    await win.getByRole('button', { name: 'Aufgabe starten' }).click()
+    await win.getByText(/2 von 2 Quellen gelesen \(Direktabruf/).first().waitFor({ timeout: 20_000 })
+    await win.getByText('Recherche.csv').first().waitFor()
+    const runs = join(userData, 'worker', 'runs')
+    const csvFile = readdirSync(runs).map((d) => join(runs, d, 'Recherche.csv')).find((p) => existsSync(p))
+    assert.ok(csvFile, 'CSV fehlt auf der Platte')
+    const csv = readFileSync(csvFile, 'utf8')
+    assert.match(csv, /Anbieter A;.*9,99 Euro/)
+    assert.match(csv, /Anbieter B;.*12 Euro/)
+    await win.screenshot({ path: join(shots, '06-live-recherche.png') })
+  })
+
   await step('DEMO: Ordner-Szenario mit Freigabe', async () => {
     await win.getByLabel('Vorlage').selectOption('pdf')
     await win.getByRole('button', { name: 'Demo-Modus öffnen' }).click()
@@ -120,7 +151,7 @@ try {
     await win.getByRole('alertdialog').getByText('DEMO', { exact: true }).waitFor({ timeout: 15_000 })
     await win.getByRole('alertdialog').getByRole('button', { name: 'Erlauben' }).click()
     await win.getByText('Sortierprotokoll.csv').first().waitFor({ timeout: 15_000 })
-    await win.screenshot({ path: join(shots, '06-dashboard-demo.png') })
+    await win.screenshot({ path: join(shots, '07-dashboard-demo.png') })
   })
 
   await step('DEMO: Recherche zeigt Schrittfehler; Kostendiagramm gezeichnet', async () => {
@@ -129,7 +160,7 @@ try {
     await win.getByText(/1 Quelle fehlgeschlagen/).first().waitFor({ timeout: 15_000 })
     await nav('Aktivitäten')
     await win.getByRole('region', { name: 'API-Kosten (simuliert)' }).locator('.recharts-area').waitFor()
-    await win.screenshot({ path: join(shots, '07-aktivitaeten.png') })
+    await win.screenshot({ path: join(shots, '08-aktivitaeten.png') })
   })
 
   await step('Kein Überlauf und keine Überlappung bei 1024×640', async () => {
@@ -145,7 +176,7 @@ try {
     await win.getByRole('button', { name: 'Seitenleiste umschalten' }).click()
     assert.equal(await overflow(), 0)
     await win.getByRole('button', { name: 'Seitenleiste umschalten' }).click()
-    await win.screenshot({ path: join(shots, '08-dashboard-1024.png') })
+    await win.screenshot({ path: join(shots, '09-dashboard-1024.png') })
     await win.setViewportSize({ width: 1440, height: 900 })
   })
 
@@ -154,7 +185,7 @@ try {
     await nav('Aktivitäten')
     await win.locator('tbody tr').first().waitFor()
     assert.equal(await win.locator('tbody').getByText('DEMO', { exact: true }).count(), 0)
-    assert.equal(await win.locator('tbody tr').count(), 3)
+    assert.equal(await win.locator('tbody tr').count(), 4)
   })
 
   await step('Keine Konsolenfehler', async () => {
@@ -167,5 +198,6 @@ try {
   process.exitCode = 1
 } finally {
   await app.close()
+  web.close()
   rmSync(sandbox, { recursive: true, force: true })
 }

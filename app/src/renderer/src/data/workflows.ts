@@ -28,7 +28,8 @@ export const WORKFLOWS: WorkflowTemplate[] = [
     description: '5–10 öffentliche Websites besuchen, Vergleichstabelle mit Quell-URLs und Zeitstempel, CSV-Export.',
     capabilities: ['Web lesen (eigenes Browserprofil)', 'Datei exportieren'],
     demoScenarioId: 'recherche',
-    livePhase: 'Phase 2'
+    livePhase: 'Phase 2',
+    live: { workflow: 'web_research', capabilities: ['web.read', 'files.export'] }
   },
   {
     id: 'pdf',

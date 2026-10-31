@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { FolderOpen, Info, Play } from 'lucide-react'
+import { Info, Play } from 'lucide-react'
 import { useNexora } from '../../state/store'
 import { WORKFLOWS, type WorkflowTemplate } from '../../data/workflows'
 import { enterDemo, startDemoScenario } from '../../demo/controller'
 import { cleanError } from '../../lib/actions'
+import { buildRequest, LiveForm } from './LiveForms'
 
 /** Startet echte Aufgaben über den Worker (Live) oder simulierte Abläufe (Demo). */
 export function TaskComposer() {
@@ -12,7 +13,6 @@ export function TaskComposer() {
   const [workflowId, setWorkflowId] = useState(WORKFLOWS[0]!.id)
   const [text, setText] = useState('')
   const folder = useNexora((s) => s.pickedFolder)
-  const setFolder = useNexora((s) => s.setPickedFolder)
   const [consent, setConsent] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -25,17 +25,16 @@ export function TaskComposer() {
     setError(null)
   }
 
+  const draft = useNexora((s) => s.composer)
+  const built = buildRequest(workflow, draft, folder)
+
   const startLive = async () => {
-    if (!live) return
+    if (!built.request) return
     setBusy(true)
     setError(null)
     try {
-      if (live.workflow === 'organize_folder') {
-        if (!folder) throw new Error('Bitte zuerst einen Ordner auswählen')
-        await window.nexora.createTask({ workflow: 'organize_folder', folderId: folder.folderId, capabilities: live.capabilities })
-      }
+      await window.nexora.createTask(built.request)
       setConsent(false)
-      setText('')
     } catch (e) {
       setError(cleanError(e))
     } finally {
@@ -43,7 +42,7 @@ export function TaskComposer() {
     }
   }
 
-  const canStartLive = !!live && workerReady && consent && !busy && (live.workflow !== 'organize_folder' || !!folder)
+  const canStartLive = !!live && workerReady && consent && !busy && !!built.request
   const canStartDemo = demoMode && !!workflow.demoScenarioId
 
   return (
@@ -79,33 +78,8 @@ export function TaskComposer() {
         </label>
       </div>
 
-      {!demoMode && live?.workflow === 'organize_folder' ? (
-        <div className="flex min-h-16 flex-1 flex-col gap-2">
-          <p className="text-sm text-text-2">{workflow.description}</p>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              className="btn-secondary"
-              onClick={() => {
-                setError(null)
-                window.nexora.pickFolder().then(
-                  (f) => {
-                    if (f) {
-                      setFolder(f)
-                      setConsent(false)
-                    }
-                  },
-                  (e: unknown) => setError(cleanError(e))
-                )
-              }}
-            >
-              <FolderOpen className="size-4" aria-hidden /> Ordner wählen
-            </button>
-            <span className="min-w-0 truncate font-mono text-xs text-text" title={folder?.path} data-testid="picked-folder">
-              {folder ? folder.path : 'kein Ordner gewählt'}
-            </span>
-          </div>
-        </div>
+      {!demoMode && live ? (
+        <LiveForm template={workflow} onError={setError} />
       ) : (
         <textarea
           value={text}
@@ -154,7 +128,7 @@ export function TaskComposer() {
         )}
         {demoMode && !workflow.demoScenarioId && <p className="flex-1 text-xs text-text-2">Für diese Vorlage gibt es noch keine Demo.</p>}
         {demoMode && workflow.demoScenarioId && <p className="flex-1 text-xs text-warning">Startet einen simulierten DEMO-Lauf.</p>}
-        {!demoMode && live && workerReady && <span className="flex-1" />}
+        {!demoMode && live && workerReady && <span className="flex-1 text-xs text-text-2">{built.missing ?? ''}</span>}
 
         {!demoMode && !live && (
           <button type="button" className="btn-secondary" onClick={enterDemo}>
