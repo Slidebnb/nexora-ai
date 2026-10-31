@@ -239,7 +239,10 @@ try {
     await dlg.getByRole('button', { name: 'Erlauben' }).click()
     await waitForDisk(allLoose, 'Rückgängig (Aktivitäten)')
     assert.deepEqual(listing(), [...original].sort())
-    assert.equal(existsSync(join(folder, 'Bilder')), false)
+    // Leere Unterordner entfernt der Worker NACH dem Zurückverschieben → darauf warten
+    const dirGone = Date.now() + 10_000
+    while (existsSync(join(folder, 'Bilder')) && Date.now() < dirGone) await new Promise((r) => setTimeout(r, 100))
+    assert.equal(existsSync(join(folder, 'Bilder')), false, 'leerer Unterordner wurde entfernt')
     await testRows.getByRole('button', { name: 'Rückgängig' }).first().waitFor({ state: 'detached', timeout: 10_000 }) // kein zweites Undo anbieten
     await win.screenshot({ path: join(shots, '05-live-undo.png') })
   })
