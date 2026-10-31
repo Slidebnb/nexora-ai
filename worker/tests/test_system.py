@@ -8,7 +8,7 @@ def test_system_status_reports_real_values(api, folder):
     api.approval_id(t["runId"])
     s = api.get("/api/system").json()
     assert s["worker"]["version"] and s["worker"]["uptimeSeconds"] >= 0
-    assert s["database"]["schemaVersion"] == 2 and s["database"]["runs"] == 1 and s["database"]["events"] >= 4
+    assert s["database"]["schemaVersion"] == 3 and s["database"]["runs"] == 1 and s["database"]["events"] >= 4
     assert s["disk"]["total"] > 0 and 0 <= s["disk"]["used"] <= s["disk"]["total"]
     assert set(s["workflows"]) >= {"organize_folder", "pdf_analysis"}
     assert s["ai"] == {"anthropic": False, "openai": False}

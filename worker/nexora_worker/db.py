@@ -75,6 +75,16 @@ MIGRATIONS: list[str] = [
     );
     CREATE INDEX templates_name ON templates(name, version)
     """,
+    # 3: Konnektoren (MCP). Das Zugangstoken liegt NICHT hier, sondern im sicheren Speicher der App.
+    """
+    CREATE TABLE connectors (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        url TEXT NOT NULL,
+        has_token INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL
+    )
+    """,
 ]
 
 

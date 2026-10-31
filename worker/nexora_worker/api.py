@@ -23,6 +23,7 @@ from .approvals import ApprovalError
 from .events import Decision
 from .runner import TaskError, TaskManager
 from .templates import Schedule, TemplateStore
+from .connectors import ConnectorAction, ConnectorStore
 from .system import system_status, check_ai_connection
 from .desktop import DesktopError, public_element
 
@@ -43,6 +44,18 @@ class SecretsRequest(BaseModel):
     """Main-Prozess übergibt Schlüssel pro Sitzung; sie werden nie gespeichert oder geloggt."""
     anthropic: str | None = None
     openai: str | None = None
+    # Konnektor-Token je Konnektor-ID (aus dem sicheren Speicher der App), optional
+    connectors: dict[str, str] = Field(default_factory=dict)
+
+
+class ConnectorRequest(BaseModel):
+    name: str = Field(min_length=1, max_length=80)
+    url: str = Field(min_length=1, max_length=2000)
+    token: str | None = Field(default=None, max_length=4000)
+
+
+class ConnectorToolRequest(BaseModel):
+    connectorId: str = Field(min_length=1, max_length=40)
 
 
 class TemplateFromRun(BaseModel):
@@ -62,8 +75,11 @@ class ScheduleBody(BaseModel):
     schedule: Schedule | None
 
 
-def create_app(manager: TaskManager, token: str, templates: TemplateStore | None = None) -> FastAPI:
+def create_app(manager: TaskManager, token: str, templates: TemplateStore | None = None, connectors: ConnectorStore | None = None) -> FastAPI:
     templates = templates or TemplateStore(manager)
+    connectors = connectors or ConnectorStore(manager)
+    if "connector_action" not in manager.workflows:
+        manager.register(ConnectorAction(connectors))
     app = FastAPI(title="NEXORA Worker", version=__version__, docs_url=None, redoc_url=None, openapi_url=None)
 
     def _token_ok(value: str | None) -> bool:
@@ -231,7 +247,45 @@ def create_app(manager: TaskManager, token: str, templates: TemplateStore | None
     @app.put("/api/session/secrets", status_code=204)
     async def set_secrets(body: SecretsRequest) -> None:
         manager.secrets.clear()
-        manager.secrets.update({k: v for k, v in body.model_dump().items() if v})
+        if body.anthropic:
+            manager.secrets["anthropic"] = body.anthropic
+        if body.openai:
+            manager.secrets["openai"] = body.openai
+        for cid, tok in body.connectors.items():
+            if tok:
+                manager.secrets[f"connector:{cid}"] = tok
+
+    @app.get("/api/connectors")
+    async def list_connectors() -> list[dict[str, Any]]:
+        return connectors.list()
+
+    @app.post("/api/connectors", status_code=201)
+    async def add_connector(body: ConnectorRequest) -> dict[str, Any]:
+        try:
+            return connectors.add(body.name, body.url, body.token)
+        except TaskError as e:
+            raise _err(e) from e
+
+    @app.delete("/api/connectors/{connector_id}", status_code=204)
+    async def remove_connector(connector_id: str) -> None:
+        try:
+            connectors.remove(connector_id)
+        except TaskError as e:
+            raise _err(e) from e
+
+    @app.post("/api/connectors/{connector_id}/test")
+    async def test_connector(connector_id: str) -> dict[str, Any]:
+        try:
+            return await connectors.test(connector_id)
+        except TaskError as e:
+            raise _err(e) from e
+
+    @app.get("/api/connectors/{connector_id}/tools")
+    async def connector_tools(connector_id: str) -> list[dict[str, Any]]:
+        try:
+            return await connectors.tools(connector_id)
+        except TaskError as e:
+            raise _err(e) from e
 
     @app.websocket("/api/events")
     async def events_ws(ws: WebSocket) -> None:

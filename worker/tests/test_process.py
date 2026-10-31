@@ -86,7 +86,7 @@ def test_bundled_sidecar_starts(tmp_path):
         assert line.startswith("NEXORA_WORKER_READY "), line + proc.stderr.read()
         port = json.loads(line.split(" ", 1)[1])["port"]
         health = httpx.get(f"http://127.0.0.1:{port}/api/health", headers={"Authorization": f"Bearer {TOKEN}"}).json()
-        assert set(health["workflows"]) >= {"organize_folder", "undo_organize", "web_research", "pdf_analysis", "draft_emails", "desktop_routine"}
+        assert set(health["workflows"]) >= {"organize_folder", "undo_organize", "web_research", "pdf_analysis", "draft_emails", "desktop_routine", "connector_action"}
         # Desktop-Bedienung im gebündelten Programm: unter Windows müssen pywinauto/comtypes geladen sein
         win = httpx.get(f"http://127.0.0.1:{port}/api/desktop/windows", headers={"Authorization": f"Bearer {TOKEN}"})
         if sys.platform == "win32":

@@ -32,6 +32,7 @@ from .workflows.drafts import DraftEmails
 from .desktop import default_backend
 from .workflows.desktop_routine import DesktopRoutine
 from .workflows.desktop_ai import DesktopAi
+from .connectors import ConnectorAction, ConnectorStore
 from .workflows.pdf_analysis import PdfAnalysis
 from .workflows.web_research import WebResearch
 
@@ -56,6 +57,7 @@ def build_manager(data_dir: Path) -> TaskManager:
     desktop = default_backend()
     manager.register(DesktopRoutine(desktop))
     manager.register(DesktopAi(desktop))
+    manager.register(ConnectorAction(ConnectorStore(manager)))
     return manager
 
 

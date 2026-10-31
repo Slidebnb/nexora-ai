@@ -102,7 +102,7 @@ def test_migration_from_v1_database(tmp_path, monkeypatch):
     old.close()
     monkeypatch.undo()
     new = dbmod.Database(path)
-    assert new.schema_version == 2
+    assert new.schema_version == 3
     assert new.query_one("SELECT id FROM tasks")["id"] == "task-a", "Daten bleiben bei der Migration erhalten"
     assert new.query("SELECT * FROM templates") == []
     bak = path.with_name("alt.db.bak-v1")

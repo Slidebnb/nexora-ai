@@ -24,6 +24,8 @@ a = Analysis(
         "nexora_worker.workflows.drafts",
         "nexora_worker.workflows.desktop_routine",
         "nexora_worker.workflows.desktop_ai",
+        "nexora_worker.connectors",
+        "nexora_worker.mcp",
         "pypdfium2",
         "pypdfium2_raw",
     ] + desktop_imports,
