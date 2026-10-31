@@ -42,7 +42,29 @@ const pages = {
   '/a': '<html><head><title>Anbieter A</title></head><body><p>Der Tarif kostet 9,99 Euro im Monat.</p></body></html>',
   '/b': '<html><head><title>Anbieter B</title></head><body><p>Monatlicher Tarif: 12 Euro.</p></body></html>'
 }
+// Minimaler MCP-Server (JSON-RPC) für den Konnektor-Test
+function mcpReply(req) {
+  const m = req.method
+  if (m?.startsWith('notifications/')) return null
+  if (m === 'initialize') return { jsonrpc: '2.0', id: req.id, result: { serverInfo: { name: 'Test-MCP', version: '1' } } }
+  if (m === 'tools/list') return { jsonrpc: '2.0', id: req.id, result: { tools: [{ name: 'echo', description: 'Gibt Text zurück', inputSchema: { type: 'object' } }] } }
+  if (m === 'tools/call') return { jsonrpc: '2.0', id: req.id, result: { content: [{ type: 'text', text: 'ok' }] } }
+  return { jsonrpc: '2.0', id: req.id, error: { code: -32601, message: 'unknown' } }
+}
 const web = createServer(async (req, res) => {
+  if (req.url === '/mcp' && req.method === 'POST') {
+    const chunks = []
+    for await (const c of req) chunks.push(c)
+    const reply = mcpReply(JSON.parse(Buffer.concat(chunks).toString() || '{}'))
+    if (!reply) {
+      res.writeHead(202)
+      res.end()
+      return
+    }
+    res.writeHead(200, { 'Content-Type': 'application/json' })
+    res.end(JSON.stringify(reply))
+    return
+  }
   if (req.url === '/langsam') await new Promise((r) => setTimeout(r, 2500)) // für den Pause-Test
   const body = req.url === '/langsam' ? '<html><head><title>Langsam</title></head><body><p>Tarif 15 Euro im Monat.</p></body></html>' : pages[req.url]
   res.writeHead(body ? 200 : 404, { 'Content-Type': 'text/html; charset=utf-8' })
@@ -266,6 +288,24 @@ try {
     // Ohne hinterlegten Schlüssel gibt es nichts zu testen
     if ((await win.getByRole('button', { name: 'Verbindung testen' }).count()) !== 0) throw new Error('Verbindungstest ohne Schlüssel sichtbar')
     await panel.screenshot({ path: join(shots, '02f-systemzustand.png') })
+    await nav('Start')
+  })
+
+  await step('Verbindungen (Konnektoren): hinzufügen, testen, Werkzeuge, entfernen', async () => {
+    await nav('Einstellungen')
+    const sec = win.getByRole('region', { name: 'Verbindungen' })
+    await sec.waitFor()
+    await sec.getByLabel('Name des Dienstes').fill('Test-Dienst')
+    await sec.getByLabel('Adresse des Dienstes').fill(`${webBase}/mcp`)
+    await sec.getByRole('button', { name: 'Hinzufügen' }).click()
+    await sec.getByText(`${webBase}/mcp`).waitFor()
+    await sec.getByRole('button', { name: 'Testen' }).click()
+    await sec.getByText(/Verbunden.*1 Werkzeug/).waitFor()
+    await sec.getByRole('button', { name: 'Werkzeuge' }).click()
+    await sec.getByText('echo', { exact: true }).waitFor()
+    await win.screenshot({ path: join(shots, '02h-verbindungen.png') })
+    await sec.getByRole('button', { name: 'Test-Dienst entfernen' }).click()
+    await sec.getByText('Noch keine Verbindung. Füge unten einen Dienst hinzu.').waitFor()
     await nav('Start')
   })
 

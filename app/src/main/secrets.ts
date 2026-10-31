@@ -12,7 +12,7 @@ export interface SecretCipher {
   decryptString(encrypted: Buffer): string
 }
 
-type StoredFile = Partial<Record<SecretName, string>>
+type StoredFile = Partial<Record<SecretName, string>> & Record<string, string | undefined>
 
 /**
  * Speichert API-Schlüssel ausschließlich verschlüsselt. Ist keine OS-Verschlüsselung
@@ -56,15 +56,46 @@ export class SecretStore {
     return this.cipher.decryptString(Buffer.from(value, 'base64'))
   }
 
+  /** Konnektor-Token verschlüsselt ablegen (Schlüssel: connector:<id>). */
+  setConnectorToken(id: string, token: string): void {
+    if (!this.cipher.isEncryptionAvailable()) {
+      throw new Error('Sichere Speicherung ist auf diesem System nicht verfügbar.')
+    }
+    const data = this.read()
+    data[`connector:${id}`] = this.cipher.encryptString(token).toString('base64')
+    this.write(data)
+  }
+
+  clearConnectorToken(id: string): void {
+    const data = this.read()
+    delete data[`connector:${id}`]
+    this.write(data)
+  }
+
+  /** Alle Konnektor-Token entschlüsselt (nur Main-Prozess, zur Weitergabe an den lokalen Worker). */
+  connectorTokens(): Record<string, string> {
+    if (!this.cipher.isEncryptionAvailable()) return {}
+    const out: Record<string, string> = {}
+    for (const [k, v] of Object.entries(this.read())) {
+      if (k.startsWith('connector:') && typeof v === 'string') {
+        try {
+          out[k.slice('connector:'.length)] = this.cipher.decryptString(Buffer.from(v, 'base64'))
+        } catch {
+          /* beschädigt: überspringen */
+        }
+      }
+    }
+    return out
+  }
+
   private read(): StoredFile {
     if (!existsSync(this.file)) return {}
     try {
       const parsed: unknown = JSON.parse(readFileSync(this.file, 'utf8'))
       if (!parsed || typeof parsed !== 'object') return {}
       const out: StoredFile = {}
-      for (const p of NAMES) {
-        const v = (parsed as Record<string, unknown>)[p]
-        if (typeof v === 'string') out[p] = v
+      for (const [k, v] of Object.entries(parsed as Record<string, unknown>)) {
+        if (typeof v === 'string' && ((NAMES as readonly string[]).includes(k) || k.startsWith('connector:'))) out[k] = v
       }
       return out
     } catch {

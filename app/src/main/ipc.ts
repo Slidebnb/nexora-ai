@@ -132,6 +132,20 @@ export function registerIpcHandlers(opts: { devServerUrl?: string; secrets: Secr
     return { ok: true }
   })
   handle('system:status', async () => (await hub.systemStatus()) as IpcResponse<'system:status'>)
+  handle('connectors:list', async () => (await hub.listConnectors()) as IpcResponse<'connectors:list'>)
+  handle('connectors:add', async ({ name, url, token }) => {
+    const connector = (await hub.addConnector(name, url, token ?? null)) as IpcResponse<'connectors:add'>
+    // Token verschlüsselt ablegen, damit es bei jedem Start erneut an den lokalen Worker geht
+    if (token) secrets.setConnectorToken(connector.id, token)
+    return connector
+  })
+  handle('connectors:remove', async ({ id }) => {
+    await hub.removeConnector(id)
+    secrets.clearConnectorToken(id)
+    return { ok: true }
+  })
+  handle('connectors:test', async ({ id }) => (await hub.testConnector(id)) as IpcResponse<'connectors:test'>)
+  handle('connectors:tools', async ({ id }) => (await hub.connectorTools(id)) as IpcResponse<'connectors:tools'>)
   handle('desktop:windows', async () => (await hub.desktopWindows()) as IpcResponse<'desktop:windows'>)
   handle('desktop:elements', async ({ window }) => (await hub.desktopElements(window)) as IpcResponse<'desktop:elements'>)
   handle('ai:test', async ({ provider }) => (await hub.testAi(provider)) as IpcResponse<'ai:test'>)

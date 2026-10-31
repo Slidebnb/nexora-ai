@@ -39,7 +39,7 @@ export const WorkerStatusSchema = z.object({
 export type WorkerStatus = z.infer<typeof WorkerStatusSchema>
 
 /** Fähigkeiten, die der Nutzer pro Aufgabe ausdrücklich erlaubt (muss zum Worker-Workflow passen). */
-export const CapabilitySchema = z.enum(['files.read', 'files.move', 'web.read', 'files.export', 'pdf.read', 'ai.cloud', 'drafts.write', 'files.write', 'desktop.read', 'desktop.control'])
+export const CapabilitySchema = z.enum(['files.read', 'files.move', 'web.read', 'files.export', 'pdf.read', 'ai.cloud', 'drafts.write', 'files.write', 'desktop.read', 'desktop.control', 'connectors.use'])
 
 export const CAPABILITY_LABEL: Record<z.infer<typeof CapabilitySchema>, string> = {
   'files.read': 'Dateien lesen',
@@ -51,7 +51,8 @@ export const CAPABILITY_LABEL: Record<z.infer<typeof CapabilitySchema>, string> 
   'drafts.write': 'Entwürfe erstellen',
   'files.write': 'Dateien speichern (mit Freigabe)',
   'desktop.read': 'Programmfenster lesen',
-  'desktop.control': 'Programm bedienen (mit Freigabe)'
+  'desktop.control': 'Programm bedienen (mit Freigabe)',
+  'connectors.use': 'Verbundene Dienste nutzen (mit Freigabe)'
 }
 export type Capability = z.infer<typeof CapabilitySchema>
 
@@ -84,6 +85,14 @@ export const DesktopStepSchema = z.object({
 export type DesktopStep = z.infer<typeof DesktopStepSchema>
 export const DesktopWindowSchema = z.object({ title: z.string().max(200), pid: z.number().int() })
 export type DesktopWindow = z.infer<typeof DesktopWindowSchema>
+
+/** Konnektor (MCP-Dienst), den der Kunde hinzufügt. Das Token liegt nur im sicheren Speicher. */
+export const ConnectorSchema = z.object({ id: z.string(), name: z.string().max(80), url: z.string().max(2000), hasToken: z.boolean(), createdAt: z.string() })
+export type Connector = z.infer<typeof ConnectorSchema>
+export const ConnectorTestSchema = z.object({ ok: z.boolean(), message: z.string().max(400), toolCount: z.number().int().nonnegative() })
+export type ConnectorTest = z.infer<typeof ConnectorTestSchema>
+export const ConnectorToolSchema = z.object({ name: z.string().max(100), description: z.string().max(500), inputSchema: z.unknown() })
+export type ConnectorTool = z.infer<typeof ConnectorToolSchema>
 export const CreateTaskSchema = z.discriminatedUnion('workflow', [
   z.object({ workflow: z.literal('organize_folder'), folderId: z.string().min(1), capabilities: Caps }),
   z.object({ workflow: z.literal('undo_organize'), runId: z.string().regex(/^run-[a-z0-9]+$/), capabilities: Caps }),
@@ -206,7 +215,12 @@ export const IPC_CHANNELS = {
   'system:status': { request: z.undefined(), response: SystemStatusSchema },
   'ai:test': { request: z.object({ provider: ProviderSchema }), response: AiTestResultSchema },
   'desktop:windows': { request: z.undefined(), response: z.array(DesktopWindowSchema).max(200) },
-  'desktop:elements': { request: z.object({ window: z.string().trim().min(1).max(200) }), response: z.array(DesktopElementSchema).max(500) }
+  'desktop:elements': { request: z.object({ window: z.string().trim().min(1).max(200) }), response: z.array(DesktopElementSchema).max(500) },
+  'connectors:list': { request: z.undefined(), response: z.array(ConnectorSchema).max(50) },
+  'connectors:add': { request: z.object({ name: z.string().trim().min(1).max(80), url: z.string().trim().min(1).max(2000), token: z.string().max(4000).optional() }), response: ConnectorSchema },
+  'connectors:remove': { request: z.object({ id: z.string().min(1) }), response: Ok },
+  'connectors:test': { request: z.object({ id: z.string().min(1) }), response: ConnectorTestSchema },
+  'connectors:tools': { request: z.object({ id: z.string().min(1) }), response: z.array(ConnectorToolSchema).max(200) }
 } as const
 
 /** Kanäle, auf denen der Main-Prozess an den Renderer sendet (kein invoke). */

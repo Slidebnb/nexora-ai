@@ -42,10 +42,10 @@ class ConnectorStore:
         return [{"id": r["id"], "name": r["name"], "url": r["url"], "hasToken": bool(r["has_token"]), "createdAt": r["created_at"]} for r in rows]
 
     def get(self, connector_id: str) -> dict[str, Any]:
-        row = self.db.query_one("SELECT id, name, url, has_token FROM connectors WHERE id = ?", (connector_id,))
+        row = self.db.query_one("SELECT id, name, url, has_token, created_at FROM connectors WHERE id = ?", (connector_id,))
         if not row:
             raise TaskError("Konnektor nicht gefunden", 404)
-        return {"id": row["id"], "name": row["name"], "url": row["url"], "hasToken": bool(row["has_token"])}
+        return {"id": row["id"], "name": row["name"], "url": row["url"], "hasToken": bool(row["has_token"]), "createdAt": row["created_at"]}
 
     def add(self, name: str, url: str, token: str | None) -> dict[str, Any]:
         name = name.strip()

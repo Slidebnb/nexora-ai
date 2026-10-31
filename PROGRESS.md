@@ -255,3 +255,15 @@ Antwort mit der System-Stimme), (2) Konnektoren über MCP (wie in Claude), mit F
 
 Nächster Schritt: Konnektoren über MCP (wie in Claude), mit Freigabe vor verändernden Aktionen – größeres Projekt, Aufbau folgt.
 
+## Konnektoren über MCP (2026-10-31) ✅ Grundfunktion
+
+- Kunde fügt in den Einstellungen unter „Verbindungen“ einen Dienst per Adresse hinzu (optional mit Token),
+  testet ihn und sieht dessen Werkzeuge. NEXORA ist MCP-Client (wie Claude; offener Standard).
+- Token nur im sicheren Speicher (DPAPI), nie in der Datenbank. HTTPS-Pflicht für entfernte Dienste.
+- Ein Werkzeug auszuführen ist ein Workflow mit Berechtigung „connectors.use“ UND einer Freigabe je Aufruf.
+- Tests: Worker 84 (MCP-Client 5, Konnektoren über API 5), Unit 68, E2E 27 (echter MCP-Testserver: hinzufügen,
+  testen „1 Werkzeug“, Werkzeuge anzeigen, entfernen). Architektur in docs/ADR-004-konnektoren-mcp.md.
+
+Offen / nächster Schritt: Werkzeugaufruf aus der Oberfläche (Argument-Formular, Expertenansicht) und später
+eine KI-gesteuerte Nutzung – jeweils weiter mit Freigaben. stdio-Transport bewusst noch nicht.
+

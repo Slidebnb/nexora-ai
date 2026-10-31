@@ -87,7 +87,8 @@ export class WorkerHub {
     try {
       await this.client.request('PUT', '/api/session/secrets', {
         anthropic: this.secrets.get('anthropic') ?? null,
-        openai: this.secrets.get('openai') ?? null
+        openai: this.secrets.get('openai') ?? null,
+        connectors: this.secrets.connectorTokens()
       })
     } catch {
       /* Worker noch nicht bereit – wird beim nächsten Verbinden erneut gesendet */
@@ -108,6 +109,26 @@ export class WorkerHub {
 
   testAi(provider: string): Promise<unknown> {
     return this.client.request('POST', '/api/ai/test', { provider })
+  }
+
+  listConnectors(): Promise<unknown> {
+    return this.client.request('GET', '/api/connectors')
+  }
+
+  addConnector(name: string, url: string, token: string | null): Promise<{ id: string }> {
+    return this.client.request('POST', '/api/connectors', { name, url, token })
+  }
+
+  async removeConnector(id: string): Promise<void> {
+    await this.client.request('DELETE', `/api/connectors/${encodeURIComponent(id)}`)
+  }
+
+  testConnector(id: string): Promise<unknown> {
+    return this.client.request('POST', `/api/connectors/${encodeURIComponent(id)}/test`)
+  }
+
+  connectorTools(id: string): Promise<unknown> {
+    return this.client.request('GET', `/api/connectors/${encodeURIComponent(id)}/tools`)
   }
 
   desktopWindows(): Promise<unknown> {
