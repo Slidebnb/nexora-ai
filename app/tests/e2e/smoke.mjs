@@ -82,6 +82,17 @@ await app.evaluate(({ dialog }, pick) => {
 }, { folder, files: pdfFiles })
 const setPickedFolder = (path) => app.evaluate((_e, p) => { globalThis.__nexoraPick.folder = p }, path)
 
+/** Wartet, bis der Ordner auf der Festplatte den erwarteten Zustand hat (maßgeblich, nicht UI-Text). */
+const waitForDisk = async (pred, what, ms = 20_000) => {
+  const end = Date.now() + ms
+  while (!pred(listing())) {
+    if (Date.now() > end) throw new Error(`Zeitüberschreitung: ${what}. Ordner: ${listing()}`)
+    await new Promise((r) => setTimeout(r, 200))
+  }
+}
+const allSorted = (l) => l.length > 0 && l.every((f) => f.includes('/'))
+const allLoose = (l) => l.length > 0 && l.every((f) => !f.includes('/'))
+
 const nav = (name) => win.getByRole('navigation').getByRole('button', { name }).click()
 const step = async (name, fn) => {
   process.stdout.write(`• ${name} … `)
@@ -148,8 +159,7 @@ try {
     await win.screenshot({ path: join(shots, '02c-kunde-fertig.png') })
     await win.locator('li', { hasText: 'Downloads-Test' }).getByRole('button', { name: 'Rückgängig machen' }).click()
     await win.getByRole('alertdialog').getByRole('button', { name: 'Erlauben' }).click()
-    const deadline = Date.now() + 15_000
-    while (listing().some((f) => f.includes('/')) && Date.now() < deadline) await new Promise((r) => setTimeout(r, 200))
+    await waitForDisk(allLoose, 'Rückgängig (Kundenweg)')
     assert.deepEqual(listing(), [...original].sort(), 'Rückgängig stellt alles wieder her')
     void doneList
   })
@@ -195,7 +205,7 @@ try {
 
   await step('LIVE: Erlauben → Dateien wirklich verschoben und verifiziert', async () => {
     await win.getByRole('alertdialog').getByRole('button', { name: 'Erlauben' }).click()
-    await win.getByText(/5\/5 verschobene Dateien geprüft/).first().waitFor({ timeout: 15_000 })
+    await waitForDisk(allSorted, 'Verschieben (Expertenansicht)')
     assert.deepEqual(listing(), ['Archive/archiv.zip', 'Bilder/urlaub.jpg', 'Dokumente/notizen.txt', 'PDFs/rechnung.pdf', 'Tabellen/tabelle.xlsx'])
     await win.screenshot({ path: join(shots, '04-live-fertig.png') })
   })
@@ -207,10 +217,10 @@ try {
     const dlg = win.getByRole('alertdialog')
     await dlg.getByText('Sortierung rückgängig machen', { exact: true }).waitFor({ timeout: 15_000 })
     await dlg.getByRole('button', { name: 'Erlauben' }).click()
-    await win.getByText(/5 Dateien am Ursprungsort geprüft/).first().waitFor({ timeout: 15_000 })
+    await waitForDisk(allLoose, 'Rückgängig (Aktivitäten)')
     assert.deepEqual(listing(), [...original].sort())
     assert.equal(existsSync(join(folder, 'Bilder')), false)
-    assert.equal(await testRows.getByRole('button', { name: 'Rückgängig' }).count(), 0, 'kein zweites Undo anbieten')
+    await testRows.getByRole('button', { name: 'Rückgängig' }).first().waitFor({ state: 'detached', timeout: 10_000 }) // kein zweites Undo anbieten
     await win.screenshot({ path: join(shots, '05-live-undo.png') })
   })
 
@@ -299,8 +309,7 @@ try {
     await dlg.getByText('Dateien verschieben', { exact: true }).waitFor({ timeout: 15_000 })
     await dlg.getByRole('button', { name: 'Erlauben' }).click()
     // Maßgeblich ist die Festplatte (UI-Texte früherer Läufe stehen schon im Protokoll)
-    const deadline = Date.now() + 20_000
-    while (!listing().every((f) => f.includes('/')) && Date.now() < deadline) await new Promise((r) => setTimeout(r, 200))
+    await waitForDisk(allSorted, 'Verschieben über Vorlage')
     assert.ok(listing().every((f) => f.includes('/')), `Dateien wurden über die Vorlage einsortiert: ${listing()}`)
   })
 
