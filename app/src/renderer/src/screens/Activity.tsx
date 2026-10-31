@@ -1,9 +1,10 @@
 import { useState } from 'react'
+import { Undo2 } from 'lucide-react'
 import type { RunStatus } from '@shared/events'
 import { useNexora } from '../state/store'
 import { selectPendingApprovals, selectRuns } from '../state/selectors'
 import { isTerminal } from '../state/runReducer'
-import { respondDemoApproval, stopDemoRun } from '../demo/controller'
+import { canUndo, cleanError, respondApproval, stopRun, undoRun } from '../lib/actions'
 import { RunStatusBadge } from '../components/common/StatusBadge'
 import { ApprovalCard } from '../components/approvals/ApprovalCenter'
 import { CostChart } from '../components/kpi/CostChart'
@@ -24,6 +25,11 @@ const FILTERS: { id: Filter; label: string }[] = [
 export function Activity() {
   const data = useNexora((s) => s.data)
   const [filter, setFilter] = useState<Filter>('all')
+  const [error, setError] = useState<string | null>(null)
+  const act = (p: Promise<unknown>) => {
+    setError(null)
+    p.catch((e: unknown) => setError(cleanError(e)))
+  }
   const pending = selectPendingApprovals(data)
   const runs = selectRuns(data)
     .filter((r) => (filter === 'all' ? true : filter === 'active' ? !isTerminal(r.status) : r.status === filter))
@@ -38,12 +44,17 @@ export function Activity() {
           <h2 className="hud-label mb-2 text-warning">Offene Freigaben ({pending.length})</h2>
           <div className="grid gap-3 lg:grid-cols-2">
             {pending.map((a) => (
-              <ApprovalCard key={a.id} approval={a} runTitle={data.runs[a.runId]?.title} onRespond={(d) => a.source === 'demo' && respondDemoApproval(a.id, d)} />
+              <ApprovalCard key={a.id} approval={a} runTitle={data.runs[a.runId]?.title} onRespond={(d) => act(respondApproval(a, d))} />
             ))}
           </div>
         </section>
       )}
 
+      {error && (
+        <p role="alert" className="mb-4 text-sm text-danger">
+          {error}
+        </p>
+      )}
       <div className="mb-6">
         <CostChart />
       </div>
@@ -95,8 +106,13 @@ export function Activity() {
                   <td className="px-4 py-2 font-mono text-xs text-text-2">{formatUsd(r.costUsd)}</td>
                   <td className="max-w-80 truncate px-4 py-2 text-xs text-text-2" title={r.verification ?? r.error}>{r.verification ?? r.error ?? '–'}</td>
                   <td className="px-4 py-2 text-right">
-                    {!isTerminal(r.status) && r.source === 'demo' && (
-                      <button type="button" className="btn-ghost text-xs" onClick={() => stopDemoRun(r.runId)}>Stoppen</button>
+                    {!isTerminal(r.status) && (
+                      <button type="button" className="btn-ghost text-xs" onClick={() => act(stopRun(r))}>Stoppen</button>
+                    )}
+                    {canUndo(data, r) && (
+                      <button type="button" className="btn-ghost text-xs" onClick={() => act(undoRun(r))}>
+                        <Undo2 className="size-3.5" aria-hidden /> Rückgängig
+                      </button>
                     )}
                   </td>
                 </tr>

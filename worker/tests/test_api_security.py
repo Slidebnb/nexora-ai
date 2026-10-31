@@ -52,3 +52,14 @@ def test_websocket_rejects_browser_origin(api):
         with api.c.websocket_connect("/api/events", headers={**WS_HOST, "origin": "https://evil.example"}) as ws:
             ws.receive_text()
     assert exc.value.code == 4403
+
+
+def test_events_match_renderer_contract(api, folder):
+    """Der Renderer akzeptiert keine null-Felder – sie müssen fehlen (Regression)."""
+    t = api.post("/api/tasks", {"workflow": "organize_folder", "input": {"folder": str(folder)}, "capabilities": ["files.read", "files.move"]}).json()
+    evs = api.wait_type(t["runId"], "approval_requested")
+    for e in evs:
+        assert None not in e.values(), e
+        assert e["source"] == "live" and isinstance(e["seq"], int)
+    created = evs[0]
+    assert created["type"] == "run_created" and "stepId" not in created

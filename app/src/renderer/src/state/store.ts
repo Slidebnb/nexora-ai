@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { NexoraEventSchema, type NexoraEvent } from '@shared/events'
+import type { PickedFolder } from '@shared/ipc-contract'
 import { applyEvent, initialState, type NexoraState } from './runReducer'
 
 export type Screen = 'dashboard' | 'agents' | 'automations' | 'activity' | 'files' | 'settings'
@@ -25,6 +26,8 @@ export interface NexoraStore {
   rightPanelOpen: boolean
   sidebarCollapsed: boolean
   worker: WorkerConnection
+  /** Im nativen Dialog gewählter Ordner (bleibt beim Wechsel der Bereiche erhalten). */
+  pickedFolder: PickedFolder | null
   /** Nimmt ein Event an. Demo-Events werden nur im Demo-Modus akzeptiert. */
   ingest: (event: unknown) => boolean
   setDemoMode: (on: boolean) => void
@@ -32,6 +35,7 @@ export interface NexoraStore {
   toggleRightPanel: () => void
   toggleSidebar: () => void
   setWorker: (worker: WorkerConnection) => void
+  setPickedFolder: (folder: PickedFolder | null) => void
 }
 
 /** Baut den Zustand nur aus Live-Events neu auf (Demo-Daten verschwinden vollständig). */
@@ -46,6 +50,7 @@ export const useNexora = create<NexoraStore>((set, get) => ({
   rightPanelOpen: true,
   sidebarCollapsed: true,
   worker: { state: 'disconnected' },
+  pickedFolder: null,
   ingest: (raw) => {
     const parsed = NexoraEventSchema.safeParse(raw)
     if (!parsed.success) return false
@@ -59,5 +64,6 @@ export const useNexora = create<NexoraStore>((set, get) => ({
   setScreen: (screen) => set({ screen }),
   toggleRightPanel: () => set((s) => ({ rightPanelOpen: !s.rightPanelOpen })),
   toggleSidebar: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
-  setWorker: (worker) => set({ worker })
+  setWorker: (worker) => set({ worker }),
+  setPickedFolder: (pickedFolder) => set({ pickedFolder })
 }))

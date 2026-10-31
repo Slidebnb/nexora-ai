@@ -129,7 +129,7 @@ def create_app(manager: TaskManager, token: str) -> FastAPI:
     async def run_events(run_id: str, after: int = 0) -> list[dict[str, Any]]:
         if manager.db.query_one("SELECT 1 FROM runs WHERE id = ?", (run_id,)) is None:
             raise HTTPException(404, "Run nicht gefunden")
-        return [e.model_dump() for e in manager.bus.replay(after, run_id)]
+        return [e.model_dump(exclude_none=True) for e in manager.bus.replay(after, run_id)]
 
     @app.put("/api/session/secrets", status_code=204)
     async def set_secrets(body: SecretsRequest) -> None:
@@ -152,21 +152,36 @@ def create_app(manager: TaskManager, token: str) -> FastAPI:
             return
         after = int(first.get("after", 0) or 0)
         queue = manager.bus.subscribe()  # vor dem Replay abonnieren → keine Lücke
-        try:
+
+        async def send_events() -> None:
             last = after
             for e in manager.bus.replay(after):
-                await ws.send_text(e.model_dump_json())
+                await ws.send_text(e.model_dump_json(exclude_none=True))
                 last = e.seq
             await ws.send_text(json.dumps({"type": "replay_done", "lastSeq": last}))
             while True:
                 e = await queue.get()
                 if e.seq <= last:
                     continue
-                await ws.send_text(e.model_dump_json())
+                await ws.send_text(e.model_dump_json(exclude_none=True))
                 last = e.seq
+
+        async def watch_disconnect() -> None:
+            # Ohne aktives Lesen würde ein Verbindungsabbruch nie bemerkt (hängender Shutdown).
+            while True:
+                msg = await ws.receive()
+                if msg["type"] == "websocket.disconnect":
+                    return
+
+        tasks = [asyncio.create_task(send_events()), asyncio.create_task(watch_disconnect())]
+        try:
+            await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
         except WebSocketDisconnect:
             pass
         finally:
+            for t in tasks:
+                t.cancel()
+            await asyncio.gather(*tasks, return_exceptions=True)
             manager.bus.unsubscribe(queue)
 
     return app

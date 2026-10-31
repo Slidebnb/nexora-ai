@@ -1,10 +1,10 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ShieldAlert } from 'lucide-react'
 import type { ApprovalDecision } from '@shared/events'
 import { useNexora } from '../../state/store'
 import { selectPendingApprovals } from '../../state/selectors'
 import type { ApprovalState } from '../../state/runReducer'
-import { respondDemoApproval } from '../../demo/controller'
+import { cleanError, respondApproval } from '../../lib/actions'
 import { formatTime } from '../../lib/format'
 import { DemoTag } from '../common/Panel'
 
@@ -59,10 +59,12 @@ export function ApprovalCenter() {
   const data = useNexora((s) => s.data)
   const pending = selectPendingApprovals(data)
   const first = pending[0]
+  const [error, setError] = useState<string | null>(null)
   if (!first) return null
 
   const respond = (decision: ApprovalDecision) => {
-    if (first.source === 'demo') respondDemoApproval(first.id, decision)
+    setError(null)
+    respondApproval(first, decision).catch((e: unknown) => setError(cleanError(e)))
   }
 
   return (
@@ -72,8 +74,10 @@ export function ApprovalCenter() {
           Freigabe erforderlich {pending.length > 1 && `(1 von ${pending.length})`}
         </h2>
         <ApprovalCard approval={first} runTitle={data.runs[first.runId]?.title} onRespond={respond} autoFocus />
-        {first.source === 'live' && (
-          <p className="mt-2 text-xs text-text-2">Live-Freigaben werden mit dem Worker in Phase 2 angebunden.</p>
+        {error && (
+          <p role="alert" className="mt-2 text-sm text-danger">
+            {error}
+          </p>
         )}
       </div>
     </div>

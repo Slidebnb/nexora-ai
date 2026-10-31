@@ -37,3 +37,34 @@ def test_refuses_short_token(tmp_path):
     env = {**os.environ, "NEXORA_WORKER_TOKEN": "kurz"}
     r = subprocess.run([sys.executable, "-m", "nexora_worker", "--data-dir", str(tmp_path)], env=env, capture_output=True, text=True, timeout=30)
     assert r.returncode == 2
+
+
+def test_worker_exits_when_parent_dies_even_with_open_websocket(tmp_path):
+    """Regression: offene WS-Verbindung darf das Beenden nicht blockieren (verwaiste Prozesse)."""
+    import asyncio
+
+    import websockets
+
+    env = {**os.environ, "NEXORA_WORKER_TOKEN": TOKEN}
+    proc = subprocess.Popen(
+        [sys.executable, "-m", "nexora_worker", "--data-dir", str(tmp_path / "d"), "--watch-stdin"],
+        stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env, text=True,
+    )
+    try:
+        port = json.loads(proc.stdout.readline().split(" ", 1)[1])["port"]
+
+        async def hold_open() -> None:
+            async with websockets.connect(f"ws://127.0.0.1:{port}/api/events") as ws:
+                await ws.send(json.dumps({"type": "auth", "token": TOKEN, "after": 0}))
+                assert json.loads(await ws.recv())["type"] == "replay_done"
+                proc.stdin.close()
+                t0 = time.monotonic()
+                while proc.poll() is None and time.monotonic() - t0 < 10:
+                    await asyncio.sleep(0.1)
+
+        asyncio.run(hold_open())
+        assert proc.wait(timeout=1) == 0
+    finally:
+        if proc.poll() is None:
+            proc.kill()
+            raise AssertionError("Worker hat sich nicht beendet")

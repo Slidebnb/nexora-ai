@@ -1,9 +1,15 @@
 import { join } from 'node:path'
 import { app, BrowserWindow, session, shell } from 'electron'
 import { buildCsp, isAllowedNavigation, secureWebPreferences } from './security'
-import { registerIpcHandlers } from './ipc'
+import { createSecretStore, registerIpcHandlers } from './ipc'
+import { WorkerHub } from './worker/hub'
+import { resolveWorkerLaunch } from './worker/supervisor'
 
 const devServerUrl = !app.isPackaged ? process.env['ELECTRON_RENDERER_URL'] : undefined
+
+// Isoliertes Datenverzeichnis für automatisierte Tests (nur in der Entwicklungsversion).
+const testUserData = !app.isPackaged ? process.env['NEXORA_USER_DATA'] : undefined
+if (testUserData) app.setPath('userData', testUserData)
 
 function createWindow(): void {
   const win = new BrowserWindow({
@@ -45,8 +51,31 @@ app.whenReady().then(() => {
   session.defaultSession.setPermissionRequestHandler((_wc, _permission, callback) => callback(false))
   session.defaultSession.setPermissionCheckHandler(() => false)
 
-  registerIpcHandlers(devServerUrl)
+  const secrets = createSecretStore()
+  const hub = new WorkerHub(
+    () =>
+      resolveWorkerLaunch({
+        packaged: app.isPackaged,
+        resourcesPath: process.resourcesPath,
+        appPath: app.getAppPath(),
+        dataDir: join(app.getPath('userData'), 'worker')
+      }),
+    secrets,
+    (channel, payload) => {
+      for (const w of BrowserWindow.getAllWindows()) if (!w.isDestroyed()) w.webContents.send(channel, payload)
+    }
+  )
+  registerIpcHandlers({ devServerUrl, secrets, hub })
   createWindow()
+  hub.start()
+
+  let quitting = false
+  app.on('before-quit', (event) => {
+    if (quitting) return
+    event.preventDefault()
+    quitting = true
+    void hub.stop().finally(() => app.quit())
+  })
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()

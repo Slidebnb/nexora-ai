@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
-import { Cpu, HardDrive, PanelRight, Pause, Square, WifiOff } from 'lucide-react'
+import { Cpu, HardDrive, Loader2, PanelRight, Square, Wifi, WifiOff } from 'lucide-react'
 import { SCREEN_LABEL, useNexora } from '../../state/store'
 import { selectActiveRuns, selectKpis } from '../../state/selectors'
-import { stopAllDemoRuns } from '../../demo/controller'
+import { stopRun } from '../../lib/actions'
 import { formatUsd } from '../../lib/format'
 
 const clock = new Intl.DateTimeFormat('de-DE', { hour: '2-digit', minute: '2-digit' })
@@ -15,6 +15,7 @@ export function TopBar() {
   const toggleRight = useNexora((s) => s.toggleRightPanel)
   const rightOpen = useNexora((s) => s.rightPanelOpen)
   const screen = useNexora((s) => s.screen)
+  const worker = useNexora((s) => s.worker)
   const [now, setNow] = useState(() => new Date())
 
   useEffect(() => {
@@ -22,7 +23,9 @@ export function TopBar() {
     return () => clearInterval(id)
   }, [])
 
-  const hasDemoActive = demoMode && activeRuns.some((r) => r.source === 'demo')
+  const hasActive = activeRuns.length > 0
+  const WorkerIcon = worker.state === 'connected' ? Wifi : worker.state === 'starting' ? Loader2 : WifiOff
+  const workerLabel = { connected: 'verbunden', starting: 'startet …', disconnected: 'nicht verbunden', error: 'Fehler' }[worker.state]
 
   return (
     <header className="flex h-14 shrink-0 items-center gap-5 border-b border-line bg-base-2/80 px-5">
@@ -35,8 +38,11 @@ export function TopBar() {
       </div>
 
       <div className="ml-2 flex items-center gap-4 whitespace-nowrap text-xs text-text-2">
-        <span className="inline-flex items-center gap-1.5" title="Der lokale Worker wird in Phase 2 angebunden.">
-          <WifiOff className="size-3.5 text-text-2" aria-hidden /> Worker: nicht verbunden
+        <span
+          className={`inline-flex items-center gap-1.5 ${worker.state === 'connected' ? 'text-success' : worker.state === 'error' ? 'text-danger' : ''}`}
+          title={worker.message ?? 'Lokaler Worker (127.0.0.1)'}
+        >
+          <WorkerIcon className={`size-3.5 ${worker.state === 'starting' ? 'motion-safe:animate-spin' : ''}`} aria-hidden /> Worker: {workerLabel}
         </span>
         <span className="inline-flex items-center gap-1.5" title="Es ist keine Cloud-Verarbeitung aktiv.">
           <HardDrive className="size-3.5" aria-hidden /> <span className="max-xl:hidden">Verarbeitung:</span> lokal
@@ -48,15 +54,12 @@ export function TopBar() {
       </div>
 
       <div className="ml-auto flex items-center gap-2">
-        <button type="button" className="btn-ghost" disabled title="Pausieren folgt mit dem Worker (Phase 2)">
-          <Pause className="size-4" aria-hidden /> <span className="max-xl:sr-only">Pause</span>
-        </button>
         <button
           type="button"
           className="btn-ghost"
-          disabled={!hasDemoActive}
-          onClick={stopAllDemoRuns}
-          title={hasDemoActive ? 'Alle laufenden Demo-Vorgänge stoppen' : 'Kein laufender Vorgang'}
+          disabled={!hasActive}
+          onClick={() => activeRuns.forEach((r) => void stopRun(r).catch(() => undefined))}
+          title={hasActive ? 'Alle laufenden Vorgänge stoppen' : 'Kein laufender Vorgang'}
         >
           <Square className="size-4" aria-hidden /> <span className="max-xl:sr-only">Stopp</span>
         </button>

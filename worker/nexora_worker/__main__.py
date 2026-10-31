@@ -75,7 +75,7 @@ def main() -> int:
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.bind(("127.0.0.1", 0))
     port = sock.getsockname()[1]
-    config = uvicorn.Config(app, log_config=None, access_log=False, ws="websockets", lifespan="off")
+    config = uvicorn.Config(app, log_config=None, access_log=False, ws="websockets", lifespan="off", timeout_graceful_shutdown=3)
     server = uvicorn.Server(config)
 
     async def serve() -> None:

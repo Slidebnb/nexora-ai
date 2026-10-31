@@ -123,6 +123,10 @@ class Workflow(ABC):
         """Ressource, die nicht parallel bearbeitet werden darf (z. B. Ordner)."""
         return None
 
+    def related_run_id(self, data: BaseModel) -> str | None:
+        """Bezug auf einen früheren Run (z. B. Undo)."""
+        return None
+
     @abstractmethod
     async def run(self, ctx: RunContext, data: BaseModel) -> None: ...
 
@@ -188,7 +192,7 @@ class TaskManager:
         )
         ctx = RunContext(run_id, task_id, wf.agent_id, self.data_dir, self.bus, self.approvals, self.secrets)
         self._contexts[run_id] = ctx
-        self.bus.emit(run_id=run_id, task_id=task_id, agent_id=wf.agent_id, type="run_created", status="queued", payload={"title": title, "agentName": wf.agent_name})
+        self.bus.emit(run_id=run_id, task_id=task_id, agent_id=wf.agent_id, type="run_created", status="queued", payload={"title": title, "agentName": wf.agent_name, "workflow": wf.name, **({"relatedRunId": rel} if (rel := wf.related_run_id(data)) else {})})
         self._tasks[run_id] = asyncio.create_task(self._execute(wf, ctx, data))
         return task_id, run_id
 

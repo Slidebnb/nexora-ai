@@ -53,7 +53,7 @@ export type ArtifactKind = z.infer<typeof ArtifactKindSchema>
 
 /** Payload-Schemas je Eventtyp. Unbekannte Zusatzfelder sind erlaubt. */
 export const PAYLOAD_SCHEMAS = {
-  run_created: z.object({ title: z.string(), agentName: z.string().optional() }),
+  run_created: z.object({ title: z.string(), agentName: z.string().optional(), workflow: z.string().optional(), relatedRunId: z.string().optional() }),
   plan_ready: z.object({
     steps: z.array(z.object({ id: z.string(), title: z.string() }))
   }),

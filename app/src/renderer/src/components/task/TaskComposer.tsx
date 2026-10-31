@@ -1,14 +1,49 @@
 import { useState } from 'react'
-import { Play, Info } from 'lucide-react'
+import { FolderOpen, Info, Play } from 'lucide-react'
 import { useNexora } from '../../state/store'
-import { WORKFLOWS } from '../../data/workflows'
+import { WORKFLOWS, type WorkflowTemplate } from '../../data/workflows'
 import { enterDemo, startDemoScenario } from '../../demo/controller'
+import { cleanError } from '../../lib/actions'
 
+/** Startet echte Aufgaben über den Worker (Live) oder simulierte Abläufe (Demo). */
 export function TaskComposer() {
   const demoMode = useNexora((s) => s.demoMode)
+  const worker = useNexora((s) => s.worker)
   const [workflowId, setWorkflowId] = useState(WORKFLOWS[0]!.id)
   const [text, setText] = useState('')
-  const workflow = WORKFLOWS.find((w) => w.id === workflowId)!
+  const folder = useNexora((s) => s.pickedFolder)
+  const setFolder = useNexora((s) => s.setPickedFolder)
+  const [consent, setConsent] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const workflow: WorkflowTemplate = WORKFLOWS.find((w) => w.id === workflowId)!
+  const live = workflow.live
+  const workerReady = worker.state === 'connected'
+
+  const reset = () => {
+    setConsent(false)
+    setError(null)
+  }
+
+  const startLive = async () => {
+    if (!live) return
+    setBusy(true)
+    setError(null)
+    try {
+      if (live.workflow === 'organize_folder') {
+        if (!folder) throw new Error('Bitte zuerst einen Ordner auswählen')
+        await window.nexora.createTask({ workflow: 'organize_folder', folderId: folder.folderId, capabilities: live.capabilities })
+      }
+      setConsent(false)
+      setText('')
+    } catch (e) {
+      setError(cleanError(e))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const canStartLive = !!live && workerReady && consent && !busy && (live.workflow !== 'organize_folder' || !!folder)
   const canStartDemo = demoMode && !!workflow.demoScenarioId
 
   return (
@@ -18,17 +53,23 @@ export function TaskComposer() {
       aria-label="Neue Aufgabe"
       onSubmit={(e) => {
         e.preventDefault()
-        if (canStartDemo && workflow.demoScenarioId) {
-          startDemoScenario(workflow.demoScenarioId)
-          setText('')
-        }
+        if (demoMode) {
+          if (canStartDemo && workflow.demoScenarioId) startDemoScenario(workflow.demoScenarioId)
+        } else void startLive()
       }}
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="hud-label">Neue Aufgabe</h2>
         <label className="flex items-center gap-2 text-xs text-text-2">
           Vorlage
-          <select value={workflowId} onChange={(e) => setWorkflowId(e.target.value)} className="input py-1 text-xs">
+          <select
+            value={workflowId}
+            onChange={(e) => {
+              setWorkflowId(e.target.value)
+              reset()
+            }}
+            className="input py-1 text-xs"
+          >
             {WORKFLOWS.map((w) => (
               <option key={w.id} value={w.id}>
                 {w.title}
@@ -37,14 +78,45 @@ export function TaskComposer() {
           </select>
         </label>
       </div>
-      <textarea
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        rows={2}
-        placeholder={`z. B. „${workflow.description}“`}
-        aria-label="Aufgabe in natürlicher Sprache"
-        className="input min-h-16 flex-1 resize-none text-sm"
-      />
+
+      {!demoMode && live?.workflow === 'organize_folder' ? (
+        <div className="flex min-h-16 flex-1 flex-col gap-2">
+          <p className="text-sm text-text-2">{workflow.description}</p>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => {
+                setError(null)
+                window.nexora.pickFolder().then(
+                  (f) => {
+                    if (f) {
+                      setFolder(f)
+                      setConsent(false)
+                    }
+                  },
+                  (e: unknown) => setError(cleanError(e))
+                )
+              }}
+            >
+              <FolderOpen className="size-4" aria-hidden /> Ordner wählen
+            </button>
+            <span className="min-w-0 truncate font-mono text-xs text-text" title={folder?.path} data-testid="picked-folder">
+              {folder ? folder.path : 'kein Ordner gewählt'}
+            </span>
+          </div>
+        </div>
+      ) : (
+        <textarea
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          rows={2}
+          placeholder={`z. B. „${workflow.description}“`}
+          aria-label="Aufgabe in natürlicher Sprache"
+          className="input min-h-16 flex-1 resize-none text-sm"
+        />
+      )}
+
       <div className="flex flex-wrap items-center gap-2 text-[11px] text-text-2">
         <span>Benötigt:</span>
         {workflow.capabilities.map((c) => (
@@ -53,22 +125,48 @@ export function TaskComposer() {
           </span>
         ))}
       </div>
+
+      {!demoMode && live && (
+        <label className="flex items-start gap-2 text-xs text-text">
+          <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} className="mt-0.5 accent-[var(--color-accent)]" />
+          <span>
+            Ich erlaube NEXORA für diese Aufgabe: {workflow.capabilities.join(', ')}. Jede verändernde Aktion wird vorher einzeln zur Freigabe
+            angezeigt.
+          </span>
+        </label>
+      )}
+
+      {error && (
+        <p role="alert" className="text-xs text-danger">
+          {error}
+        </p>
+      )}
+
       <div className="flex flex-wrap items-center gap-3">
-        {!demoMode && (
+        {!demoMode && !live && (
           <p className="flex flex-1 items-start gap-1.5 text-xs text-text-2">
             <Info className="mt-px size-3.5 shrink-0" aria-hidden />
-            Echte Ausführung folgt ab {workflow.livePhase}, sobald der lokale Worker angebunden ist. Du kannst den Ablauf vorher im Demo-Modus ansehen.
+            Echte Ausführung dieser Vorlage folgt ab {workflow.livePhase}. Im Demo-Modus kannst du den Ablauf ansehen.
           </p>
         )}
-        {demoMode && !workflow.demoScenarioId && (
-          <p className="flex-1 text-xs text-text-2">Für diese Vorlage gibt es noch keine Demo.</p>
+        {!demoMode && live && !workerReady && (
+          <p className="flex-1 text-xs text-warning">Worker ist nicht verbunden{worker.message ? `: ${worker.message}` : ''}.</p>
         )}
+        {demoMode && !workflow.demoScenarioId && <p className="flex-1 text-xs text-text-2">Für diese Vorlage gibt es noch keine Demo.</p>}
         {demoMode && workflow.demoScenarioId && <p className="flex-1 text-xs text-warning">Startet einen simulierten DEMO-Lauf.</p>}
-        {!demoMode ? (
+        {!demoMode && live && workerReady && <span className="flex-1" />}
+
+        {!demoMode && !live && (
           <button type="button" className="btn-secondary" onClick={enterDemo}>
             Demo-Modus öffnen
           </button>
-        ) : (
+        )}
+        {!demoMode && live && (
+          <button type="submit" className="btn-primary" disabled={!canStartLive}>
+            <Play className="size-4" aria-hidden /> Aufgabe starten
+          </button>
+        )}
+        {demoMode && (
           <button type="submit" className="btn-primary" disabled={!canStartDemo}>
             <Play className="size-4" aria-hidden /> Demo starten
           </button>

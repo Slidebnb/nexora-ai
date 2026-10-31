@@ -1,4 +1,6 @@
-/** Die fünf MVP-Workflows laut Masterplan §6. Ausführung im Live-Modus folgt ab Phase 2/3. */
+import type { Capability } from '@shared/ipc-contract'
+
+/** Die fünf MVP-Workflows laut Masterplan §6. `live` ist gesetzt, sobald der Worker sie echt ausführt. */
 export interface WorkflowTemplate {
   id: string
   title: string
@@ -7,6 +9,7 @@ export interface WorkflowTemplate {
   /** Szenario für den DEMO-Modus, falls vorhanden. */
   demoScenarioId?: string
   livePhase: string
+  live?: { workflow: 'organize_folder' | 'web_research'; capabilities: Capability[] }
 }
 
 export const WORKFLOWS: WorkflowTemplate[] = [
@@ -16,7 +19,8 @@ export const WORKFLOWS: WorkflowTemplate[] = [
     description: 'Testordner analysieren, Sortiervorschlag zeigen, nach Freigabe verschieben. Backup und Undo.',
     capabilities: ['Dateien lesen', 'Dateien verschieben (mit Freigabe)'],
     demoScenarioId: 'ordner',
-    livePhase: 'Phase 3'
+    livePhase: 'Phase 2',
+    live: { workflow: 'organize_folder', capabilities: ['files.read', 'files.move'] }
   },
   {
     id: 'recherche',

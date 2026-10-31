@@ -1,4 +1,4 @@
-import { FileText, Link2, Sheet, Download } from 'lucide-react'
+import { FileText, Link2, Sheet, Download, FolderOpen } from 'lucide-react'
 import type { ArtifactKind } from '@shared/events'
 import { useNexora } from '../../state/store'
 import { formatTime } from '../../lib/format'
@@ -32,9 +32,13 @@ export function ResultCards({ limit }: { limit?: number }) {
                 </div>
                 {run?.source === 'demo' ? (
                   <DemoTag />
-                ) : (
-                  <span className="text-[11px] text-text-2" title="Öffnen folgt mit dem Worker">–</span>
-                )}
+                ) : a.uri?.startsWith('file:') ? (
+                  <button type="button" className="btn-ghost text-xs" onClick={() => void window.nexora.revealArtifact(a.id)} title="Im Explorer anzeigen">
+                    <FolderOpen className="size-3.5" aria-hidden /> Anzeigen
+                  </button>
+                ) : a.uri ? (
+                  <span className="max-w-40 truncate font-mono text-[11px] text-text-2" title={a.uri}>{a.uri}</span>
+                ) : null}
               </li>
             )
           })}

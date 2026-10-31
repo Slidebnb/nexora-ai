@@ -46,6 +46,10 @@ export interface RunState {
   title: string
   agentId?: string
   agentName?: string
+  /** Worker-Workflow (z. B. organize_folder); bei Demo-Läufen leer. */
+  workflow?: string
+  /** Bezug auf einen früheren Run (z. B. Undo). */
+  relatedRunId?: string
   status: RunStatus
   planReady: boolean
   steps: StepState[]
@@ -127,7 +131,7 @@ export function applyEvent(state: NexoraState, event: NexoraEvent): NexoraState 
 
   if (event.type === 'run_created') {
     if (existing) return next
-    const p = parsed.success ? (parsed.data as { title: string; agentName?: string }) : undefined
+    const p = parsed.success ? (parsed.data as { title: string; agentName?: string; workflow?: string; relatedRunId?: string }) : undefined
     const run: RunState = {
       runId: event.runId,
       taskId: event.taskId,
@@ -135,6 +139,8 @@ export function applyEvent(state: NexoraState, event: NexoraEvent): NexoraState 
       title: p?.title ?? 'Unbenannter Vorgang',
       agentId: event.agentId,
       agentName: p?.agentName,
+      workflow: p?.workflow,
+      relatedRunId: p?.relatedRunId,
       status: event.status,
       planReady: false,
       steps: [],

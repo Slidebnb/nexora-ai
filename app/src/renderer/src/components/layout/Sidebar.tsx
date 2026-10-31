@@ -86,8 +86,9 @@ export function Sidebar() {
         <div className="mt-auto rounded border border-line bg-panel p-3" role="status">
           <div className="mb-1.5 flex items-center gap-2">
             <span className={cx('size-2 rounded-full', online ? 'bg-success motion-safe:animate-pulse' : 'bg-text-2')} aria-hidden />
-            <span className="text-xs text-text">{online ? 'Worker verbunden' : 'Worker nicht verbunden'}</span>
+            <span className="text-xs text-text">{online ? 'Worker verbunden' : worker.state === 'starting' ? 'Worker startet …' : worker.state === 'error' ? 'Worker-Fehler' : 'Worker nicht verbunden'}</span>
           </div>
+          {worker.state === 'error' && worker.message && <p className="mb-1 text-[11px] leading-4 text-danger">{worker.message}</p>}
           <p className="text-[11px] leading-4 text-text-2">
             Modus: {demoMode ? 'DEMO (simuliert)' : 'Live'}
             <br />

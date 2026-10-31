@@ -285,6 +285,10 @@ class UndoOrganize(Workflow):
         assert isinstance(data, UndoInput)
         return f"undo:{data.runId}"
 
+    def related_run_id(self, data: BaseModel) -> str | None:
+        assert isinstance(data, UndoInput)
+        return data.runId
+
     async def run(self, ctx: RunContext, data: BaseModel) -> None:
         assert isinstance(data, UndoInput)
         jpath = journal_path(ctx.data_dir, data.runId)
