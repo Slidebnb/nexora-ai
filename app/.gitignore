@@ -3,3 +3,5 @@ out/
 dist/
 *.log
 e2e-artifacts/
+release/
+build/

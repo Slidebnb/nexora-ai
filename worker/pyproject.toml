@@ -20,6 +20,10 @@ browser = ["browser-use==0.13.14"]
 dev = [
   "pytest==9.2.0",
 ]
+# Installer-Build des Sidecars (GPL mit Bootloader-Ausnahme: erzeugte Programme frei lizenzierbar)
+build = [
+  "pyinstaller==6.22.3",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

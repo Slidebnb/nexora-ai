@@ -68,3 +68,27 @@ def test_worker_exits_when_parent_dies_even_with_open_websocket(tmp_path):
         if proc.poll() is None:
             proc.kill()
             raise AssertionError("Worker hat sich nicht beendet")
+
+
+BUNDLED = os.path.join(os.path.dirname(__file__), "..", "..", "app", "build", "worker", "nexora-worker" + (".exe" if sys.platform == "win32" else ""))
+
+
+def test_bundled_sidecar_starts(tmp_path):
+    """Prüft die mit PyInstaller gebaute Programmdatei (nur wenn vorhanden: `uv run --group build python build_sidecar.py`)."""
+    import pytest
+
+    if not os.path.exists(BUNDLED):
+        pytest.skip("Sidecar nicht gebaut")
+    env = {**os.environ, "NEXORA_WORKER_TOKEN": TOKEN}
+    proc = subprocess.Popen([BUNDLED, "--data-dir", str(tmp_path / "d"), "--watch-stdin"], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env, text=True)
+    try:
+        line = proc.stdout.readline()
+        assert line.startswith("NEXORA_WORKER_READY "), line + proc.stderr.read()
+        port = json.loads(line.split(" ", 1)[1])["port"]
+        health = httpx.get(f"http://127.0.0.1:{port}/api/health", headers={"Authorization": f"Bearer {TOKEN}"}).json()
+        assert set(health["workflows"]) >= {"organize_folder", "undo_organize", "web_research", "pdf_analysis", "draft_emails"}
+        proc.stdin.close()
+        assert proc.wait(timeout=15) == 0
+    finally:
+        if proc.poll() is None:
+            proc.kill()

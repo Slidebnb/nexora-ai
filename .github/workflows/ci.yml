@@ -1,0 +1,98 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  linux:
+    name: Tests (Linux, inkl. E2E)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.28.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: app/pnpm-lock.yaml
+      - name: Worker installieren und testen
+        working-directory: worker
+        run: |
+          uv sync --extra browser
+          uv run pytest -q
+      - name: App installieren
+        working-directory: app
+        run: pnpm install --frozen-lockfile
+      - name: Unit-Tests und Build
+        working-directory: app
+        run: |
+          pnpm test
+          pnpm build
+      - name: E2E (echter Worker, echte Dateien)
+        working-directory: app
+        run: xvfb-run -a pnpm e2e
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-screenshots-linux
+          path: app/e2e-artifacts/
+
+  windows:
+    name: Windows-Installer
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.28.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: app/pnpm-lock.yaml
+      - name: Worker testen und als Sidecar bauen
+        working-directory: worker
+        run: |
+          uv sync --group build
+          uv run pytest -q
+          uv run --group build python build_sidecar.py
+          uv run pytest -q tests/test_process.py
+      - name: App installieren und testen
+        working-directory: app
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm test
+      - name: E2E unter Windows (echter Worker)
+        working-directory: app
+        run: |
+          pnpm build
+          pnpm e2e
+      - name: Installer bauen (unsigniert, solange kein Zertifikat hinterlegt ist)
+        working-directory: app
+        env:
+          CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+        run: pnpm exec electron-builder --win
+      - name: Gepackte App starten (eingebauter Worker, echter Vorgang)
+        working-directory: app
+        run: node tests/e2e/packaged.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nexora-ai-windows-installer
+          path: app/release/*.exe
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-screenshots-windows
+          path: app/e2e-artifacts/

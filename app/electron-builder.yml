@@ -1,0 +1,39 @@
+# electron-builder – Installer-Konfiguration
+# Windows-Installer: pnpm dist:win   (Signatur: CSC_LINK / CSC_KEY_PASSWORD als Umgebungsvariablen, nie im Repo)
+appId: de.nexora.ai
+productName: NEXORA AI
+copyright: Copyright © 2026 NEXORA AI
+directories:
+  output: release
+  buildResources: resources
+files:
+  - out/**
+  - package.json
+asar: true
+extraResources:
+  # Gebündelter Python-Worker (vorher: im Ordner worker `uv run --group build python build_sidecar.py`)
+  - from: build/worker
+    to: worker
+  - from: ../THIRD_PARTY_NOTICES.md
+    to: THIRD_PARTY_NOTICES.md
+  - from: ../licenses
+    to: licenses
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+  # Signieren erfolgt nur, wenn CSC_LINK gesetzt ist (Code-Signing-Zertifikat, Phase 4)
+  signtoolOptions:
+    publisherName: NEXORA AI
+nsis:
+  oneClick: false
+  perMachine: false            # Installation pro Benutzer: keine Admin-Rechte nötig
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: NEXORA AI
+  deleteAppDataOnUninstall: false   # Nutzerdaten (Verlauf, Vorlagen) bleiben bei Deinstallation erhalten
+linux:
+  target: [dir]                # nur für automatisierte Tests in der Linux-Umgebung
+  category: Utility
+publish: null                  # Auto-Update: siehe docs/ADR-003.md (noch nicht aktiviert)
