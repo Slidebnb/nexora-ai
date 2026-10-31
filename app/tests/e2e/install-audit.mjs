@@ -104,7 +104,8 @@ try {
 
   // 4) API-Schlüssel: Windows-Verschlüsselung (DPAPI) und Neustart
   await win.getByRole('navigation').getByRole('button', { name: 'Einstellungen' }).click()
-  const secure = await win.getByText('Sichere Speicherung verfügbar').isVisible()
+  // Status wird asynchron geladen → warten statt sofort abzufragen
+  const secure = await win.getByText('Sichere Speicherung verfügbar').waitFor({ timeout: 10_000 }).then(() => true, () => false)
   check('Sichere Speicherung (DPAPI) verfügbar', secure)
   const fakeKey = 'sk-ant-audit-' + 'X'.repeat(32)
   await win.getByLabel('API-Schlüssel Anthropic (Claude)').fill(fakeKey)
