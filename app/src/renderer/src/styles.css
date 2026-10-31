@@ -1,0 +1,39 @@
+@import 'tailwindcss';
+
+/* Design-Tokens laut Masterplan §5 (Theme „Crimson“) */
+@theme {
+  --color-base: #080b12;
+  --color-base-2: #0d111a;
+  --color-panel: #101827;
+  --color-panel-2: #131b2c;
+  --color-accent: #f43f67;
+  --color-accent-hi: #ff6b88;
+  --color-text: #f0f3f9;
+  --color-text-2: #9ba5b8;
+  --color-success: #4ade80;
+  --color-warning: #f5b544;
+  --color-danger: #ef4444;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-base);
+  color: var(--color-text);
+  font-family: 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
