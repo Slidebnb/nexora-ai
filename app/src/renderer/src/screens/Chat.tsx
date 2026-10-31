@@ -4,13 +4,14 @@
  * Aktionen auf dem PC (Ordner, Dateien …) folgen als nächster Schritt – dann jeweils mit Freigabe.
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { KeyRound, Mic, Send, Sparkles, Square, Volume2, VolumeX } from 'lucide-react'
+import { AudioLines, KeyRound, Mic, Send, Sparkles, Square, Volume2, VolumeX } from 'lucide-react'
 import type { ChatMessage, Provider } from '@shared/ipc-contract'
 import { useNexora } from '../state/store'
 import { WORKFLOWS } from '../data/workflows'
 import { TaskWizard } from '../components/home/TaskWizard'
 import { TaskRuns } from '../components/home/TaskRuns'
 import { useVoice } from '../lib/useVoice'
+import { VoiceMode } from './VoiceMode'
 
 interface Shown extends ChatMessage {
   pending?: boolean
@@ -31,6 +32,7 @@ export function Chat() {
   const idRef = useRef<string | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const [speakReplies, setSpeakReplies] = useState(true)
+  const [voiceMode, setVoiceMode] = useState(false)
   const sendRef = useRef<(t: string, spoken: boolean) => void>(() => {})
   const voice = useVoice((t) => sendRef.current(t, true))
 
@@ -118,8 +120,12 @@ export function Chat() {
       <header className="flex items-center gap-2 pb-3">
         <Sparkles className="size-5 text-accent-hi" aria-hidden />
         <h1 className="text-lg font-semibold text-text">NEXORA</h1>
-        {provider && <span className="ml-auto text-xs text-text-2">über {PROVIDER_LABEL[provider]}</span>}
+        <button type="button" className="btn-secondary ml-auto text-xs" onClick={() => setVoiceMode(true)} aria-label="Live-Sprachmodus öffnen" data-testid="open-voice">
+          <AudioLines className="size-4" aria-hidden /> Sprachmodus
+        </button>
+        {provider && <span className="text-xs text-text-2">über {PROVIDER_LABEL[provider]}</span>}
       </header>
+      {voiceMode && <VoiceMode onClose={() => setVoiceMode(false)} />}
 
       <div ref={scrollRef} className="min-h-0 flex-1 space-y-4 overflow-y-auto pr-1" aria-live="polite">
         {messages.length === 0 && (

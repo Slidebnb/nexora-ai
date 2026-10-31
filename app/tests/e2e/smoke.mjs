@@ -218,6 +218,15 @@ try {
     await win.screenshot({ path: join(shots, '02a-chat.png') })
   })
 
+  await step('Sprachmodus öffnet sich (animierter Orb) und schließt wieder', async () => {
+    await win.getByTestId('open-voice').click()
+    const voice = win.getByRole('dialog', { name: 'Sprachmodus' })
+    await voice.waitFor()
+    await win.screenshot({ path: join(shots, '02k-sprachmodus.png') })
+    await voice.getByRole('button', { name: 'Sprachmodus schließen' }).click()
+    assert.equal(await win.getByRole('dialog', { name: 'Sprachmodus' }).count(), 0)
+  })
+
   await step('AGENT: KI startet selbst eine Web-Recherche und antwortet aus dem Ergebnis', async () => {
     await nav('Dateien')
     await nav('Start')

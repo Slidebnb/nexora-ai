@@ -321,3 +321,19 @@ E2E 29: echter Agent-Entwurf – „Schreib einen E-Mail-Entwurf an …" → KI 
 im Chat deutlicher anzeigen, Modellwahl je Anbieter. Der Kern „NEXORA ist ein Agent" steht: die KI entscheidet
 selbst, nutzt echte Werkzeuge und hält sich an die Freigaben.
 
+## Live-Sprachmodus mit animiertem Orb (2026-10-31) ✅
+
+- Vollbild-Sprachmodus (Knopf „Sprachmodus" im Chat): animierter Orb, der beim Zuhören und Sprechen lebt.
+- Freisprech-Schleife: einmal „Sprechen" tippen → frei reden → NEXORA antwortet laut (System-Stimme) und
+  führt dabei dieselben Agent-Werkzeuge aus wie im Chat → hört danach automatisch weiter zu.
+- Ehrliche Meldung, wenn die Spracherkennung (Web-Speech-API) nicht verfügbar ist.
+- E2E 30: Sprachmodus öffnet (Orb sichtbar) und schließt wieder. Unit 68.
+
+**Ehrliche Einordnung / nächste Stufen zur vollständigen Vision des Inhabers:**
+- Der aktuelle Sprachmodus nutzt die Browser-Spracherkennung + System-Stimme. **Echte Telefon-Latenz
+  (durchgehendes Echtzeit-Gespräch)** käme über eine Realtime-Sprach-API (z. B. OpenAI Realtime) – eigener, größerer Ausbau.
+- **Echtes Senden statt Entwürfe:** E-Mails/Nachrichten wirklich über die verbundenen Dienste des Nutzers senden
+  (statt nur Entwürfe) – über die Konnektoren, jede Sendung mit Freigabe. Braucht die Anbindung des E-Mail-Dienstes.
+- **Visuelle Konnektor-Einrichtung:** eine Galerie zum Auswählen und Verbinden von Diensten (statt nur Adresse eintragen).
+- **Sichtbare Agent-Schritte** im Chat/Sprachmodus (eigene „arbeitet …"-Karten).
+
