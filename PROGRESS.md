@@ -115,7 +115,7 @@ Außerdem: Berechtigungen je Aufgabe mit ausdrücklicher Zustimmung (Cloud-KI nu
 - Freigabe-Fenster mit „Wo / Was genau / Was passiert“, Statusleiste „Bereit · Läuft auf deinem PC“
 - **Expertenansicht** (Einstellungen → Ansicht): technisches Kontrollzentrum mit Ereignisprotokoll, Event-Stream, Kennzahlen und HUD; standardmäßig aus
 
-**Teststatus:** E2E 19 Schritte grün, darunter der komplette Kundenweg auf der Startseite mit Prüfung auf der Festplatte; gepackte App startet mit dem neuen Ablauf; Worker 49 und Unit 55 Tests grün.
+**Teststatus:** E2E 18 Schritte grün (korrigiert, zuvor fälschlich 19), darunter der komplette Kundenweg auf der Startseite mit Prüfung auf der Festplatte; gepackte App startet mit dem neuen Ablauf; Worker 49 und Unit 55 Tests grün.
 
 ## Erststart, Hinweise, Themen (2026-10-31) ✅
 
@@ -125,7 +125,7 @@ Außerdem: Berechtigungen je Aufgabe mit ausdrücklicher Zustimmung (Cloud-KI nu
 - **Farbthemen** Crimson, Cyan, Violett, Minimal (Masterplan §5), auch in den Canvas-Effekten
 - **Datenbank-Sicherung** vor jeder Strukturänderung (`nexora.db.bak-v<alte Version>`)
 
-**Teststatus:** E2E 21 Schritte grün (inkl. Erststart bis zum Erfolg und Themenwechsel), Unit 57, Worker 49 (inkl. Sicherung vor Migration).
+**Teststatus:** E2E 20 Schritte grün (korrigiert, zuvor fälschlich 21; inkl. Erststart bis zum Erfolg und Themenwechsel), Unit 57, Worker 49 (inkl. Sicherung vor Migration).
 **Nicht automatisiert getestet:** Windows-Benachrichtigungen (benötigen ein Fenster ohne Fokus auf einem echten Desktop) – bitte beim Windows-Test prüfen.
 
 ## Feinschliff MVP (2026-10-31) ✅
@@ -135,7 +135,7 @@ Außerdem: Berechtigungen je Aufgabe mit ausdrücklicher Zustimmung (Cloud-KI nu
 - **Optionale Texterkennung (OCR)** für gescannte PDFs: lokal mit Tesseract (vom Nutzer installiert), ehrliche Meldung, wenn es fehlt
 - **Kleineres Startpaket:** 774,92 kB → 419,41 kB (gemessen mit `pnpm build`); Diagramm und Expertenansicht laden bei Bedarf
 
-**Teststatus:** Worker 55 Tests (inkl. echter OCR einer gescannten PDF, Pause/Abbruch), Unit 58, E2E 22 Schritte (inkl. Pause während einer langsamen Webseite), gepackte App grün. OCR auch über die gebündelte Programmdatei geprüft (10 erkannte Wörter in der Test-PDF).
+**Teststatus:** Worker 55 Tests (inkl. echter OCR einer gescannten PDF, Pause/Abbruch), Unit 58, E2E 21 Schritte (korrigiert, zuvor fälschlich 22; inkl. Pause während einer langsamen Webseite), gepackte App grün. OCR auch über die gebündelte Programmdatei geprüft (10 erkannte Wörter in der Test-PDF).
 
 **Offen:** Ein einmaliger Fehlschlag von `test_websocket_requires_auth_and_replays` (1 von 11 Läufen, danach 10 grün) ist nicht reproduziert und wird in der CI beobachtet.
 
