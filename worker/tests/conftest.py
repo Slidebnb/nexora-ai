@@ -29,7 +29,7 @@ class Api:
         assert r.status_code == 200, r.text
         return r.json()
 
-    def wait_for(self, run_id: str, pred: Callable[[list[dict]], bool], timeout: float = 10) -> list[dict]:
+    def wait_for(self, run_id: str, pred: Callable[[list[dict]], bool], timeout: float = 20) -> list[dict]:
         end = time.monotonic() + timeout
         while time.monotonic() < end:
             evs = self.events(run_id)

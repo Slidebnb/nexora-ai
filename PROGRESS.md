@@ -211,3 +211,12 @@ Masterplan-Module „SystemStatus: echte Worker-/Browser-/Modellverbindung“ un
 
 Damit ist der Code-Teil des Masterplans umgesetzt. Was nur der Inhaber erledigen kann, steht in `docs/AUDIT.md` unter „Offene Punkte“: Rechtstexte prüfen lassen, Stripe-Konto, Lizenzschlüssel, Code-Signing-Zertifikat, Pilot-Zielwerte und der Test mit eigenem API-Schlüssel auf einem echten Windows-PC.
 
+## Seltener Testfehler geklärt (2026-10-31)
+
+- Ursache des seltenen Fehlschlags von `test_websocket_requires_auth_and_replays`: ein `CancelledError`
+  beim Schließen der WebSocket-Verbindung im Starlette-Testclient – ein Zeitfenster im Test, nicht im Produkt.
+- Behoben: Der Test trennt die Verbindung ausdrücklich und wartet, bis der Server das Abo entfernt hat.
+- Zusätzlich: Wartezeitlimit der Tests von 10 auf 20 Sekunden erhöht, damit ausgelastete CI-Rechner keine
+  Fehlalarme mehr durch Zeitüberschreitung auslösen (ein solcher trat bei 40 parallelen Testläufen einmal in `test_organizer` auf).
+- Nachweis: 40 Durchläufe der gesamten Worker-Tests; der ursprüngliche WebSocket-Fehler trat nicht mehr auf.
+

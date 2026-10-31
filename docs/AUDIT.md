@@ -145,5 +145,5 @@ Beim Audit habe ich frühere Angaben gegen das Testskript im jeweiligen Commit g
 | Code-Signing-Zertifikat | Kauf/Identitätsprüfung nötig | Inhaber |
 | Echte KI-Aufrufe (Anthropic/OpenAI, browser-use) | kein API-Schlüssel in der Testumgebung | Inhaber (eigener Schlüssel) |
 | Texterkennung unter Windows | Tesseract auf dem Runner nicht installiert | lässt sich in der CI ergänzen |
-| Ein einmaliger, nicht reproduzierter Fehlschlag des Python-Tests `test_websocket_requires_auth_and_replays` (1 von 11 lokalen Läufen) | danach durchgehend grün; Ursache unbekannt | Beobachtung in der CI |
+| ~~Seltener Fehlschlag von `test_websocket_requires_auth_and_replays`~~ | **Geklärt und behoben:** `CancelledError` beim Trennen im Starlette-Testclient (Zeitfenster im Test, nicht im Produkt). Der Test trennt jetzt sauber und wartet auf das Aufräumen; Wartezeitlimit der Tests von 10 auf 20 s erhöht gegen Überlast-Fehlalarme. In 40 Läufen nicht mehr aufgetreten. | erledigt |
 | Rechtstexte, Stripe, Lizenzschlüssel, Pilot-Zielwerte | siehe `PROGRESS.md` | Inhaber |
