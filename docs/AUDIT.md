@@ -103,7 +103,7 @@ Externe Programme werden an genau drei Stellen gestartet, alle mit fester Argume
 
 | Bereich | Anzahl | Quelle |
 |---|---|---|
-| Worker (pytest) | 72 bestanden + 1 nur unter Windows (Stand `75ac001`; beim Audit 55) | `uv run pytest` |
+| Worker (pytest) | 74 bestanden + 1 nur unter Windows (beim Audit 55) | `uv run pytest` |
 | Lizenzdienst (pytest) | 7 bestanden | `uv run pytest` |
 | App-Unit-Tests (vitest) | 65 bestanden | `pnpm test` |
 | E2E mit echter App, echtem Worker und echten Dateien | 25 Schritte | `tests/e2e/smoke.mjs`; läuft unter Linux und Windows in der CI |

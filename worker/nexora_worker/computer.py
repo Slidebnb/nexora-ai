@@ -93,6 +93,38 @@ def escape_text(text: str) -> str:
     return "".join(out)
 
 
+_VK_MODS = {"shift": "VK_SHIFT", "ctrl": "VK_CONTROL", "alt": "VK_MENU"}
+
+
+def modifier_vks(text: str) -> list[str]:
+    """Zusatztasten für Klick/Scroll („shift“, „ctrl+shift“) → pywinauto-VK-Namen. Windows-Taste: gesperrt."""
+    parts = normalize_combo(text) if text else []
+    out = []
+    for m in parts:
+        if m not in _VK_MODS:
+            raise ActionError(f"Zusatztaste „{m}“ wird nicht unterstützt")
+        out.append(_VK_MODS[m])
+    return out
+
+
+def hold_tokens(combo: str) -> tuple[str, str]:
+    """Taste(n) gedrückt halten: (Drücken, Loslassen) als send_keys-Folge. Nur Sonder- und Zusatztasten."""
+    if is_blocked(combo):
+        raise ActionError(f"Tastenkombination „{combo}“ ist aus Sicherheitsgründen gesperrt")
+    parts = normalize_combo(combo)
+    if not parts:
+        raise ActionError("Leere Tastenangabe")
+    names = []
+    for k in parts:
+        if k in _VK_MODS:
+            names.append(_VK_MODS[k])
+        elif k in _SPECIAL:
+            names.append(_SPECIAL[k].strip("{}"))
+        else:
+            raise ActionError(f"Taste „{k}“ kann nicht gehalten werden (nur Sonder- und Zusatztasten)")
+    return "".join(f"{{{n} down}}" for n in names), "".join(f"{{{n} up}}" for n in reversed(names))
+
+
 @dataclass(frozen=True)
 class Frame:
     """Fensterausschnitt auf dem Bildschirm und Maßstab zwischen Bildschirmfoto und Bildschirm."""
@@ -138,7 +170,7 @@ def describe_action(name: str, inp: dict[str, Any]) -> str:
         "mouse_move": f"Maus bewegen{at}",
         "left_mouse_down": "Linke Maustaste drücken",
         "left_mouse_up": "Linke Maustaste loslassen",
-        "scroll": f"{inp.get('scroll_amount', 1)}× scrollen ({inp.get('scroll_direction', '?')}){at}",
+        "scroll": f"{inp.get('scroll_amount', 1)}× scrollen ({ {'up': 'nach oben', 'down': 'nach unten', 'left': 'nach links', 'right': 'nach rechts'}.get(str(inp.get('scroll_direction')), '?')}){at}" + (f" mit {inp['text']}" if inp.get("text") else ""),
         "type": f"Text tippen: „{str(inp.get('text', ''))[:200]}“",
         "key": f"Taste {inp.get('text', '')}" + (f" ×{inp['repeat']}" if inp.get("repeat") else ""),
         "hold_key": f"Taste {inp.get('text', '')} {inp.get('duration', '?')} s halten",

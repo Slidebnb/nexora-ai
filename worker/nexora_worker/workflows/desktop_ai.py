@@ -17,12 +17,13 @@ from typing import Any, Callable, ClassVar
 import httpx
 from pydantic import BaseModel, Field, field_validator
 
-from ..computer import CONTROL, READ_ONLY, TOOL_ENTRY, ActionError, Frame, describe_action, escape_text, frame_for, image_content, result, to_send_keys
+from ..computer import CONTROL, READ_ONLY, TOOL_ENTRY, ActionError, Frame, describe_action, escape_text, frame_for, hold_tokens, image_content, modifier_vks, result, to_send_keys
 from ..desktop import DesktopBackend, DesktopError, is_own_window
 from ..runner import RunCancelled, RunContext, Workflow, WorkflowError
 from ..safety import redact_text
 
 MODEL = "claude-opus-5-5"
+FALLBACK_BETA = "server-side-fallback-2026-07-01"
 # Preise laut Anthropic-Preisliste für dieses Modell (USD je 1 Mio. Token, Eingabe/Ausgabe)
 PRICE_IN, PRICE_OUT = 4.0, 20.0
 MAX_TURNS = 12
@@ -156,18 +157,23 @@ class DesktopAi(Workflow):
 
     @staticmethod
     def _request(client: httpx.Client, key: str, messages: list[dict[str, Any]]) -> dict[str, Any]:
-        r = client.post(
-            "https://api.anthropic.com/v1/messages",
-            headers={"x-api-key": key, "anthropic-version": "2023-06-01", "content-type": "application/json"},
-            json={
-                "model": MODEL,
-                "max_tokens": 16000,
-                "system": SYSTEM,
-                "output_config": {"effort": "medium"},
-                "tools": [TOOL_ENTRY],
-                "messages": messages,
-            },
-        )
+        body: dict[str, Any] = {
+            "model": MODEL,
+            "max_tokens": 16000,
+            "system": SYSTEM,
+            "output_config": {"effort": "medium"},
+            "tools": [TOOL_ENTRY],
+            "messages": messages,
+            # Lehnt das Modell ab, wählt der Anbieter selbst ein passendes Ersatzmodell (serverseitige Ausweichlösung)
+            "fallbacks": "default",
+        }
+        headers = {"x-api-key": key, "anthropic-version": "2023-06-01", "content-type": "application/json", "anthropic-beta": FALLBACK_BETA}
+        r = client.post("https://api.anthropic.com/v1/messages", headers=headers, json=body)
+        if r.status_code == 400 and "fallback" in r.text.lower():
+            # Ausweichlösung für dieses Konto/Werkzeug nicht verfügbar → ohne sie erneut senden
+            body.pop("fallbacks")
+            headers.pop("anthropic-beta")
+            r = client.post("https://api.anthropic.com/v1/messages", headers=headers, json=body)
         if r.status_code != 200:
             try:
                 msg = str(r.json().get("error", {}).get("message", ""))
@@ -200,10 +206,15 @@ class DesktopAi(Workflow):
             if name == "wait":
                 await asyncio.sleep(min(float(inp.get("duration", 1) or 1), 10.0))
                 return result(tid, [{"type": "text", "text": "OK"}])
+            mods: tuple[str, ...] = ()
+            if (name.endswith("click") or name == "scroll") and inp.get("text"):
+                mods = tuple(modifier_vks(str(inp["text"])))
+            hold: tuple[str, str, float] | None = None
             if name == "hold_key":
-                raise ActionError("Taste halten wird nicht unterstützt")
-            if name.endswith("click") and inp.get("text"):
-                raise ActionError("Klick mit Zusatztasten wird nicht unterstützt")
+                secs = float(inp.get("duration", 0) or 0)
+                if not 0 < secs <= 10:
+                    raise ActionError("Haltedauer 0–10 Sekunden")
+                hold = (*hold_tokens(str(inp.get("text", ""))), secs)
 
             # Alles prüfen, BEVOR der Nutzer gefragt wird
             keys = ""
@@ -226,8 +237,8 @@ class DesktopAi(Workflow):
                 amount = int(inp.get("scroll_amount", 1) or 1)
                 if not 1 <= amount <= 30:
                     raise ActionError("Scrollweite 1–30")
-                if inp.get("scroll_direction") not in ("up", "down"):
-                    raise ActionError("Nur senkrechtes Scrollen wird unterstützt")
+                if inp.get("scroll_direction") not in ("up", "down", "left", "right"):
+                    raise ActionError("Ungültige Scrollrichtung")
 
             decision = await ctx.approve(
                 action="KI-Aktion ausführen",
@@ -241,13 +252,15 @@ class DesktopAi(Workflow):
 
             if name in ("type", "key"):
                 await self._call(self.backend.send_keys, keys)
+            elif hold is not None:
+                await self._call(self.backend.hold, *hold)
             elif name == "scroll":
                 x, y = coord or (frame.left + frame.width // 2, frame.top + frame.height // 2)
-                await self._call(self.backend.scroll, x, y, str(inp["scroll_direction"]), amount)
+                await self._call(self.backend.scroll, x, y, str(inp["scroll_direction"]), amount, mods)
             else:
                 if coord is None:
                     coord = await self._call(self.backend.cursor)
-                await self._call(self.backend.mouse, name, coord[0], coord[1], start)
+                await self._call(self.backend.mouse, name, coord[0], coord[1], start, mods)
             return result(tid, [{"type": "text", "text": "OK"}])
         except ActionError as e:
             return result(tid, f"Error: {e}", is_error=True)

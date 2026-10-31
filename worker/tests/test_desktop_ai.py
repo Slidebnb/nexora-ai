@@ -40,11 +40,14 @@ class FakeScreen:
         self.calls.append(("shot", rect, size))
         return png_b64(*size)
 
-    def mouse(self, action, x, y, start=None):
-        self.calls.append(("mouse", action, x, y, start))
+    def mouse(self, action, x, y, start=None, mods=()):
+        self.calls.append(("mouse", action, x, y, start, tuple(mods)))
 
-    def scroll(self, x, y, direction, amount):
-        self.calls.append(("scroll", x, y, direction, amount))
+    def scroll(self, x, y, direction, amount, mods=()):
+        self.calls.append(("scroll", x, y, direction, amount, tuple(mods)))
+
+    def hold(self, down, up, seconds):
+        self.calls.append(("hold", down, up, seconds))
 
     def send_keys(self, keys):
         self.calls.append(("keys", keys))
@@ -58,14 +61,20 @@ def tool(i, name, **inp):
 
 
 class ScriptedApi:
-    def __init__(self, replies):
+    def __init__(self, replies, reject_fallback=False):
         self.replies = list(replies)
         self.requests: list[dict] = []
+        self.headers: list[dict] = []
+        self.reject_fallback = reject_fallback
 
     def handler(self, request: httpx.Request) -> httpx.Response:
         assert request.url == "https://api.anthropic.com/v1/messages"
         assert request.headers["x-api-key"] == KEY["anthropic"]
-        self.requests.append(json.loads(request.content))
+        body = json.loads(request.content)
+        self.headers.append(dict(request.headers))
+        if self.reject_fallback and "fallbacks" in body:
+            return httpx.Response(400, json={"type": "error", "error": {"type": "invalid_request_error", "message": "fallbacks is not supported"}})
+        self.requests.append(body)
         return httpx.Response(200, json=self.replies.pop(0))
 
 
@@ -75,8 +84,8 @@ def reply(content, stop="tool_use", out=100):
 
 @pytest.fixture
 def setup(api):
-    def make(replies):
-        screen, script = FakeScreen(), ScriptedApi(replies)
+    def make(replies, reject_fallback=False):
+        screen, script = FakeScreen(), ScriptedApi(replies, reject_fallback)
         wf = api.manager.workflows["desktop_ai"]
         wf.backend = screen
         wf.client_factory = lambda: httpx.Client(transport=httpx.MockTransport(script.handler))
@@ -132,11 +141,12 @@ def test_full_loop_with_approvals_blocking_and_result(api, setup):
     assert asked[1:] == ["Linksklick bei [40, 30]", "Text tippen: „2+3=“"], "gesperrte Taste und Klick außerhalb werden gar nicht erst gefragt"
     # Bildschirm: nur Fensterausschnitt, Klick in Bildschirmkoordinaten, Text maskiert, Win+R nie gesendet
     assert ("shot", (100, 50, 900, 650), (800, 600)) in screen.calls
-    assert ("mouse", "left_click", 140, 80, None) in screen.calls
+    assert ("mouse", "left_click", 140, 80, None, ()) in screen.calls
     assert ("keys", "2{+}3=") in screen.calls and not any(c[0] == "keys" and "r" == c[1] for c in screen.calls)
     # API-Vertrag: Toolset-Eintrag, Modell, Ergebnisse mit toolset_name, Denkblock unverändert zurück
     first, second, third = script.requests
     assert first["tools"] == [{"type": "computer_toolset_20260801"}] and first["model"] == "claude-opus-5-5"
+    assert first["fallbacks"] == "default" and script.headers[0]["anthropic-beta"] == "server-side-fallback-2026-07-01"
     assert second["messages"][1]["content"][0] == {"type": "thinking", "thinking": "", "signature": "sig-1"}
     results = second["messages"][2]["content"]
     assert [r["tool_use_id"] for r in results] == ["toolu_1", "toolu_2"] and all(r["toolset_name"] == "computer" for r in results)
@@ -185,3 +195,34 @@ def test_refusal_missing_key_and_permissions(api, setup):
     body = {"workflow": "desktop_ai", "input": {"window": "Rechner", "goal": "Rechne 2+3 aus"}}
     assert api.post("/api/tasks", {**body, "capabilities": ["desktop.read", "desktop.control"]}).status_code == 403
     assert api.post("/api/tasks", {**body, "input": {"window": "NEXORA AI", "goal": "Rechne 2+3 aus"}, "capabilities": CAPS}).status_code == 400
+
+
+def test_modifier_click_hold_and_horizontal_scroll(api, setup):
+    screen, _ = setup([
+        reply([
+            tool(1, "left_click", coordinate=[40, 30], text="ctrl+shift"),
+            tool(2, "hold_key", text="shift", duration=0.2),
+            tool(3, "scroll", scroll_direction="right", scroll_amount=3, coordinate=[10, 10]),
+            tool(4, "left_click", coordinate=[1, 1], text="super"),
+            tool(5, "hold_key", text="a", duration=1),
+        ]),
+        reply([{"type": "text", "text": "Fertig."}], stop="end_turn"),
+    ])
+    run = start(api)
+    asked = answer(api, run, ["allow", "allow", "allow", "allow"])
+    assert api.wait_terminal(run)[-1]["type"] == "run_succeeded"
+    assert asked[1:] == ["Linksklick bei [40, 30] mit ctrl+shift", "Taste shift 0.2 s halten", "3× scrollen (nach rechts) bei [10, 10]"]
+    assert ("mouse", "left_click", 140, 80, None, ("VK_CONTROL", "VK_SHIFT")) in screen.calls
+    assert ("hold", "{VK_SHIFT down}", "{VK_SHIFT up}", 0.2) in screen.calls
+    assert ("scroll", 110, 60, "right", 3, ()) in screen.calls
+    assert not any(c[0] == "mouse" and c[2:4] == (101, 51) for c in screen.calls), "Windows-Taste als Zusatztaste gesperrt"
+    assert not any(c[0] == "hold" and "VK_A" in c[1] for c in screen.calls), "normale Buchstaben werden nicht gehalten"
+
+
+def test_retries_without_fallback_when_rejected(api, setup):
+    _, script = setup([reply([{"type": "text", "text": "Fertig."}], stop="end_turn")], reject_fallback=True)
+    run = start(api)
+    answer(api, run, ["allow"])
+    assert api.wait_terminal(run)[-1]["type"] == "run_succeeded"
+    assert len(script.headers) == 2 and "anthropic-beta" not in script.headers[1]
+    assert "fallbacks" not in script.requests[0]

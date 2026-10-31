@@ -110,9 +110,10 @@ class DesktopBackend(Protocol):
     # Bildschirmbedienung für den KI-Modus (Computer Use); Koordinaten sind Bildschirmpixel
     def window_rect(self, window: str) -> tuple[int, int, int, int]: ...
     def screenshot_png(self, rect: tuple[int, int, int, int], size: tuple[int, int]) -> str: ...
-    def mouse(self, action: str, x: int, y: int, start: tuple[int, int] | None = None) -> None: ...
-    def scroll(self, x: int, y: int, direction: str, amount: int) -> None: ...
+    def mouse(self, action: str, x: int, y: int, start: tuple[int, int] | None = None, mods: tuple[str, ...] = ()) -> None: ...
+    def scroll(self, x: int, y: int, direction: str, amount: int, mods: tuple[str, ...] = ()) -> None: ...
     def send_keys(self, keys: str) -> None: ...
+    def hold(self, down: str, up: str, seconds: float) -> None: ...
     def cursor(self) -> tuple[int, int]: ...
 
 
@@ -144,10 +145,13 @@ class UnavailableBackend:
     def screenshot_png(self, rect: tuple[int, int, int, int], size: tuple[int, int]) -> str:
         return self._no()
 
-    def mouse(self, action: str, x: int, y: int, start: tuple[int, int] | None = None) -> None:
+    def mouse(self, action: str, x: int, y: int, start: tuple[int, int] | None = None, mods: tuple[str, ...] = ()) -> None:
         self._no()
 
-    def scroll(self, x: int, y: int, direction: str, amount: int) -> None:
+    def scroll(self, x: int, y: int, direction: str, amount: int, mods: tuple[str, ...] = ()) -> None:
+        self._no()
+
+    def hold(self, down: str, up: str, seconds: float) -> None:
         self._no()
 
     def send_keys(self, keys: str) -> None:
@@ -301,7 +305,29 @@ class WindowsBackend:  # pragma: no cover – läuft nur unter Windows (CI-Job �
         img.save(buf, format="PNG")
         return base64.b64encode(buf.getvalue()).decode("ascii")
 
-    def mouse(self, action: str, x: int, y: int, start: tuple[int, int] | None = None) -> None:
+    def mouse(self, action: str, x: int, y: int, start: tuple[int, int] | None = None, mods: tuple[str, ...] = ()) -> None:
+        with self._modifiers(mods):
+            self._mouse(action, x, y, start)
+
+    @staticmethod
+    def _modifiers(mods: tuple[str, ...]):  # noqa: ANN205 – Kontextmanager
+        import contextlib  # noqa: PLC0415
+
+        from pywinauto import keyboard  # noqa: PLC0415
+
+        @contextlib.contextmanager
+        def held():  # noqa: ANN202
+            if mods:
+                keyboard.send_keys("".join(f"{{{m} down}}" for m in mods))
+            try:
+                yield
+            finally:
+                if mods:
+                    keyboard.send_keys("".join(f"{{{m} up}}" for m in reversed(mods)))
+
+        return held()
+
+    def _mouse(self, action: str, x: int, y: int, start: tuple[int, int] | None) -> None:
         from pywinauto import mouse  # noqa: PLC0415
 
         c = (x, y)
@@ -329,12 +355,32 @@ class WindowsBackend:  # pragma: no cover – läuft nur unter Windows (CI-Job �
         else:
             raise DesktopError(f"Mausaktion {action} nicht unterstützt")
 
-    def scroll(self, x: int, y: int, direction: str, amount: int) -> None:
+    def scroll(self, x: int, y: int, direction: str, amount: int, mods: tuple[str, ...] = ()) -> None:
         from pywinauto import mouse  # noqa: PLC0415
 
-        if direction not in ("up", "down"):
-            raise DesktopError("Nur senkrechtes Scrollen wird unterstützt")
-        mouse.scroll((x, y), wheel_dist=amount if direction == "up" else -amount)
+        with self._modifiers(mods):
+            if direction in ("up", "down"):
+                mouse.scroll((x, y), wheel_dist=amount if direction == "up" else -amount)
+            elif direction in ("left", "right"):
+                import win32api  # noqa: PLC0415
+                import win32con  # noqa: PLC0415
+
+                mouse.move((x, y))
+                delta = 120 * amount * (1 if direction == "right" else -1)  # WHEEL_DELTA je Raste
+                win32api.mouse_event(win32con.MOUSEEVENTF_HWHEEL, 0, 0, delta, 0)
+            else:
+                raise DesktopError(f"Unbekannte Scrollrichtung {direction}")
+
+    def hold(self, down: str, up: str, seconds: float) -> None:
+        import time  # noqa: PLC0415
+
+        from pywinauto import keyboard  # noqa: PLC0415
+
+        keyboard.send_keys(down)
+        try:
+            time.sleep(seconds)
+        finally:
+            keyboard.send_keys(up)
 
     def send_keys(self, keys: str) -> None:
         from pywinauto import keyboard  # noqa: PLC0415

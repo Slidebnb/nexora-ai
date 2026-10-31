@@ -198,5 +198,16 @@ Masterplan-Module „SystemStatus: echte Worker-/Browser-/Modellverbindung“ un
 **Nicht geprüft / offen**
 - Ein echter KI-Desktop-Lauf gegen die Anthropic-API: in der Testumgebung gibt es keinen Schlüssel.
 - Klicks über pywinauto auf einem echten Kunden-Desktop. Die CI prüft Texteingabe und Zurücklesen im Editor, keine Mausklicks.
-- Klick mit Zusatztasten, Taste halten und waagerechtes Scrollen werden bewusst abgelehnt (noch nicht umgesetzt).
+
+## Masterauftrag: letzte Code-Lücken geschlossen (2026-10-31)
+
+- KI-Desktop-Modus kann jetzt auch:
+  - mit Umschalt/Strg/Alt klicken und scrollen (Windows-Taste bleibt gesperrt),
+  - Sonder- und Zusatztasten bis 10 s halten,
+  - waagerecht scrollen.
+  - Jede dieser Aktionen wird vorher einzeln freigegeben.
+- Ausweichmodell des Anbieters: Lehnt das Modell eine Anfrage ab, wählt der Anbieter ein passendes Ersatzmodell (`fallbacks: "default"`). Unterstützt das Konto das nicht, sendet NEXORA einmal ohne erneut.
+- Tests: Worker 74 (davon 2 neu für diese Fälle).
+
+Damit ist der Code-Teil des Masterplans umgesetzt. Was nur der Inhaber erledigen kann, steht in `docs/AUDIT.md` unter „Offene Punkte“: Rechtstexte prüfen lassen, Stripe-Konto, Lizenzschlüssel, Code-Signing-Zertifikat, Pilot-Zielwerte und der Test mit eigenem API-Schlüssel auf einem echten Windows-PC.
 
