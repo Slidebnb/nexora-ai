@@ -65,11 +65,13 @@ app.whenReady().then(() => {
         dataDir: join(app.getPath('userData'), 'worker')
       }),
     secrets,
-    (channel, payload) => {
-      for (const w of BrowserWindow.getAllWindows()) if (!w.isDestroyed()) w.webContents.send(channel, payload)
-      if (channel === 'worker:event') notifyIfUnfocused(payload as NexoraEvent)
-    }
+    (channel, payload) => broadcast(channel, payload)
   )
+
+  function broadcast(channel: string, payload: unknown): void {
+    for (const w of BrowserWindow.getAllWindows()) if (!w.isDestroyed()) w.webContents.send(channel, payload)
+    if (channel === 'worker:event') notifyIfUnfocused(payload as NexoraEvent)
+  }
 
   /** Windows-Benachrichtigung, wenn NEXORA im Hintergrund ist und der Nutzer gebraucht wird oder etwas fertig ist. */
   const runTitles = new Map<string, string>()
@@ -100,7 +102,7 @@ app.whenReady().then(() => {
     serverUrl: process.env['NEXORA_LICENSE_URL'] ?? 'https://license.nexora.example'
   })
   void license.refreshIfDue(secrets.get('license'))
-  registerIpcHandlers({ devServerUrl, secrets, hub, license, settings })
+  registerIpcHandlers({ devServerUrl, secrets, hub, license, settings, broadcast })
   createWindow()
   hub.start()
 

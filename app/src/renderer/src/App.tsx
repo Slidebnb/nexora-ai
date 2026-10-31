@@ -7,7 +7,7 @@ import { DemoBanner } from './components/layout/DemoBanner'
 import { ApprovalCenter } from './components/approvals/ApprovalCenter'
 import { Onboarding } from './components/onboarding/Onboarding'
 import { useNexora, type Screen } from './state/store'
-import { Home } from './screens/Home'
+import { Chat } from './screens/Chat'
 import { Agents } from './screens/Agents'
 import { Automations } from './screens/Automations'
 import { Activity } from './screens/Activity'
@@ -30,7 +30,7 @@ function StartScreen() {
       <Dashboard />
     </Suspense>
   ) : (
-    <Home />
+    <Chat />
   )
 }
 

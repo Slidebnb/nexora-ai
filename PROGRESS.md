@@ -267,3 +267,22 @@ Nächster Schritt: Konnektoren über MCP (wie in Claude), mit Freigabe vor verä
 Offen / nächster Schritt: Werkzeugaufruf aus der Oberfläche (Argument-Formular, Expertenansicht) und später
 eine KI-gesteuerte Nutzung – jeweils weiter mit Freigaben. stdio-Transport bewusst noch nicht.
 
+## Neuausrichtung: Chat als Herzstück (2026-10-31) ✅
+
+Auf klares Nutzer-Feedback („unübersichtlich, man kann nicht mit NEXORA schreiben, obwohl API-Key hinterlegt“):
+- **Echter Chat als Startseite.** Du schreibst, NEXORA antwortet **live gestreamt** über deinen hinterlegten
+  Schlüssel (Anthropic oder OpenAI – automatisch gewählt). Der Schlüssel bleibt im Hauptprozess, nie im Renderer.
+  Streaming und API-Aufruf laufen im Main-Prozess (`src/main/chat.ts`), Live-Tippen über den Push-Kanal `chat:delta`.
+- **Einrichtung:** Ohne Schlüssel zeigt der Chat einen klaren Hinweis mit Knopf zu den Einstellungen.
+- **Aufgeräumt:** Für Kunden zeigt die Seitenleiste nur noch Start, Dateien, Einstellungen; die technischen
+  Bereiche (Agenten, Automationen, Aktivitäten) nur in der Expertenansicht.
+- **Sprachmodus** ist in den Chat umgezogen (Mikrofon + System-Stimme).
+- **Aufgaben** (Ordner, PDF, E-Mail, Programm bedienen) sind als Vorschläge im leeren Chat erreichbar; läuft eine
+  Aufgabe, erscheinen Fortschritt/Ergebnis/Rückgängig direkt im Chat (sonst bleibt er leer und ruhig).
+- Tests: Unit 68, E2E 27 Schritte – inkl. echtem Chat-Test (nachgebauter Stream-Anbieter): Nachricht → live
+  gestreamte Antwort; Kundennavigation ohne technische Bereiche.
+
+**Offen / als Nächstes (mit dir abgestimmt):** „Reden + Aktionen mit Freigabe“ – die KI soll aus dem Chat heraus
+Aufgaben vorschlagen/ausführen können (Werkzeug-Aufrufe inkl. der Konnektoren), jede Änderung weiterhin erst nach
+deiner Freigabe. Modellwahl pro Anbieter in den Einstellungen folgt.
+

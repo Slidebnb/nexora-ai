@@ -11,11 +11,11 @@ import { useNexora, type Screen } from '../../state/store'
 import { selectPendingApprovals } from '../../state/selectors'
 import { cx } from '../../lib/format'
 
-const NAV: { id: Screen; label: string; icon: typeof Bot }[] = [
+const NAV: { id: Screen; label: string; icon: typeof Bot; expert?: boolean }[] = [
   { id: 'dashboard', label: 'Start', icon: LayoutDashboard },
-  { id: 'agents', label: 'Agenten', icon: Bot },
-  { id: 'automations', label: 'Automationen', icon: Workflow },
-  { id: 'activity', label: 'Aktivitäten', icon: Activity },
+  { id: 'agents', label: 'Agenten', icon: Bot, expert: true },
+  { id: 'automations', label: 'Automationen', icon: Workflow, expert: true },
+  { id: 'activity', label: 'Aktivitäten', icon: Activity, expert: true },
   { id: 'files', label: 'Dateien', icon: FolderOpen },
   { id: 'settings', label: 'Einstellungen', icon: Settings }
 ]
@@ -28,6 +28,8 @@ export function Sidebar() {
   const demoMode = useNexora((s) => s.demoMode)
   const worker = useNexora((s) => s.worker)
   const pending = useNexora((s) => selectPendingApprovals(s.data).length)
+  const expert = useNexora((s) => s.expertMode)
+  const nav = NAV.filter((n) => expert || !n.expert)
 
   const online = worker.state === 'connected'
   return (
@@ -54,7 +56,7 @@ export function Sidebar() {
       </div>
 
       <div className="flex flex-col gap-1">
-        {NAV.map(({ id, label, icon: Icon }) => {
+        {nav.map(({ id, label, icon: Icon }) => {
           const active = screen === id
           return (
             <button

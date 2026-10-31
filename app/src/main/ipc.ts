@@ -4,6 +4,7 @@ import { app, BrowserWindow, dialog, ipcMain, safeStorage, shell, type IpcMainIn
 import { IPC_CHANNELS, type IpcChannel, type IpcRequest, type IpcResponse } from '@shared/ipc-contract'
 import { isAllowedNavigation } from './security'
 import { SecretStore } from './secrets'
+import { DEFAULT_MODEL, streamChat, ChatError, type ChatMessage } from './chat'
 import type { WorkerHub } from './worker/hub'
 import type { Feature, LicenseManager } from './license'
 import { createPracticeFolder, type AppSettingsStore } from './appSettings'
@@ -19,8 +20,15 @@ export function createSecretStore(): SecretStore {
   return new SecretStore(join(app.getPath('userData'), 'secrets.json'), safeStorage)
 }
 
-export function registerIpcHandlers(opts: { devServerUrl?: string; secrets: SecretStore; hub: WorkerHub; license: LicenseManager; settings: AppSettingsStore }): void {
-  const { devServerUrl, secrets, hub, license, settings } = opts
+export function registerIpcHandlers(opts: { devServerUrl?: string; secrets: SecretStore; hub: WorkerHub; license: LicenseManager; settings: AppSettingsStore; broadcast: (channel: string, payload: unknown) => void }): void {
+  const { devServerUrl, secrets, hub, license, settings, broadcast } = opts
+
+  const chats = new Map<string, AbortController>()
+  // Nur Entwicklungsversion (E2E): Test-Schlüssel aus Umgebungsvariable, nie in der gepackten App.
+  const envKey = (provider: 'anthropic' | 'openai'): string | undefined =>
+    (!app.isPackaged && process.env[provider === 'anthropic' ? 'NEXORA_TEST_ANTHROPIC_KEY' : 'NEXORA_TEST_OPENAI_KEY']) || undefined
+  const chatKey = (provider: 'anthropic' | 'openai'): string | undefined => secrets.get(provider) ?? envKey(provider)
+  const activeProvider = (): 'anthropic' | 'openai' | null => (chatKey('anthropic') ? 'anthropic' : chatKey('openai') ? 'openai' : null)
 
   /** Lizenzprüfung im Main-Prozess (der Renderer kann sie nicht umgehen). */
   function requireFeature(feature: Feature): void {
@@ -198,6 +206,42 @@ export function registerIpcHandlers(opts: { devServerUrl?: string; secrets: Secr
   })
   handle('templates:delete', async ({ templateId }) => {
     await hub.deleteTemplate(templateId)
+    return { ok: true }
+  })
+
+  handle('chat:provider', () => {
+    const provider = activeProvider()
+    return { provider, model: provider ? DEFAULT_MODEL[provider] : null }
+  })
+  handle('chat:send', async ({ id, messages }) => {
+    const provider = activeProvider()
+    if (!provider) throw new Error('Kein KI-Schlüssel hinterlegt. Bitte unter Einstellungen einen Anthropic- oder OpenAI-Schlüssel eintragen.')
+    requireFeature('cloud_ai')
+    const key = chatKey(provider)!
+    const model = DEFAULT_MODEL[provider]
+    const controller = new AbortController()
+    chats.get(id)?.abort()
+    chats.set(id, controller)
+    try {
+      const text = await streamChat({
+        provider,
+        key,
+        model,
+        messages: messages as ChatMessage[],
+        signal: controller.signal,
+        onDelta: (delta) => broadcast('chat:delta', { id, delta })
+      })
+      return { text, model, provider }
+    } catch (e) {
+      if (controller.signal.aborted) return { text: '', model, provider }
+      throw e instanceof ChatError ? new Error(e.message) : e
+    } finally {
+      chats.delete(id)
+    }
+  })
+  handle('chat:cancel', ({ id }) => {
+    chats.get(id)?.abort()
+    chats.delete(id)
     return { ok: true }
   })
 

@@ -52,6 +52,17 @@ function mcpReply(req) {
   return { jsonrpc: '2.0', id: req.id, error: { code: -32601, message: 'unknown' } }
 }
 const web = createServer(async (req, res) => {
+  if (req.url === '/chat' && req.method === 'POST') {
+    // Fake-Anthropic-Stream (SSE) für den Chat-Test
+    for await (const _ of req) void _
+    res.writeHead(200, { 'Content-Type': 'text/event-stream' })
+    const delta = (t) => `event: content_block_delta\ndata: ${JSON.stringify({ type: 'content_block_delta', delta: { type: 'text_delta', text: t } })}\n\n`
+    res.write(delta('Hallo! '))
+    res.write(delta('Ich bin NEXORA.'))
+    res.write('event: message_stop\ndata: {"type":"message_stop"}\n\n')
+    res.end()
+    return
+  }
   if (req.url === '/mcp' && req.method === 'POST') {
     const chunks = []
     for await (const c of req) chunks.push(c)
@@ -75,7 +86,7 @@ const webBase = `http://127.0.0.1:${web.address().port}`
 
 const args = [appDir]
 if (process.platform === 'linux') args.push('--no-sandbox')
-const app = await _electron.launch({ executablePath: require('electron'), args, cwd: appDir, env: { ...process.env, NEXORA_USER_DATA: userData, NEXORA_ALLOW_PRIVATE_URLS: '1', NEXORA_PRACTICE_DIR: sandbox } })
+const app = await _electron.launch({ executablePath: require('electron'), args, cwd: appDir, env: { ...process.env, NEXORA_USER_DATA: userData, NEXORA_ALLOW_PRIVATE_URLS: '1', NEXORA_PRACTICE_DIR: sandbox, NEXORA_TEST_ANTHROPIC_KEY: 'sk-test', NEXORA_CHAT_ANTHROPIC_URL: `${webBase}/chat` } })
 const errors = []
 const win = await app.firstWindow()
 win.on('console', (m) => m.type() === 'error' && errors.push(m.text()))
@@ -124,9 +135,8 @@ const step = async (name, fn) => {
 }
 
 try {
-  await step('Start: echter Worker verbindet sich', async () => {
+  await step('Start: Worker verbindet, Chat ist die Startseite', async () => {
     await win.getByText('Bereit', { exact: true }).waitFor({ timeout: 30_000 })
-    await win.getByRole('heading', { name: 'Was soll ich für dich erledigen?' }).waitFor()
     assert.equal(await win.getByText('DEMO-MODUS', { exact: true }).count(), 0)
     await win.screenshot({ path: join(shots, '01-dashboard-live.png') })
   })
@@ -152,10 +162,14 @@ try {
     await win.screenshot({ path: join(shots, '00b-onboarding-erfolg.png') })
   })
 
-  await step('Alle sechs Bereiche erreichbar', async () => {
-    for (const name of ['Agenten', 'Automationen', 'Aktivitäten', 'Dateien', 'Einstellungen']) {
+  await step('Kundenansicht: nur Dateien und Einstellungen sichtbar, Technik ausgeblendet', async () => {
+    for (const name of ['Dateien', 'Einstellungen']) {
       await nav(name)
       await win.getByRole('heading', { level: 1, name }).waitFor()
+    }
+    const sidebar = win.getByRole('navigation')
+    for (const hidden of ['Agenten', 'Automationen', 'Aktivitäten']) {
+      assert.equal(await sidebar.getByRole('button', { name: hidden }).count(), 0, `${hidden} darf für Kunden nicht in der Navigation sein`)
     }
     await win.getByText(/Sichere Speicherung/).waitFor()
     await win.screenshot({ path: join(shots, '02-einstellungen.png') })
@@ -172,27 +186,21 @@ try {
     await nav('Start')
   })
 
-  await step('KUNDE: Befehlszeile erkennt Aufgabe und füllt den Assistenten vor', async () => {
+  await step('CHAT: NEXORA antwortet live über den hinterlegten Schlüssel', async () => {
     await nav('Start')
-    const cmd = win.getByLabel('Was soll NEXORA erledigen?')
-    await cmd.fill('Was kostet der Basistarif? https://a.example/tarif https://b.example')
-    await cmd.press('Enter')
-    const dialog = win.getByRole('dialog', { name: 'Webseiten vergleichen' })
-    await dialog.waitFor()
-    if ((await dialog.getByLabel('Adressen').inputValue()) !== 'https://a.example/tarif\nhttps://b.example') throw new Error('Adressen nicht übernommen')
-    if ((await dialog.getByLabel('Recherchefrage').inputValue()) !== 'Was kostet der Basistarif?') throw new Error('Frage nicht übernommen')
-    await win.screenshot({ path: join(shots, '02a-befehlszeile.png') })
-    await dialog.getByRole('button', { name: 'Schließen' }).click()
+    const box = win.getByLabel('Nachricht an NEXORA')
+    await box.fill('Hallo')
+    await box.press('Enter')
+    // Antwort kommt gestreamt vom (im Test nachgebauten) Anbieter
+    await win.getByText('Hallo! Ich bin NEXORA.').waitFor({ timeout: 10_000 })
     // Sprachmodus: Mikrofon-Knopf vorhanden (Spracherkennung selbst hängt vom System ab)
     await win.getByRole('button', { name: /Sprechen|Zuhören beenden/ }).waitFor()
-    await cmd.fill('Wie wird das Wetter morgen?')
-    await cmd.press('Enter')
-    await win.getByText(/Dafür habe ich noch keine passende Aufgabe/).waitFor()
-    if ((await win.getByRole('dialog').count()) !== 0) throw new Error('Bei unbekannter Eingabe darf nichts geöffnet werden')
+    await win.screenshot({ path: join(shots, '02a-chat.png') })
   })
 
   await step('KUNDE: „Programm bedienen“ – Aufzeichnung per Auswahl (Windows) bzw. ehrlicher Hinweis', async () => {
-    await nav('Start')
+    await nav('Dateien')
+    await nav('Start') // frischer Chat → Aufgaben-Vorschläge sichtbar
     await win.getByRole('button', { name: /Programm bedienen/ }).click()
     const dialog = win.getByRole('dialog', { name: 'Programm bedienen' })
     await dialog.getByTestId('desktop-recorder').waitFor()
@@ -210,7 +218,8 @@ try {
   })
 
   await step('KUNDE: Startseite → „Ordner aufräumen“ → bestätigen → Ergebnis → Rückgängig', async () => {
-    await nav('Start')
+    await nav('Dateien')
+    await nav('Start') // frischer Chat → Aufgaben-Vorschläge sichtbar
     await win.getByRole('button', { name: /Ordner aufräumen/ }).click()
     const wizard = win.getByRole('dialog', { name: 'Ordner aufräumen' })
     await wizard.getByRole('button', { name: 'Ordner wählen' }).click()
@@ -235,7 +244,8 @@ try {
   })
 
   await step('KUNDE: Aufgabe pausieren und fortsetzen', async () => {
-    await nav('Start')
+    await nav('Dateien')
+    await nav('Start') // frischer Chat → Aufgaben-Vorschläge sichtbar
     await win.getByRole('button', { name: /Webseiten vergleichen/ }).click()
     const wizard = win.getByRole('dialog', { name: 'Webseiten vergleichen' })
     await wizard.getByLabel('Recherchefrage').fill('Was kostet der Tarif?')

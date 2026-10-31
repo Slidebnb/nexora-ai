@@ -1,4 +1,5 @@
 import type { ApprovalDecision, NexoraEvent } from '../shared/events'
+import type { ChatDelta, ChatMessage, Provider as ChatProvider } from '../shared/ipc-contract'
 import type { AiTestResult, AppInfo, Connector, ConnectorTest, ConnectorTool, DesktopElement, DesktopWindow, AppSettings, CreateTask, LicenseStatus, PickedFile, PickedFolder, Provider, Schedule, SecretStatus, SystemStatus, Template, WorkerStatus } from '../shared/ipc-contract'
 
 export interface NexoraApi {
@@ -36,6 +37,10 @@ export interface NexoraApi {
   connectorTools: (id: string) => Promise<ConnectorTool[]>
   desktopWindows: () => Promise<DesktopWindow[]>
   desktopElements: (window: string) => Promise<DesktopElement[]>
+  getChatProvider: () => Promise<{ provider: ChatProvider | null; model: string | null }>
+  sendChat: (id: string, messages: ChatMessage[]) => Promise<{ text: string; model: string; provider: ChatProvider }>
+  cancelChat: (id: string) => Promise<{ ok: boolean }>
+  onChatDelta: (cb: (d: ChatDelta) => void) => () => void
   onWorkerEvent: (cb: (event: unknown) => void) => () => void
   onWorkerStatus: (cb: (status: WorkerStatus) => void) => () => void
 }

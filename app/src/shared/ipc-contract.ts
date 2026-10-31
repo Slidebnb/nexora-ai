@@ -175,6 +175,11 @@ export type SystemStatus = z.infer<typeof SystemStatusSchema>
 export const AiTestResultSchema = z.object({ ok: z.boolean(), message: z.string().max(300) })
 export type AiTestResult = z.infer<typeof AiTestResultSchema>
 
+export const ChatMessageSchema = z.object({ role: z.enum(['user', 'assistant']), content: z.string().min(1).max(100000) })
+export type ChatMessage = z.infer<typeof ChatMessageSchema>
+export const ChatDeltaSchema = z.object({ id: z.string(), delta: z.string() })
+export type ChatDelta = z.infer<typeof ChatDeltaSchema>
+
 export const IPC_CHANNELS = {
   'app:getInfo': { request: z.undefined(), response: AppInfoSchema },
   'secrets:status': { request: z.undefined(), response: SecretStatusSchema },
@@ -220,11 +225,14 @@ export const IPC_CHANNELS = {
   'connectors:add': { request: z.object({ name: z.string().trim().min(1).max(80), url: z.string().trim().min(1).max(2000), token: z.string().max(4000).optional() }), response: ConnectorSchema },
   'connectors:remove': { request: z.object({ id: z.string().min(1) }), response: Ok },
   'connectors:test': { request: z.object({ id: z.string().min(1) }), response: ConnectorTestSchema },
-  'connectors:tools': { request: z.object({ id: z.string().min(1) }), response: z.array(ConnectorToolSchema).max(200) }
+  'connectors:tools': { request: z.object({ id: z.string().min(1) }), response: z.array(ConnectorToolSchema).max(200) },
+  'chat:provider': { request: z.undefined(), response: z.object({ provider: ProviderSchema.nullable(), model: z.string().nullable() }) },
+  'chat:send': { request: z.object({ id: z.string().min(1).max(64), messages: z.array(ChatMessageSchema).min(1).max(100) }), response: z.object({ text: z.string(), model: z.string(), provider: ProviderSchema }) },
+  'chat:cancel': { request: z.object({ id: z.string().min(1).max(64) }), response: Ok }
 } as const
 
 /** Kanäle, auf denen der Main-Prozess an den Renderer sendet (kein invoke). */
-export const PUSH_CHANNELS = ['worker:event', 'worker:status'] as const
+export const PUSH_CHANNELS = ['worker:event', 'worker:status', 'chat:delta'] as const
 
 export type IpcChannel = keyof typeof IPC_CHANNELS
 export type IpcRequest<C extends IpcChannel> = z.infer<(typeof IPC_CHANNELS)[C]['request']>

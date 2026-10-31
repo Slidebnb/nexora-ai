@@ -1,7 +1,7 @@
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron'
 import type { NexoraApi } from './api'
 
-function subscribe<T>(channel: 'worker:event' | 'worker:status', cb: (payload: T) => void): () => void {
+function subscribe<T>(channel: 'worker:event' | 'worker:status' | 'chat:delta', cb: (payload: T) => void): () => void {
   const listener = (_e: IpcRendererEvent, payload: T) => cb(payload)
   ipcRenderer.on(channel, listener)
   return () => ipcRenderer.removeListener(channel, listener)
@@ -43,6 +43,10 @@ const api: NexoraApi = {
   connectorTools: (id) => ipcRenderer.invoke('connectors:tools', { id }),
   desktopWindows: () => ipcRenderer.invoke('desktop:windows'),
   desktopElements: (window) => ipcRenderer.invoke('desktop:elements', { window }),
+  getChatProvider: () => ipcRenderer.invoke('chat:provider'),
+  sendChat: (id, messages) => ipcRenderer.invoke('chat:send', { id, messages }),
+  cancelChat: (id) => ipcRenderer.invoke('chat:cancel', { id }),
+  onChatDelta: (cb) => subscribe('chat:delta', cb),
   onWorkerEvent: (cb) => subscribe('worker:event', cb),
   onWorkerStatus: (cb) => subscribe('worker:status', cb)
 }
