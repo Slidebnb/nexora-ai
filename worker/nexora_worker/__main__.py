@@ -27,6 +27,7 @@ from .db import Database
 from .runner import TaskManager
 from .safety import redact_text
 from .workflows import OrganizeFolder, UndoOrganize
+from .workflows.drafts import DraftEmails
 from .workflows.pdf_analysis import PdfAnalysis
 from .workflows.web_research import WebResearch
 
@@ -47,6 +48,7 @@ def build_manager(data_dir: Path) -> TaskManager:
     manager.register(UndoOrganize())
     manager.register(WebResearch())
     manager.register(PdfAnalysis())
+    manager.register(DraftEmails())
     return manager
 
 

@@ -3,6 +3,7 @@ import type { Capability } from '@shared/ipc-contract'
 import type { ApprovalState, NexoraState, RunState } from '../state/runReducer'
 import { isTerminal } from '../state/runReducer'
 import { respondDemoApproval, stopDemoRun } from '../demo/controller'
+import { resyncFromWorker } from './liveBridge'
 
 /** IPC-Fehlermeldungen ohne technisches Präfix. */
 export function cleanError(e: unknown): string {
@@ -15,7 +16,16 @@ export async function respondApproval(approval: ApprovalState, decision: Approva
     respondDemoApproval(approval.id, decision)
     return
   }
-  await window.nexora.respondApproval(approval.id, decision)
+  try {
+    await window.nexora.respondApproval(approval.id, decision)
+  } catch (e) {
+    // Bereits entschieden (z. B. Doppelklick oder verpasstes Event): Stand nachladen statt Fehler zeigen.
+    if (/bereits entschieden/.test(cleanError(e))) {
+      await resyncFromWorker()
+      return
+    }
+    throw e
+  }
 }
 
 export async function stopRun(run: RunState): Promise<void> {

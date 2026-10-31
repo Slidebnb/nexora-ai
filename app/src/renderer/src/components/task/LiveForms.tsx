@@ -10,6 +10,18 @@ export interface FormResult {
   missing?: string
 }
 
+/** „Name <mail@x.de>“, „Name; mail@x.de“ oder nur „mail@x.de“ – eine Zeile je Empfänger. */
+export function parseRecipients(text: string): { recipients: { name: string; email: string }[]; invalid: string[] } {
+  const recipients: { name: string; email: string }[] = []
+  const invalid: string[] = []
+  for (const raw of text.split('\n').map((l) => l.trim()).filter(Boolean)) {
+    const m = raw.match(/^(.*?)[\s;,]*<?([^\s<>;,]+@[^\s<>;,]+\.[A-Za-z]{2,})>?$/)
+    if (m) recipients.push({ name: (m[1] ?? '').replace(/^["']|["']$/g, '').trim(), email: m[2]! })
+    else invalid.push(raw)
+  }
+  return { recipients, invalid }
+}
+
 function parseUrls(text: string): string[] {
   return text
     .split(/\s+/)
@@ -38,6 +50,18 @@ export function buildRequest(t: WorkflowTemplate, d: ComposerDraft, folder: Pick
       if (d.files.length === 0) return { request: null, missing: 'Bitte PDF-Dateien wählen' }
       const caps = d.useCloudAi ? [...capabilities, 'ai.cloud' as const] : capabilities
       return { request: { workflow: 'pdf_analysis', fileIds: d.files.map((f) => f.fileId), useCloudAi: d.useCloudAi, capabilities: caps } }
+    }
+    case 'draft_emails': {
+      const { recipients, invalid } = parseRecipients(d.recipients)
+      if (!d.subject.trim()) return { request: null, missing: 'Bitte einen Betreff eingeben' }
+      if (invalid.length) return { request: null, missing: `Ungültige Empfängerzeile: ${invalid[0]}` }
+      if (recipients.length === 0) return { request: null, missing: 'Bitte Empfänger eingeben' }
+      if (d.briefing.trim().length < 10) return { request: null, missing: 'Bitte ein Briefing eingeben (mind. 10 Zeichen)' }
+      if (!d.outFolder) return { request: null, missing: 'Bitte einen Zielordner wählen' }
+      const caps = d.useCloudAi ? [...capabilities, 'ai.cloud' as const] : capabilities
+      return {
+        request: { workflow: 'draft_emails', subject: d.subject.trim(), briefing: d.briefing.trim(), recipients, outFolderId: d.outFolder.folderId, useCloudAi: d.useCloudAi, capabilities: caps }
+      }
     }
   }
 }
@@ -126,6 +150,45 @@ export function LiveForm({ template, onError }: { template: WorkflowTemplate; on
             <span>
               Zusätzlich KI-Zusammenfassung (Cloud). Vor dem Senden wird einzeln gefragt; es fallen API-Kosten an. Ohne Häkchen bleibt alles lokal.
             </span>
+          </label>
+        </div>
+      )
+    case 'draft_emails':
+      return (
+        <div className="flex min-h-16 flex-1 flex-col gap-2">
+          <input value={d.subject} onChange={(e) => set({ subject: e.target.value })} placeholder="Betreff" aria-label="Betreff" className="input text-sm" />
+          <div className="grid min-h-0 flex-1 grid-cols-2 gap-2">
+            <textarea
+              value={d.recipients}
+              onChange={(e) => set({ recipients: e.target.value })}
+              placeholder={'Empfänger, einer pro Zeile\nAnna Muster <anna@firma.de>'}
+              aria-label="Empfänger"
+              className="input min-h-16 resize-none font-mono text-xs"
+            />
+            <textarea
+              value={d.briefing}
+              onChange={(e) => set({ briefing: e.target.value })}
+              placeholder="Briefing: Worum geht es? Was soll in der Antwort stehen?"
+              aria-label="Briefing"
+              className="input min-h-16 resize-none text-xs"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <PickButton
+              label="Zielordner wählen"
+              onError={onError}
+              onPick={async () => {
+                const f = await window.nexora.pickFolder()
+                if (f) set({ outFolder: f })
+              }}
+            />
+            <span className="min-w-0 truncate font-mono text-xs text-text" title={d.outFolder?.path} data-testid="draft-folder">
+              {d.outFolder ? d.outFolder.path : 'kein Zielordner'}
+            </span>
+          </div>
+          <label className="flex items-start gap-2 text-xs text-text-2">
+            <input type="checkbox" checked={d.useCloudAi} onChange={(e) => set({ useCloudAi: e.target.checked })} className="mt-0.5 accent-[var(--color-accent)]" />
+            <span>Text per KI formulieren (Cloud, mit Freigabe und Kosten). Ohne Häkchen wird das Briefing übernommen.</span>
           </label>
         </div>
       )

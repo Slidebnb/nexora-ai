@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildRequest } from '../src/renderer/src/components/task/LiveForms'
+import { buildRequest, parseRecipients } from '../src/renderer/src/components/task/LiveForms'
 import { WORKFLOWS } from '../src/renderer/src/data/workflows'
 import type { ComposerDraft } from '../src/renderer/src/state/store'
 
@@ -30,6 +30,21 @@ describe('buildRequest', () => {
     const files = [{ fileId: 'a', name: 'a.pdf', path: '/a.pdf' }]
     expect(buildRequest(wf('pdf'), draft({ files }), null).request).toEqual({ workflow: 'pdf_analysis', fileIds: ['a'], useCloudAi: false, capabilities: ['pdf.read', 'files.export'] })
     expect(buildRequest(wf('pdf'), draft({ files, useCloudAi: true }), null).request?.capabilities).toContain('ai.cloud')
+  })
+
+  it('Entwürfe: Empfänger in mehreren Schreibweisen, Pflichtfelder', () => {
+    const { recipients, invalid } = parseRecipients('Anna Muster <anna@firma.de>\nbob@x.org\n"Chef"; chef@firma.de\nkaputt')
+    expect(recipients).toEqual([
+      { name: 'Anna Muster', email: 'anna@firma.de' },
+      { name: '', email: 'bob@x.org' },
+      { name: 'Chef', email: 'chef@firma.de' }
+    ])
+    expect(invalid).toEqual(['kaputt'])
+    const out = { folderId: 'o1', name: 'Out', path: '/out' }
+    const ok = draft({ subject: 'Termin', recipients: 'a@b.de', briefing: 'Bitte Termin vorschlagen.', outFolder: out })
+    expect(buildRequest(wf('entwurf'), { ...ok, outFolder: null }, null).missing).toMatch(/Zielordner/)
+    expect(buildRequest(wf('entwurf'), { ...ok, recipients: 'nix' }, null).missing).toMatch(/Ungültige/)
+    expect(buildRequest(wf('entwurf'), ok, null).request).toMatchObject({ workflow: 'draft_emails', outFolderId: 'o1', recipients: [{ name: '', email: 'a@b.de' }] })
   })
 
   it('Vorlagen ohne Live-Ausführung liefern keine Anfrage', () => {

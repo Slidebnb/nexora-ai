@@ -91,6 +91,12 @@ export function registerIpcHandlers(opts: { devServerUrl?: string; secrets: Secr
         if (files.some((f) => !f)) throw new Error('Bitte die Dateien erneut auswählen')
         return hub.createTask('pdf_analysis', { files, useCloudAi: req.useCloudAi }, req.capabilities)
       }
+      case 'draft_emails': {
+        const outFolder = pickedFolders.get(req.outFolderId)
+        if (!outFolder) throw new Error('Bitte den Zielordner erneut auswählen')
+        const { subject, briefing, recipients, useCloudAi } = req
+        return hub.createTask('draft_emails', { subject, briefing, recipients, outFolder, useCloudAi }, req.capabilities)
+      }
     }
   })
   handle('tasks:cancel', async ({ taskId }) => {

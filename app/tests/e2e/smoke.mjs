@@ -63,12 +63,14 @@ const pdfFiles = [join(pdfDir, 'Angebot.pdf'), join(pdfDir, 'Scan.pdf')]
 
 // Native Dialoge durch Testpfade ersetzen (nur im Test)
 await app.evaluate(({ dialog }, pick) => {
+  globalThis.__nexoraPick = pick
   dialog.showOpenDialog = async (a, b) => {
     const options = b ?? a
-    const files = options.properties.includes('openFile')
-    return { canceled: false, filePaths: files ? pick.files : [pick.folder] }
+    const p = globalThis.__nexoraPick
+    return { canceled: false, filePaths: options.properties.includes('openFile') ? p.files : [p.folder] }
   }
 }, { folder, files: pdfFiles })
+const setPickedFolder = (path) => app.evaluate((_e, p) => { globalThis.__nexoraPick.folder = p }, path)
 
 const nav = (name) => win.getByRole('navigation').getByRole('button', { name }).click()
 const step = async (name, fn) => {
@@ -172,6 +174,31 @@ try {
     await win.screenshot({ path: join(shots, '07-live-pdf.png') })
   })
 
+  await step('LIVE: Entwürfe statt Versand – .eml erst nach Freigabe', async () => {
+    const draftsDir = join(sandbox, 'Entwuerfe')
+    mkdirSync(draftsDir)
+    await setPickedFolder(draftsDir)
+    await win.getByLabel('Vorlage').selectOption('entwurf')
+    await win.getByLabel('Betreff', { exact: true }).fill('Angebot Büromaterial')
+    await win.getByLabel('Empfänger', { exact: true }).fill('Anna Muster <anna@example.com>\nbob@example.org')
+    await win.getByLabel('Briefing', { exact: true }).fill('Vielen Dank für Ihre Anfrage. Anbei unser Angebot über 1200 Euro netto.')
+    await win.getByRole('button', { name: 'Zielordner wählen' }).click()
+    await win.getByTestId('draft-folder').getByText(draftsDir).waitFor()
+    await win.getByLabel('Erlaubnis für diese Aufgabe').check()
+    await win.getByRole('button', { name: 'Aufgabe starten' }).click()
+    const dlg = win.getByRole('alertdialog')
+    await dlg.getByText('E-Mail-Entwürfe speichern', { exact: true }).waitFor({ timeout: 15_000 })
+    assert.deepEqual(readdirSync(draftsDir), [])
+    await win.screenshot({ path: join(shots, '08-live-entwurf-freigabe.png') })
+    await dlg.getByRole('button', { name: 'Erlauben' }).click()
+    await win.getByText(/Nichts wurde versendet/).first().waitFor({ timeout: 15_000 })
+    const emls = readdirSync(draftsDir).sort()
+    assert.deepEqual(emls, ['Entwurf 01 - Anna Muster.eml', 'Entwurf 02 - bob.eml'])
+    const eml = readFileSync(join(draftsDir, emls[0]), 'utf8')
+    assert.match(eml, /X-Unsent: 1/)
+    assert.match(eml, /To: Anna Muster <anna@example.com>/)
+  })
+
   await step('DEMO: Ordner-Szenario mit Freigabe', async () => {
     await win.getByLabel('Vorlage').selectOption('wiederholen')
     await win.getByRole('button', { name: 'Demo-Modus öffnen' }).click()
@@ -181,7 +208,7 @@ try {
     await win.getByRole('alertdialog').getByText('DEMO', { exact: true }).waitFor({ timeout: 15_000 })
     await win.getByRole('alertdialog').getByRole('button', { name: 'Erlauben' }).click()
     await win.getByText('Sortierprotokoll.csv').first().waitFor({ timeout: 15_000 })
-    await win.screenshot({ path: join(shots, '08-dashboard-demo.png') })
+    await win.screenshot({ path: join(shots, '09-dashboard-demo.png') })
   })
 
   await step('DEMO: Recherche zeigt Schrittfehler; Kostendiagramm gezeichnet', async () => {
@@ -190,7 +217,7 @@ try {
     await win.getByText(/1 Quelle fehlgeschlagen/).first().waitFor({ timeout: 15_000 })
     await nav('Aktivitäten')
     await win.getByRole('region', { name: 'API-Kosten (simuliert)' }).locator('.recharts-area').waitFor()
-    await win.screenshot({ path: join(shots, '09-aktivitaeten.png') })
+    await win.screenshot({ path: join(shots, '10-aktivitaeten.png') })
   })
 
   await step('Kein Überlauf und keine Überlappung bei 1024×640', async () => {
@@ -206,7 +233,7 @@ try {
     await win.getByRole('button', { name: 'Seitenleiste umschalten' }).click()
     assert.equal(await overflow(), 0)
     await win.getByRole('button', { name: 'Seitenleiste umschalten' }).click()
-    await win.screenshot({ path: join(shots, '10-dashboard-1024.png') })
+    await win.screenshot({ path: join(shots, '11-dashboard-1024.png') })
     await win.setViewportSize({ width: 1440, height: 900 })
   })
 
@@ -215,7 +242,7 @@ try {
     await nav('Aktivitäten')
     await win.locator('tbody tr').first().waitFor()
     assert.equal(await win.locator('tbody').getByText('DEMO', { exact: true }).count(), 0)
-    assert.equal(await win.locator('tbody tr').count(), 5)
+    assert.equal(await win.locator('tbody tr').count(), 6)
   })
 
   await step('Keine Konsolenfehler', async () => {
@@ -229,5 +256,6 @@ try {
 } finally {
   await app.close()
   web.close()
-  rmSync(sandbox, { recursive: true, force: true })
+  if (process.env['E2E_KEEP'] || process.exitCode) console.log('Sandbox behalten:', sandbox)
+  else rmSync(sandbox, { recursive: true, force: true })
 }

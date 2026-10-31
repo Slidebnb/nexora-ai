@@ -9,7 +9,7 @@ export interface WorkflowTemplate {
   /** Szenario für den DEMO-Modus, falls vorhanden. */
   demoScenarioId?: string
   livePhase: string
-  live?: { workflow: 'organize_folder' | 'web_research' | 'pdf_analysis'; capabilities: Capability[] }
+  live?: { workflow: 'organize_folder' | 'web_research' | 'pdf_analysis' | 'draft_emails'; capabilities: Capability[] }
 }
 
 export const WORKFLOWS: WorkflowTemplate[] = [
@@ -45,7 +45,8 @@ export const WORKFLOWS: WorkflowTemplate[] = [
     description: 'Aus Briefings E-Mail-Entwürfe erstellen. Versand nur nach ausdrücklicher Bestätigung.',
     capabilities: ['Eingaben lesen', 'Entwürfe speichern (mit Freigabe)'],
     demoScenarioId: 'entwurf',
-    livePhase: 'Phase 3'
+    livePhase: 'Phase 3',
+    live: { workflow: 'draft_emails', capabilities: ['drafts.write', 'files.write'] }
   },
   {
     id: 'wiederholen',
