@@ -6,6 +6,10 @@ import { MatrixRain } from '../components/hud/MatrixRain'
 import { ScanLines } from '../components/hud/ScanLines'
 import { DataFlowLines, type PulseTone } from '../components/hud/DataFlowLines'
 import { HexStream } from '../components/hud/HexStream'
+import { WireframeGlobe } from '../components/hud/WireframeGlobe'
+import { RadarSweep } from '../components/hud/RadarSweep'
+import { NeuralNetwork } from '../components/hud/NeuralNetwork'
+import { GlitchOverlay } from '../components/hud/GlitchOverlay'
 import type { NexoraEvent } from '@shared/events'
 import { formatUsd } from '../lib/format'
 import { KpiGrid } from '../components/kpi/KpiGrid'
@@ -28,10 +32,13 @@ export function Dashboard() {
 
   return (
     <div className="relative grid h-full min-h-[760px] grid-rows-[auto_minmax(0,1fr)_220px] gap-3 p-4">
+      <NeuralNetwork opacity={0.1} />
+      <GlitchOverlay />
       <KpiGrid />
       <div className={cx('grid min-h-0 gap-3', rightOpen ? 'grid-cols-[minmax(0,1fr)_340px]' : 'grid-cols-1')}>
         <div className="grid min-h-0 min-w-0 grid-rows-[minmax(0,1fr)_auto] gap-3 xl:grid-cols-[minmax(0,1fr)_340px] xl:grid-rows-1">
           <div data-testid="orbit-panel" className="panel hud-grid relative min-h-[200px] overflow-hidden p-3">
+            <WireframeGlobe opacity={0.22} />
             <MatrixRain intensity={intensity} opacity={0.18 + intensity * 0.17} />
             <DataFlowLines pulseKey={lastEvent?.seq ?? 0} tone={toneOf(lastEvent)} />
             <OrbitCore
@@ -46,6 +53,9 @@ export function Dashboard() {
             />
             <div className="absolute right-2 top-2 w-60 max-xl:hidden">
               <HexStream events={data.log} lines={5} />
+            </div>
+            <div className="pointer-events-none absolute bottom-2 left-2 size-28 opacity-60 max-xl:hidden">
+              <RadarSweep />
             </div>
             <ScanLines />
           </div>

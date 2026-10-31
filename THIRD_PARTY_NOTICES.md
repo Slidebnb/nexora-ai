@@ -14,6 +14,10 @@ Die Übernahme erfolgte auf ausdrückliche Anweisung des Projektinhabers. Er hat
 | `app/src/renderer/src/components/hud/MatrixRain.tsx` | ChatDSJ/evil-ai-viz @ cf22a87, `src/components/viz/MatrixRain.tsx` | MIT (laut README) | Crimson; Elterngröße; Intensität an Aktivität gekoppelt |
 | `app/src/renderer/src/components/hud/ScanLines.tsx` (+ `.scan-move` in `styles.css`) | ChatDSJ/evil-ai-viz @ cf22a87, `src/components/viz/ScanLines.tsx` | MIT (laut README) | Crimson; Keyframes in CSS (CSP) |
 | `app/src/renderer/src/components/hud/DataFlowLines.tsx` | ChatDSJ/evil-ai-viz @ cf22a87, `src/components/viz/DataFlowLines.tsx` | MIT (laut README) | Impulse je echtem Event, Farbe nach Eventart, Flug zur Mitte |
+| `app/src/renderer/src/components/hud/RadarSweep.tsx` | ChatDSJ/evil-ai-viz @ cf22a87, `src/components/viz/RadarSweep.tsx` | MIT (laut README) | Theme-Farben; gemeinsamer Animations-Loop; irreführende Beschriftung „THREAT RADAR/TARGETS“ entfernt; Punkte sind abstrakte Deko |
+| `app/src/renderer/src/components/hud/WireframeGlobe.tsx` | ChatDSJ/evil-ai-viz @ cf22a87, `src/components/viz/WireframeGlobe.tsx` | MIT (laut README) | Theme-Farben; „GLOBAL NETWORK/NODES“ entfernt; keine echten Orte/Verbindungen; nichts wird gesendet |
+| `app/src/renderer/src/components/hud/NeuralNetwork.tsx` | ChatDSJ/evil-ai-viz @ cf22a87, `src/components/viz/NeuralNetwork.tsx` | MIT (laut README) | Theme-Farben; „NEURAL ARCHITECTURE v7.3 / SELF-IMPROVING“ entfernt; bildet kein echtes Modell ab |
+| `app/src/renderer/src/components/hud/GlitchOverlay.tsx` | ChatDSJ/evil-ai-viz @ cf22a87, `src/components/viz/GlitchOverlay.tsx` | MIT (laut README) | Theme-Farben; bei reduced motion aus |
 | `app/src/renderer/src/components/hud/HexStream.tsx` | ChatDSJ/evil-ai-viz @ cf22a87, `src/components/viz/HexStream.tsx` | MIT (laut README) | echte Events statt Zufallsbytes; Text „Exfiltration“ entfernt |
 | `app/src/renderer/src/components/layout/Sidebar.tsx` | raheem-dotgit/cyberpunk-dashboard @ 8ec7ec7, `app/page.tsx` | MIT (laut README) | React/Vite statt Next.js; echter Worker-Status; Freigabe-Badge |
 | `components/common/Cyber.tsx`, `screens/Agents.tsx`, `screens/Activity.tsx` (Kennzahlen), `screens/Files.tsx`, `components/feed/RunDetail.tsx` | raheem-dotgit/cyberpunk-dashboard @ 8ec7ec7, `app/agent-network/page.tsx`, `app/operations/page.tsx`, `app/intelligence/page.tsx` | MIT (laut README) | Kennzahlkarten, Suche, Liste und Detail-Dialog mit echten Werten statt Mockzahlen; deutsche Texte; NEXORA-Farben |
@@ -32,7 +36,7 @@ Zusätzlich aus ClawBridge (Apache-2.0, Copyright (c) 2026 RomaTek AI; Änderung
 
 Der vollständige Apache-2.0-Lizenztext liegt unter `licenses/Apache-2.0.txt`.
 
-Bewusst **nicht** übernommen, weil der Masterplan (§2 A) es ausschließt: Tracking, Fingerprinting, Fake-Terminal, Convex sowie `CodeFragments` (lädt externe CVE-Feeds).
+Bewusst **nicht** übernommen, weil der Masterplan (§2 A) es ausschließt bzw. es Überwachung oder Täuschung wäre: Tracking/Fingerprinting (u. a. `DeviceFingerprint`, `KeyloggerOverlay`, `ClipboardInterceptor`, `WebRTCProbe`, `MouseHeatmap`, `TypingBiometric`, `UserLocationMap`), `FakeTerminal`/`FakeOSDialog`/`FakeNotifications`/`MetricsDashboard` (erfundene Inhalte), die „compromised“-`WorldMap`, `BootSequence` (gibt erfundene Dienste/Scans als echt aus), Convex und `CodeFragments` (lädt externe CVE-Feeds).
 
 ### MIT-Lizenztext (gilt für die oben genannten Übernahmen)
 

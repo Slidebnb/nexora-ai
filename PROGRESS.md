@@ -220,3 +220,14 @@ Damit ist der Code-Teil des Masterplans umgesetzt. Was nur der Inhaber erledigen
   Fehlalarme mehr durch Zeitüberschreitung auslösen (ein solcher trat bei 40 parallelen Testläufen einmal in `test_organizer` auf).
 - Nachweis: 40 Durchläufe der gesamten Worker-Tests; der ursprüngliche WebSocket-Fehler trat nicht mehr auf.
 
+## Weitere Visualisierungen aus evil-ai-viz (2026-10-31)
+
+Auf Kundenwunsch die restlichen **rein dekorativen** Visualisierungen übernommen, in NEXORA-Optik:
+- RadarSweep, WireframeGlobe (Drahtgitter-Globus), NeuralNetwork, GlitchOverlay – im Experten-Dashboard als Deko-Ebenen.
+- Theme-Farben statt Grün/Cyan, gemeinsamer Animations-Loop (Pause bei verstecktem Fenster, bei reduced motion aus).
+- Die **irreführenden Beschriftungen** der Vorlagen wurden entfernt (z. B. „THREAT RADAR“, „NEURAL ARCHITECTURE v7.3 / SELF-IMPROVING“, „GLOBAL NETWORK / NODES“), weil sie einen Status vortäuschen, den es nicht gibt – das widerspräche „nichts erfinden“.
+- Dabei gefundener Fehler: Bei sehr kleiner Fläche wurde ein Kreis mit negativem Radius gezeichnet (Konsolenfehler). Behoben (Radar/Globus zeichnen erst ab ausreichender Größe); vom E2E-Konsolenfehler-Test bestätigt.
+- Nicht übernommen (Überwachung oder Täuschung, kein „Aussehen“): Keylogger, Fingerprinting, Zwischenablage/Maus-Mitschnitt, Fake-Terminal/-Dialoge/-Benachrichtigungen, „compromised“-Weltkarte, BootSequence mit erfundenen Dienst-/Scan-Zeilen.
+
+**Teststatus:** Unit 65, E2E 26 Schritte (inkl. Konsolenfehler-Prüfung), Typprüfung grün.
+
