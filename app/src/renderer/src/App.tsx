@@ -1,11 +1,12 @@
-import { useEffect } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
+// Technisches Kontrollzentrum nur bei eingeschalteter Expertenansicht laden
+const Dashboard = lazy(() => import('./screens/Dashboard').then((m) => ({ default: m.Dashboard })))
 import { Sidebar } from './components/layout/Sidebar'
 import { TopBar } from './components/layout/TopBar'
 import { DemoBanner } from './components/layout/DemoBanner'
 import { ApprovalCenter } from './components/approvals/ApprovalCenter'
 import { Onboarding } from './components/onboarding/Onboarding'
 import { useNexora, type Screen } from './state/store'
-import { Dashboard } from './screens/Dashboard'
 import { Home } from './screens/Home'
 import { Agents } from './screens/Agents'
 import { Automations } from './screens/Automations'
@@ -24,7 +25,13 @@ const SCREENS: Record<Screen, () => React.JSX.Element> = {
 
 /** Start: einfache Kundenansicht, technische Ansicht nur im Expertenmodus. */
 function StartScreen() {
-  return useNexora((s) => s.expertMode) ? <Dashboard /> : <Home />
+  return useNexora((s) => s.expertMode) ? (
+    <Suspense fallback={null}>
+      <Dashboard />
+    </Suspense>
+  ) : (
+    <Home />
+  )
 }
 
 export function App() {

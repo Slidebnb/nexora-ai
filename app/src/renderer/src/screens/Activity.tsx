@@ -7,7 +7,9 @@ import { isTerminal } from '../state/runReducer'
 import { canUndo, cleanError, respondApproval, stopRun, undoRun } from '../lib/actions'
 import { RunStatusBadge } from '../components/common/StatusBadge'
 import { ApprovalCard } from '../components/approvals/ApprovalCenter'
-import { CostChart } from '../components/kpi/CostChart'
+import { lazy, Suspense } from 'react'
+// Diagramm-Bibliothek erst laden, wenn diese Seite geöffnet wird (kleinerer Start)
+const CostChart = lazy(() => import('../components/kpi/CostChart').then((m) => ({ default: m.CostChart })))
 import { DemoTag, EmptyState } from '../components/common/Panel'
 import { formatDuration, formatTime, formatUsd, cx } from '../lib/format'
 import { ScreenHeader } from './ScreenHeader'
@@ -64,7 +66,9 @@ export function Activity() {
         </p>
       )}
       <div className="mb-6">
-        <CostChart />
+        <Suspense fallback={<div className="panel h-60" aria-busy="true" />}>
+          <CostChart />
+        </Suspense>
       </div>
 
       <div className="mb-3 flex gap-1" role="group" aria-label="Filter">

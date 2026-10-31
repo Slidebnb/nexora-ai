@@ -128,5 +128,16 @@ Außerdem: Berechtigungen je Aufgabe mit ausdrücklicher Zustimmung (Cloud-KI nu
 **Teststatus:** E2E 21 Schritte grün (inkl. Erststart bis zum Erfolg und Themenwechsel), Unit 57, Worker 49 (inkl. Sicherung vor Migration).
 **Nicht automatisiert getestet:** Windows-Benachrichtigungen (benötigen ein Fenster ohne Fokus auf einem echten Desktop) – bitte beim Windows-Test prüfen.
 
+## Feinschliff MVP (2026-10-31) ✅
+
+**Implementiert**
+- **Echte Pause/Fortsetzen:** hält an sicheren Haltepunkten (zwischen Dateien/Quellen, nach Freigaben), nie mitten in einer Dateioperation; Knöpfe auf der Startseite und in der Statusleiste
+- **Optionale Texterkennung (OCR)** für gescannte PDFs: lokal mit Tesseract (vom Nutzer installiert), ehrliche Meldung, wenn es fehlt
+- **Kleineres Startpaket:** 774,92 kB → 419,41 kB (gemessen mit `pnpm build`); Diagramm und Expertenansicht laden bei Bedarf
+
+**Teststatus:** Worker 55 Tests (inkl. echter OCR einer gescannten PDF, Pause/Abbruch), Unit 58, E2E 22 Schritte (inkl. Pause während einer langsamen Webseite), gepackte App grün. OCR auch über die gebündelte Programmdatei geprüft (10 erkannte Wörter in der Test-PDF).
+
+**Offen:** Ein einmaliger Fehlschlag von `test_websocket_requires_auth_and_replays` (1 von 11 Läufen, danach 10 grün) ist nicht reproduziert und wird in der CI beobachtet.
+
 **Nächster Schritt**
 Pilot nach `docs/PILOT.md`. Phase 5 (Recorder/Replay, weitere Integrationen, Teamfunktionen …) laut Masterplan erst nach positiver Beta.
