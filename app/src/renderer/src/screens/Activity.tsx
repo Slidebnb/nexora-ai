@@ -34,6 +34,7 @@ export function Activity() {
   const [templateName, setTemplateName] = useState('')
   const [saved, setSaved] = useState<string | null>(null)
   const [openRun, setOpenRun] = useState<string | null>(null)
+  const expert = useNexora((s) => s.expertMode)
   const act = (p: Promise<unknown>) => {
     setError(null)
     p.catch((e: unknown) => setError(cleanError(e)))
@@ -110,13 +111,13 @@ export function Activity() {
             <thead className="border-b border-line text-xs text-text-2">
               <tr>
                 <th className="px-4 py-2 font-medium">Vorgang</th>
-                <th className="px-4 py-2 font-medium">Agent</th>
+                {expert && <th className="px-4 py-2 font-medium">Agent</th>}
                 <th className="px-4 py-2 font-medium">Status</th>
-                <th className="px-4 py-2 font-medium">Schritte</th>
-                <th className="px-4 py-2 font-medium">Start</th>
-                <th className="px-4 py-2 font-medium">Dauer</th>
-                <th className="px-4 py-2 font-medium">Kosten</th>
-                <th className="px-4 py-2 font-medium">Ergebnis / Prüfung</th>
+                {expert && <th className="px-4 py-2 font-medium">Schritte</th>}
+                {expert && <th className="px-4 py-2 font-medium">Start</th>}
+                {expert && <th className="px-4 py-2 font-medium">Dauer</th>}
+                {expert && <th className="px-4 py-2 font-medium">Kosten</th>}
+                <th className="px-4 py-2 font-medium">Ergebnis</th>
                 <th className="px-4 py-2" />
               </tr>
             </thead>
@@ -129,12 +130,12 @@ export function Activity() {
                     </button>
                     {r.source === 'demo' && <DemoTag />}
                   </td>
-                  <td className="px-4 py-2 text-text-2">{r.agentName ?? r.agentId ?? '–'}</td>
+                  {expert && <td className="px-4 py-2 text-text-2">{r.agentName ?? r.agentId ?? '–'}</td>}
                   <td className="px-4 py-2"><RunStatusBadge status={r.status} /></td>
-                  <td className="px-4 py-2 font-mono text-xs text-text-2">{r.stepsTotal !== undefined ? `${r.stepsDone}/${r.stepsTotal}` : '–'}</td>
-                  <td className="px-4 py-2 font-mono text-xs text-text-2">{formatTime(r.createdAt)}</td>
-                  <td className="px-4 py-2 font-mono text-xs text-text-2">{r.endedAt ? formatDuration(Date.parse(r.endedAt) - Date.parse(r.createdAt)) : 'läuft'}</td>
-                  <td className="px-4 py-2 font-mono text-xs text-text-2">{formatUsd(r.costUsd)}</td>
+                  {expert && <td className="px-4 py-2 font-mono text-xs text-text-2">{r.stepsTotal !== undefined ? `${r.stepsDone}/${r.stepsTotal}` : '–'}</td>}
+                  {expert && <td className="px-4 py-2 font-mono text-xs text-text-2">{formatTime(r.createdAt)}</td>}
+                  {expert && <td className="px-4 py-2 font-mono text-xs text-text-2">{r.endedAt ? formatDuration(Date.parse(r.endedAt) - Date.parse(r.createdAt)) : 'läuft'}</td>}
+                  {expert && <td className="px-4 py-2 font-mono text-xs text-text-2">{formatUsd(r.costUsd)}</td>}
                   <td className="max-w-80 truncate px-4 py-2 text-xs text-text-2" title={r.verification ?? r.error}>{r.verification ?? r.error ?? '–'}</td>
                   <td className="px-4 py-2 text-right">
                     {!isTerminal(r.status) && (

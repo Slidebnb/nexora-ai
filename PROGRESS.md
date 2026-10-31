@@ -231,3 +231,14 @@ Auf Kundenwunsch die restlichen **rein dekorativen** Visualisierungen übernomme
 
 **Teststatus:** Unit 65, E2E 26 Schritte (inkl. Konsolenfehler-Prüfung), Typprüfung grün.
 
+## Kundenansicht weiter vereinfacht (2026-10-31)
+
+- „Aktivitäten“ zeigt Kunden nur noch **Vorgang / Status / Ergebnis**. Die technischen Spalten
+  (Agent, Schritte, Start, Dauer, Kosten) erscheinen nur in der Expertenansicht.
+- Vorgangsdetails: „Agent“ und „Kosten“ nur noch in der Expertenansicht; interne IDs und
+  Protokollfehler bereits vorher ausgeblendet.
+- Standard bleibt: einfache Startseite; das technische Kontrollzentrum nur bei eingeschalteter Expertenansicht.
+
+Nächste Schritte (mit dem Inhaber abgestimmt): (1) Sprachmodus einfach & lokal (Mikrofon → Befehlszeile,
+Antwort mit der System-Stimme), (2) Konnektoren über MCP (wie in Claude), mit Freigabe vor verändernden Aktionen.
+

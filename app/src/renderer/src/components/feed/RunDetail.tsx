@@ -34,10 +34,10 @@ export function RunDetail({ run, onClose }: { run: RunState; onClose: () => void
       </div>
       <ProgressBar value={progressOf(run)} label={`Fortschritt ${run.title}`} />
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        <Field label="Agent">{run.agentName ?? run.agentId ?? '–'}</Field>
+        {expert && <Field label="Agent">{run.agentName ?? run.agentId ?? '–'}</Field>}
         <Field label="Gestartet">{formatTime(run.createdAt)}</Field>
         <Field label="Dauer">{run.endedAt ? formatDuration(Date.parse(run.endedAt) - Date.parse(run.createdAt)) : 'läuft'}</Field>
-        <Field label="Kosten">{formatUsd(run.costUsd)}</Field>
+        {expert && <Field label="Kosten">{formatUsd(run.costUsd)}</Field>}
       </div>
       {(run.summary || run.verification || run.error) && (
         <Field label={run.error ? 'Fehler' : 'Ergebnis und Prüfung'}>
