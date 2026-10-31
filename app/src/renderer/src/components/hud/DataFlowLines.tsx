@@ -9,6 +9,7 @@
 import { useEffect, useRef } from 'react'
 import { useReducedMotion } from '../../lib/useReducedMotion'
 import { useAnimationLoop } from './useAnimationLoop'
+import { rgbHex, themeColors } from '../../lib/themeColor'
 
 interface Particle {
   x: number
@@ -60,7 +61,7 @@ export function DataFlowLines({ pulseKey, tone }: DataFlowLinesProps) {
             vy: (dy / len) * speed,
             life: 0,
             maxLife: len / speed,
-            color: COLORS[t],
+            color: t === 'accent' ? rgbHex(themeColors().accent) : COLORS[t],
             size: 1 + Math.random() * 2,
             trail: []
           })

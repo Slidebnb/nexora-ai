@@ -6,6 +6,13 @@ import { enterDemo, exitDemo } from '../demo/controller'
 import { ScreenHeader } from './ScreenHeader'
 import { LicenseSection } from '../components/settings/LicenseSection'
 
+const THEME_OPTIONS = [
+  { id: 'crimson', label: 'Crimson', color: '#f43f67' },
+  { id: 'cyan', label: 'Cyan', color: '#06b6d4' },
+  { id: 'violet', label: 'Violett', color: '#8b5cf6' },
+  { id: 'minimal', label: 'Minimal', color: '#94a3b8' }
+] as const
+
 const PROVIDER_LABEL: Record<Provider, string> = { anthropic: 'Anthropic (Claude)', openai: 'OpenAI' }
 
 /** IPC-Fehler kommen als „Error invoking remote method …: Error: <Text>“ – nur den Text zeigen. */
@@ -75,6 +82,8 @@ export function Settings() {
   const demoMode = useNexora((s) => s.demoMode)
   const expertMode = useNexora((s) => s.expertMode)
   const setExpertMode = useNexora((s) => s.setExpertMode)
+  const appSettings = useNexora((s) => s.settings)
+  const saveSettings = useNexora((s) => s.saveSettings)
   const [status, setStatus] = useState<SecretStatus | null>(null)
   const [info, setInfo] = useState<AppInfo | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -145,9 +154,35 @@ export function Settings() {
         </section>
 
         <section className="panel p-5" aria-labelledby="theme-title">
-          <h2 id="theme-title" className="hud-label">Darstellung</h2>
-          <p className="mt-2 text-sm text-text">Theme: Crimson</p>
-          <p className="text-xs text-text-2">Weitere Themes (Cyan, Violet, Minimal) folgen.</p>
+          <h2 id="theme-title" className="hud-label">Darstellung und Hinweise</h2>
+          <div className="mt-3 flex flex-wrap gap-2" role="radiogroup" aria-label="Farbthema">
+            {THEME_OPTIONS.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                role="radio"
+                aria-checked={appSettings?.theme === t.id}
+                onClick={() => void saveSettings({ theme: t.id })}
+                className={`flex items-center gap-2 rounded-md border px-3 py-2 text-sm ${appSettings?.theme === t.id ? 'border-accent text-text' : 'border-line text-text-2 hover:text-text'}`}
+              >
+                <span className="size-4 rounded-full" style={{ background: t.color }} aria-hidden />
+                {t.label}
+              </button>
+            ))}
+          </div>
+          <label className="mt-4 flex items-start gap-3 text-sm text-text">
+            <input
+              type="checkbox"
+              checked={appSettings?.notifications ?? true}
+              onChange={(e) => void saveSettings({ notifications: e.target.checked })}
+              className="mt-1 accent-[var(--color-accent)]"
+              aria-label="Windows-Benachrichtigungen"
+            />
+            <span>
+              Windows-Benachrichtigungen
+              <span className="block text-xs text-text-2">Wenn NEXORA im Hintergrund ist: Hinweis, sobald eine Bestätigung nötig oder eine Aufgabe fertig ist.</span>
+            </span>
+          </label>
         </section>
 
         {info && (

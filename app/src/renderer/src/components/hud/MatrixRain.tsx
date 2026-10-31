@@ -8,6 +8,7 @@
 import { useRef } from 'react'
 import { useReducedMotion } from '../../lib/useReducedMotion'
 import { useAnimationLoop } from './useAnimationLoop'
+import { rgbHex, themeColors } from '../../lib/themeColor'
 
 const CHARS = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン0123456789ABCDEF{}[]<>/\\|'
 const FONT_SIZE = 14
@@ -45,6 +46,7 @@ export function MatrixRain({ intensity, opacity = 0.35 }: MatrixRainProps) {
         },
         frame: () => {
           const level = intensityRef.current
+          const { accent, hi } = themeColors()
           ctx.fillStyle = 'rgba(8, 11, 18, 0.08)'
           ctx.fillRect(0, 0, width, height)
           ctx.font = `${FONT_SIZE}px "Cascadia Mono", Consolas, monospace`
@@ -53,7 +55,7 @@ export function MatrixRain({ intensity, opacity = 0.35 }: MatrixRainProps) {
             const x = (columns[i] ?? 0) * FONT_SIZE
             const y = (drops[i] ?? 0) * FONT_SIZE
             const b = Math.random()
-            ctx.fillStyle = b > 0.95 ? '#ffd9e1' : b > 0.8 ? '#ff6b88' : `rgba(244, 63, 103, ${0.25 + Math.random() * 0.4})`
+            ctx.fillStyle = b > 0.95 ? '#f0f3f9' : b > 0.8 ? rgbHex(hi) : `rgba(${accent[0]}, ${accent[1]}, ${accent[2]}, ${0.25 + Math.random() * 0.4})`
             ctx.fillText(char, x, y)
             if (y > height && Math.random() > 0.975) drops[i] = 0
             drops[i] = (drops[i] ?? 0) + (0.04 + level * 0.2) * (0.6 + Math.random() * 0.8)

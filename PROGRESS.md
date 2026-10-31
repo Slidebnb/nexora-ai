@@ -117,5 +117,16 @@ Außerdem: Berechtigungen je Aufgabe mit ausdrücklicher Zustimmung (Cloud-KI nu
 
 **Teststatus:** E2E 19 Schritte grün, darunter der komplette Kundenweg auf der Startseite mit Prüfung auf der Festplatte; gepackte App startet mit dem neuen Ablauf; Worker 49 und Unit 55 Tests grün.
 
+## Erststart, Hinweise, Themen (2026-10-31) ✅
+
+**Implementiert**
+- **Onboarding** beim ersten Start (3 Schritte) mit **Übungsordner** in „Dokumente“ (Beispieldateien enthalten nur einen Hinweistext, nichts wird überschrieben). Danach öffnet direkt „Ordner aufräumen“: erster echter Erfolg ohne Risiko
+- **Windows-Benachrichtigungen**, wenn NEXORA im Hintergrund ist: bei Bestätigungsbedarf, Fertig und Fehler (abschaltbar)
+- **Farbthemen** Crimson, Cyan, Violett, Minimal (Masterplan §5), auch in den Canvas-Effekten
+- **Datenbank-Sicherung** vor jeder Strukturänderung (`nexora.db.bak-v<alte Version>`)
+
+**Teststatus:** E2E 21 Schritte grün (inkl. Erststart bis zum Erfolg und Themenwechsel), Unit 57, Worker 49 (inkl. Sicherung vor Migration).
+**Nicht automatisiert getestet:** Windows-Benachrichtigungen (benötigen ein Fenster ohne Fokus auf einem echten Desktop) – bitte beim Windows-Test prüfen.
+
 **Nächster Schritt**
 Pilot nach `docs/PILOT.md`. Phase 5 (Recorder/Replay, weitere Integrationen, Teamfunktionen …) laut Masterplan erst nach positiver Beta.

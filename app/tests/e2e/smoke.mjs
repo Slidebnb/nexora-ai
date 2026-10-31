@@ -21,11 +21,21 @@ const folder = join(sandbox, 'Downloads-Test')
 mkdirSync(folder)
 const original = ['urlaub.jpg', 'rechnung.pdf', 'notizen.txt', 'tabelle.xlsx', 'archiv.zip']
 for (const f of original) writeFileSync(join(folder, f), `Inhalt ${f}`)
-const listing = () =>
+const listingOnce = () =>
   readdirSync(folder, { recursive: true, withFileTypes: true })
     .filter((d) => d.isFile())
     .map((d) => join(d.parentPath ?? d.path, d.name).slice(folder.length + 1).replaceAll('\\', '/'))
     .sort()
+// Der Worker kann während des Lesens Unterordner entfernen (Rückgängig) → kurz erneut versuchen
+const listing = () => {
+  for (let i = 0; ; i++) {
+    try {
+      return listingOnce()
+    } catch (e) {
+      if (e.code !== 'ENOENT' || i >= 20) throw e
+    }
+  }
+}
 
 // Lokaler Testserver für die Web-Recherche (Worker erlaubt localhost nur mit NEXORA_ALLOW_PRIVATE_URLS=1)
 const pages = {
@@ -142,6 +152,19 @@ try {
     while (listing().some((f) => f.includes('/')) && Date.now() < deadline) await new Promise((r) => setTimeout(r, 200))
     assert.deepEqual(listing(), [...original].sort(), 'Rückgängig stellt alles wieder her')
     void doneList
+  })
+
+  await step('Farbthema wechseln (Cyan) und zurück', async () => {
+    await nav('Einstellungen')
+    await win.getByRole('radio', { name: 'Cyan' }).click()
+    await win.waitForFunction(() => document.documentElement.dataset.theme === 'cyan')
+    const accent = await win.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--color-accent').trim())
+    assert.equal(accent, '#06b6d4')
+    await nav('Start')
+    await win.screenshot({ path: join(shots, '02d-theme-cyan.png') })
+    await nav('Einstellungen')
+    await win.getByRole('radio', { name: 'Crimson' }).click()
+    await win.waitForFunction(() => document.documentElement.dataset.theme === 'crimson')
   })
 
   await step('Expertenansicht einschalten (technisches Kontrollzentrum)', async () => {

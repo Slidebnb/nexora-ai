@@ -1,9 +1,10 @@
 import { join } from 'node:path'
-import { app, BrowserWindow, session, shell } from 'electron'
+import { app, BrowserWindow, Notification, session, shell } from 'electron'
 import { buildCsp, isAllowedNavigation, secureWebPreferences } from './security'
 import { createSecretStore, registerIpcHandlers } from './ipc'
 import { LICENSE_PUBLIC_KEY_PEM, LicenseManager } from './license'
 import { AppSettingsStore } from './appSettings'
+import type { NexoraEvent } from '../shared/events'
 import { WorkerHub } from './worker/hub'
 import { resolveWorkerLaunch } from './worker/supervisor'
 
@@ -54,6 +55,7 @@ app.whenReady().then(() => {
   session.defaultSession.setPermissionCheckHandler(() => false)
 
   const secrets = createSecretStore()
+  const settings = new AppSettingsStore(join(app.getPath('userData'), 'settings.json'))
   const hub = new WorkerHub(
     () =>
       resolveWorkerLaunch({
@@ -65,15 +67,39 @@ app.whenReady().then(() => {
     secrets,
     (channel, payload) => {
       for (const w of BrowserWindow.getAllWindows()) if (!w.isDestroyed()) w.webContents.send(channel, payload)
+      if (channel === 'worker:event') notifyIfUnfocused(payload as NexoraEvent)
     }
   )
+
+  /** Windows-Benachrichtigung, wenn NEXORA im Hintergrund ist und der Nutzer gebraucht wird oder etwas fertig ist. */
+  const runTitles = new Map<string, string>()
+  function notifyIfUnfocused(e: NexoraEvent): void {
+    if (e.type === 'run_created' && typeof e.payload['title'] === 'string') runTitles.set(e.runId, e.payload['title'])
+    if (!settings.get().notifications || !Notification.isSupported()) return
+    if (BrowserWindow.getAllWindows().some((w) => w.isFocused())) return
+    const title = runTitles.get(e.runId) ?? 'NEXORA AI'
+    const text = (k: string) => (typeof e.payload[k] === 'string' ? (e.payload[k] as string) : '')
+    let body: string | null = null
+    if (e.type === 'approval_requested') body = `Bitte bestätigen: ${text('action')}`
+    else if (e.type === 'run_succeeded') body = `Fertig: ${text('summary') || text('verification')}`
+    else if (e.type === 'run_failed') body = `Nicht geschafft: ${text('error')}`
+    if (!body) return
+    const n = new Notification({ title, body: body.slice(0, 200), silent: e.type !== 'approval_requested' })
+    n.on('click', () => {
+      const w = BrowserWindow.getAllWindows()[0]
+      if (w) {
+        if (w.isMinimized()) w.restore()
+        w.focus()
+      }
+    })
+    n.show()
+  }
   const license = new LicenseManager({
     file: join(app.getPath('userData'), 'license.json'),
     publicKeyPem: LICENSE_PUBLIC_KEY_PEM,
     serverUrl: process.env['NEXORA_LICENSE_URL'] ?? 'https://license.nexora.example'
   })
   void license.refreshIfDue(secrets.get('license'))
-  const settings = new AppSettingsStore(join(app.getPath('userData'), 'settings.json'))
   registerIpcHandlers({ devServerUrl, secrets, hub, license, settings })
   createWindow()
   hub.start()

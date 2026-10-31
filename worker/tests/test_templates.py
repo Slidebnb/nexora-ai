@@ -105,3 +105,7 @@ def test_migration_from_v1_database(tmp_path, monkeypatch):
     assert new.schema_version == 2
     assert new.query_one("SELECT id FROM tasks")["id"] == "task-a", "Daten bleiben bei der Migration erhalten"
     assert new.query("SELECT * FROM templates") == []
+    bak = path.with_name("alt.db.bak-v1")
+    assert bak.exists(), "Sicherung vor der Migration"
+    import sqlite3
+    assert sqlite3.connect(bak).execute("SELECT id FROM tasks").fetchone()[0] == "task-a"

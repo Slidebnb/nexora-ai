@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { Sidebar } from './components/layout/Sidebar'
 import { TopBar } from './components/layout/TopBar'
 import { DemoBanner } from './components/layout/DemoBanner'
@@ -28,6 +29,10 @@ function StartScreen() {
 
 export function App() {
   const screen = useNexora((s) => s.screen)
+  const theme = useNexora((s) => s.settings?.theme ?? 'crimson')
+  useEffect(() => {
+    document.documentElement.dataset['theme'] = theme
+  }, [theme])
   const Current = SCREENS[screen]
   return (
     <div className="flex h-full bg-base text-text">

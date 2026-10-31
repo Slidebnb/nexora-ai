@@ -13,6 +13,7 @@ import type { AgentView, AgentVisualState } from '../../state/selectors'
 import { AGENT_STATE_LABEL } from '../../state/selectors'
 import { useReducedMotion } from '../../lib/useReducedMotion'
 import { useAnimationLoop } from './useAnimationLoop'
+import { themeColors } from '../../lib/themeColor'
 
 type RGB = readonly [number, number, number]
 
@@ -24,8 +25,8 @@ const STATE_COLOR: Record<AgentVisualState, RGB> = {
   done: [74, 222, 128],
   failed: [239, 68, 68]
 }
-const ACCENT: RGB = [244, 63, 103]
-const HIGHLIGHT: RGB = [255, 107, 136]
+let ACCENT: RGB = [244, 63, 103]
+let HIGHLIGHT: RGB = [255, 107, 136]
 
 /** Tempofaktor je Zustand; idle ruhig, executing lebhaft. */
 const SPEED: Record<AgentVisualState, number> = { idle: 0.25, planning: 0.8, executing: 1.4, waiting: 0.4, done: 0.3, failed: 0.15 }
@@ -115,7 +116,9 @@ export function OrbitCore({ agents, progress, readouts, compact = false }: Orbit
 
       const draw = (ts: number) => {
         const { agents: list, state: st, progress: prog, readouts: ro, compact: small } = scene.current
-        const col = STATE_COLOR[st]
+        ;({ accent: ACCENT, hi: HIGHLIGHT } = themeColors())
+        // „Führt aus“/„Plant“ folgen der Themefarbe, Statusfarben (Warten/Erledigt/Fehler) bleiben fest
+        const col = st === 'executing' ? ACCENT : st === 'planning' ? HIGHLIGHT : STATE_COLOR[st]
         const cx = w / 2
         const cy = h / 2
         const base = Math.max(30, Math.min(w, h) / 2 - (small ? 6 : 34)) // Rand für Labels

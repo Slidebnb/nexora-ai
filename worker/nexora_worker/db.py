@@ -80,6 +80,7 @@ MIGRATIONS: list[str] = [
 
 class Database:
     def __init__(self, path: Path) -> None:
+        self.path = path
         path.parent.mkdir(parents=True, exist_ok=True)
         self._conn = sqlite3.connect(path, check_same_thread=False, isolation_level=None)
         self._conn.row_factory = sqlite3.Row
@@ -93,6 +94,13 @@ class Database:
             self._conn.execute("CREATE TABLE IF NOT EXISTS schema_version (version INTEGER NOT NULL)")
             row = self._conn.execute("SELECT MAX(version) AS v FROM schema_version").fetchone()
             current = row["v"] or 0
+            if 0 < current < len(MIGRATIONS):
+                # Vor dem Umbau eine vollständige Sicherung anlegen (konsistent über die SQLite-Backup-API)
+                backup = sqlite3.connect(self.path.with_name(f"{self.path.name}.bak-v{current}"))
+                try:
+                    self._conn.backup(backup)
+                finally:
+                    backup.close()
             for version, sql in enumerate(MIGRATIONS, start=1):
                 if version <= current:
                     continue

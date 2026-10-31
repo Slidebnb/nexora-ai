@@ -168,3 +168,17 @@ body {
     display: none;
   }
 }
+
+/* Farbthemen (Masterplan §5). Standard: Crimson. Status-Farben bleiben in allen Themen gleich. */
+:root[data-theme='cyan'] {
+  --color-accent: #06b6d4;
+  --color-accent-hi: #67e8f9;
+}
+:root[data-theme='violet'] {
+  --color-accent: #8b5cf6;
+  --color-accent-hi: #c4b5fd;
+}
+:root[data-theme='minimal'] {
+  --color-accent: #94a3b8;
+  --color-accent-hi: #e2e8f0;
+}
