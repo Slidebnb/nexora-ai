@@ -85,5 +85,26 @@ Außerdem: Berechtigungen je Aufgabe mit ausdrücklicher Zustimmung (Cloud-KI nu
 - **Desktop-Automation** (pywinauto/UI Automation): im Architekturziel vorgesehen, kein MVP-Workflow benötigt sie bisher
 - Ein einmaliger, nicht reproduzierbarer E2E-Fehlschlag bei einer Freigabe (3 Wiederholungen grün). Als Absicherung lädt die Oberfläche den Stand nach, wenn der Worker „bereits entschieden“ meldet.
 
+## Phase 4: Beta-Vertrieb (2026-10-31) – technisch vorbereitet, Abnahme durch Menschen offen
+
+**Implementiert**
+- **Installer:** PyInstaller-Sidecar (kein Python beim Kunden nötig), electron-builder/NSIS pro Benutzer ohne Admin, eigenes Icon, Lizenztexte im Installationsordner
+- **CI** (`.github/workflows/ci.yml`): Linux (Worker-, Lizenz-, Unit-Tests, E2E) und Windows (Tests, Sidecar, E2E, Installer, Start der gepackten App, Installer als Artefakt)
+- **Lizenz/Billing-Prototyp:** `license-server/` (Stripe Checkout, Webhook mit Signatur und Idempotenz, Geräte-Limits, Kundenportal, Ed25519-Token); App mit Offline-Lizenzprüfung, 14 Tage Test, Funktionsprüfung im Main-Prozess. Ohne eigenen Schlüssel läuft sie als „Entwicklungsversion“ ohne Sperre
+- **Strategie** (`docs/ADR-003.md`): Code-Signatur über CI-Secrets, Auto-Update bewusst noch aus, **keine Telemetrie** in dieser Version
+- **Unterlagen:** Rechtstext-Entwürfe (`docs/legal/`, zur anwaltlichen Prüfung), `docs/SUPPORT.md`, `docs/PILOT.md` (Windows-Abnahme-Checkliste, Messgrößen), `docs/MARKETING.md` (3 Videoskripte, Landingpage, Funnel)
+
+**Teststatus**
+- Gepackte App unter Linux: eingebauter Worker startet, echter Vorgang erfolgreich (`tests/e2e/packaged.mjs`)
+- Lizenzdienst: 7 Tests; App: 55 Unit-Tests (inkl. echter Ed25519-Signaturen, gefälschte Token werden abgelehnt)
+- Windows-CI: hat zwei echte Fehler gefunden (CSP-Warnung, Test-Race), beide behoben. Das Ergebnis des aktuellen Laufs steht auf der Actions-Seite des Repos
+
+**Offen (braucht dich bzw. echte Menschen/Konten)**
+- Abnahme auf einem **frischen Windows-PC** nach `docs/PILOT.md`
+- **Code-Signing-Zertifikat** kaufen und als GitHub-Secrets hinterlegen
+- **Stripe-Konto**, Produkte/Preise anlegen, Lizenzdienst hosten (HTTPS), Signaturschlüssel erzeugen und den öffentlichen Schlüssel in `app/src/main/license.ts` eintragen
+- **Rechtstexte** anwaltlich prüfen lassen; Marken- und Domainprüfung „NEXORA AI“
+- Pilot mit 10–20 Nutzern durchführen und auswerten
+
 **Nächster Schritt**
-Phase 4: Installer (PyInstaller-Sidecar + electron-builder/NSIS), Update-Strategie, Telemetrie nur per Opt-in, Lizenz-/Billing-Prototyp, Rechtstexte, Pilotplan.
+Pilot nach `docs/PILOT.md`. Phase 5 (Recorder/Replay, weitere Integrationen, Teamfunktionen …) laut Masterplan erst nach positiver Beta.

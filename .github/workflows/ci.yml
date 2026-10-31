@@ -29,6 +29,11 @@ jobs:
         run: |
           uv sync --extra browser
           uv run pytest -q
+      - name: Lizenzdienst testen
+        working-directory: license-server
+        run: |
+          uv sync
+          uv run pytest -q
       - name: App installieren
         working-directory: app
         run: pnpm install --frozen-lockfile
