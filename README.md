@@ -5,6 +5,7 @@ Windows-first Desktop-Kontrollzentrum für KI-Agenten. Status: **Phase 3 abgesch
 - `app/`: Electron-Desktop-App (Start: siehe `app/README.md`)
 - `worker/`: lokaler Python-Worker (`uv sync`, Tests: `uv run pytest`)
 
+- `docs/AUDIT.md`: **Audit der fertigen Software** (Windows-Installation, Sicherheit, Tests) – nur Messwerte
 - `docs/SOURCE_AUDIT.md`: Prüfung der vier Quell-Repos
 - `docs/ARCHITECTURE.md`: Zielarchitektur und Event-Vertrag
 - `docs/ADR-001.md`, `docs/ADR-002.md`: Grundsatzentscheidungen
