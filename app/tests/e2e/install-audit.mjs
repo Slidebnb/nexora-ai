@@ -2,7 +2,7 @@
 // Aufruf (Windows, nach `electron-builder --win`): node tests/e2e/install-audit.mjs
 // Ergebnis: Zeilen „AUDIT …“ im Log und e2e-artifacts/audit-windows.json. Nur gemessene Werte.
 import { spawnSync } from 'node:child_process'
-import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { _electron } from 'playwright-core'
@@ -48,7 +48,13 @@ check('Worker im Installationsordner', existsSync(join(installDir, 'resources', 
 check('Lizenzhinweise im Installationsordner', existsSync(join(installDir, 'resources', 'THIRD_PARTY_NOTICES.md')) && existsSync(join(installDir, 'resources', 'licenses')))
 check('Installierte Größe gemessen', true, mb(dirSize(installDir)))
 
-// 2) Installierte App starten
+// 2) Frisches Profil wie bei einem Neukunden (CI-Rechner können Reste früherer Schritte haben)
+const profileDir = join(process.env.APPDATA ?? '', 'nexora-ai')
+const hadProfile = existsSync(profileDir)
+if (hadProfile) rmSync(profileDir, { recursive: true, force: true })
+check('Frisches Nutzerprofil vor dem ersten Start', !existsSync(profileDir), hadProfile ? 'Reste eines früheren CI-Schritts entfernt' : 'war bereits leer')
+
+// 3) Installierte App starten
 async function launch() {
   const started = Date.now()
   const app = await _electron.launch({ executablePath: exe })

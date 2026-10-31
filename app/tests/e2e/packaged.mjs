@@ -23,6 +23,9 @@ writeFileSync(join(folder, 'brief.pdf'), 'x')
 // Gepackte Apps ignorieren NEXORA_USER_DATA bewusst – daher HOME/APPDATA umbiegen, um echte Nutzerdaten nicht zu berühren
 const env = { ...process.env, HOME: sandbox, APPDATA: sandbox, XDG_CONFIG_HOME: join(sandbox, '.config') }
 const app = await _electron.launch({ executablePath: exe, args: process.platform === 'linux' ? ['--no-sandbox'] : [], env })
+// Unter Windows ignoriert Electron APPDATA → echtes Profil; danach wieder entfernen, falls der Test es angelegt hat
+const profile = await app.evaluate(({ app }) => app.getPath('userData'))
+const profileExisted = existsSync(join(profile, 'settings.json'))
 try {
   const win = await app.firstWindow()
   await win.getByText('Bereit', { exact: true }).waitFor({ timeout: 30_000 })
@@ -48,4 +51,8 @@ try {
 } finally {
   await app.close()
   rmSync(sandbox, { recursive: true, force: true })
+  if (!profileExisted && !profile.startsWith(sandbox)) {
+    await new Promise((r) => setTimeout(r, 2000)) // Worker gibt die Datenbank frei
+    rmSync(profile, { recursive: true, force: true })
+  }
 }
