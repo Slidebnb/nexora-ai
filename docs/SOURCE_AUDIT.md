@@ -46,7 +46,7 @@ Konsequenz: Phase 1 enthält **keinen kopierten Fremdcode**. Alle UI-Komponenten
 - **Struktur:** Seiten `command-center` (268 Z.), `agent-network` (334), `operations`, `intelligence`, `systems`. Die Komponenten sind inline in den `page.tsx` angelegt, es gibt keine wiederverwendbare Komponentenbibliothek.
 - **Nutzbar als Idee:** Sidebar-Navigation, KPI-Kartenraster, Agentenliste mit Statusspalte, Ops-Tabelle.
 - **Verwerfen:** Next.js-Runtime, `@vercel/analytics`, Platzhalterbilder, statische Mockdaten.
-- **Hinweis:** Die Ordnerstruktur von `slidebnb` (dieses Host-Repo) ähnelt stark derjenigen dieses Dashboards. NEXORA wird davon getrennt in `nexora-ai/` angelegt.
+- **Hinweis:** Die Ordnerstruktur von `slidebnb` (ein anderes Projekt) ähnelt stark derjenigen dieses Dashboards. NEXORA liegt davon getrennt im eigenen Repository `Slidebnb/nexora-ai`.
 
 ## D. clawbridge
 
