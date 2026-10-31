@@ -23,6 +23,7 @@ from .approvals import ApprovalError
 from .events import Decision
 from .runner import TaskError, TaskManager
 from .templates import Schedule, TemplateStore
+from .system import system_status, check_ai_connection
 
 ALLOWED_HOSTS = {"127.0.0.1", "localhost"}
 
@@ -50,6 +51,10 @@ class TemplateFromRun(BaseModel):
 
 class TemplateRun(BaseModel):
     overrides: dict[str, Any] = Field(default_factory=dict)
+
+
+class AiTestRequest(BaseModel):
+    provider: Literal["anthropic", "openai"]
 
 
 class ScheduleBody(BaseModel):
@@ -192,6 +197,14 @@ def create_app(manager: TaskManager, token: str, templates: TemplateStore | None
             templates.delete(template_id)
         except TaskError as e:
             raise _err(e) from e
+
+    @app.get("/api/system")
+    async def system() -> dict[str, Any]:
+        return await asyncio.to_thread(system_status, manager)
+
+    @app.post("/api/ai/test")
+    async def ai_test(body: AiTestRequest) -> dict[str, Any]:
+        return await asyncio.to_thread(check_ai_connection, body.provider, manager.secrets)
 
     @app.put("/api/session/secrets", status_code=204)
     async def set_secrets(body: SecretsRequest) -> None:
