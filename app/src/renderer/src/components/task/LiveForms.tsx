@@ -1,4 +1,4 @@
-import { FileText, FolderOpen } from 'lucide-react'
+import { FileText, FolderOpen, X } from 'lucide-react'
 import type { CreateTask, PickedFolder } from '@shared/ipc-contract'
 import { useNexora, type ComposerDraft } from '../../state/store'
 import type { WorkflowTemplate } from '../../data/workflows'
@@ -33,6 +33,11 @@ export function buildRequest(t: WorkflowTemplate, d: ComposerDraft, folder: Pick
       const bad = urls.find((u) => !/^https?:\/\/[^\s/]+/i.test(u))
       if (bad) return { request: null, missing: `Ungültige Adresse: ${bad}` }
       return { request: { workflow: 'web_research', question: d.question.trim(), urls, capabilities } }
+    }
+    case 'pdf_analysis': {
+      if (d.files.length === 0) return { request: null, missing: 'Bitte PDF-Dateien wählen' }
+      const caps = d.useCloudAi ? [...capabilities, 'ai.cloud' as const] : capabilities
+      return { request: { workflow: 'pdf_analysis', fileIds: d.files.map((f) => f.fileId), useCloudAi: d.useCloudAi, capabilities: caps } }
     }
   }
 }
@@ -89,6 +94,39 @@ export function LiveForm({ template, onError }: { template: WorkflowTemplate; on
             aria-label="Adressen"
             className="input min-h-16 flex-1 resize-none font-mono text-xs"
           />
+        </div>
+      )
+    case 'pdf_analysis':
+      return (
+        <div className="flex min-h-16 flex-1 flex-col gap-2">
+          <div className="flex items-center gap-2">
+            <PickButton
+              label="PDFs wählen"
+              onError={onError}
+              onPick={async () => {
+                const picked = await window.nexora.pickFiles('pdf')
+                if (picked.length) set({ files: [...d.files, ...picked.filter((p) => !d.files.some((f) => f.path === p.path))].slice(0, 20) })
+              }}
+            />
+            <span className="text-xs text-text-2">{d.files.length} Datei(en)</span>
+          </div>
+          <ul className="max-h-24 overflow-y-auto text-xs" data-testid="picked-files">
+            {d.files.map((f) => (
+              <li key={f.fileId} className="flex items-center gap-2 py-0.5">
+                <FileText className="size-3.5 text-accent-hi" aria-hidden />
+                <span className="truncate font-mono" title={f.path}>{f.name}</span>
+                <button type="button" className="ml-auto text-text-2 hover:text-danger" aria-label={`${f.name} entfernen`} onClick={() => set({ files: d.files.filter((x) => x.fileId !== f.fileId) })}>
+                  <X className="size-3.5" aria-hidden />
+                </button>
+              </li>
+            ))}
+          </ul>
+          <label className="flex items-start gap-2 text-xs text-text-2">
+            <input type="checkbox" checked={d.useCloudAi} onChange={(e) => set({ useCloudAi: e.target.checked })} className="mt-0.5 accent-[var(--color-accent)]" />
+            <span>
+              Zusätzlich KI-Zusammenfassung (Cloud). Vor dem Senden wird einzeln gefragt; es fallen API-Kosten an. Ohne Häkchen bleibt alles lokal.
+            </span>
+          </label>
         </div>
       )
     default:

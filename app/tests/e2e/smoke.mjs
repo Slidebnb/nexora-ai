@@ -3,6 +3,7 @@
 import assert from 'node:assert/strict'
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { createServer } from 'node:http'
+import { execFileSync } from 'node:child_process'
 import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
@@ -47,10 +48,27 @@ const win = await app.firstWindow()
 win.on('console', (m) => m.type() === 'error' && errors.push(m.text()))
 win.on('pageerror', (e) => errors.push(String(e)))
 await win.setViewportSize({ width: 1440, height: 900 })
-// Nativen Ordnerdialog durch den Testordner ersetzen (nur im Test)
-await app.evaluate(({ dialog }, path) => {
-  dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [path] })
-}, folder)
+// Test-PDFs mit dem Generator aus den Worker-Tests erzeugen
+const workerDir = join(appDir, '..', 'worker')
+const py = process.platform === 'win32' ? join(workerDir, '.venv', 'Scripts', 'python.exe') : join(workerDir, '.venv', 'bin', 'python')
+const pdfDir = join(sandbox, 'pdfs')
+mkdirSync(pdfDir)
+execFileSync(py, ['-c', `
+import sys; from pathlib import Path; from tests.pdfgen import make_pdf
+d = Path(sys.argv[1])
+make_pdf(d / 'Angebot.pdf', [['Angebot fuer die Lieferung von Bueromaterial.', 'Der Gesamtpreis betraegt 1200 Euro netto.', 'Die Lieferung erfolgt innerhalb von zwei Wochen nach Auftrag.']], title='Angebot 42')
+make_pdf(d / 'Scan.pdf', [[]])
+`, pdfDir], { cwd: workerDir })
+const pdfFiles = [join(pdfDir, 'Angebot.pdf'), join(pdfDir, 'Scan.pdf')]
+
+// Native Dialoge durch Testpfade ersetzen (nur im Test)
+await app.evaluate(({ dialog }, pick) => {
+  dialog.showOpenDialog = async (a, b) => {
+    const options = b ?? a
+    const files = options.properties.includes('openFile')
+    return { canceled: false, filePaths: files ? pick.files : [pick.folder] }
+  }
+}, { folder, files: pdfFiles })
 
 const nav = (name) => win.getByRole('navigation').getByRole('button', { name }).click()
 const step = async (name, fn) => {
@@ -81,7 +99,7 @@ try {
     await win.getByRole('button', { name: 'Ordner wählen' }).click()
     await win.getByTestId('picked-folder').getByText(folder).waitFor()
     assert.equal(await start.isDisabled(), true, 'ohne Erlaubnis darf nichts starten')
-    await win.getByRole('checkbox').check()
+    await win.getByLabel('Erlaubnis für diese Aufgabe').check()
     await start.click()
   })
 
@@ -116,7 +134,7 @@ try {
 
   await step('LIVE: Ablehnen verändert nichts', async () => {
     await nav('Dashboard')
-    await win.getByRole('checkbox').check()
+    await win.getByLabel('Erlaubnis für diese Aufgabe').check()
     await win.getByRole('button', { name: 'Aufgabe starten' }).click()
     const dlg = win.getByRole('alertdialog')
     await dlg.waitFor({ timeout: 15_000 })
@@ -129,7 +147,7 @@ try {
     await win.getByLabel('Vorlage').selectOption('recherche')
     await win.getByLabel('Recherchefrage').fill('Was kostet der Tarif im Monat?')
     await win.getByLabel('Adressen').fill(`${webBase}/a\n${webBase}/b`)
-    await win.getByRole('checkbox').check()
+    await win.getByLabel('Erlaubnis für diese Aufgabe').check()
     await win.getByRole('button', { name: 'Aufgabe starten' }).click()
     await win.getByText(/2 von 2 Quellen gelesen \(Direktabruf/).first().waitFor({ timeout: 20_000 })
     await win.getByText('Recherche.csv').first().waitFor()
@@ -142,8 +160,20 @@ try {
     await win.screenshot({ path: join(shots, '06-live-recherche.png') })
   })
 
-  await step('DEMO: Ordner-Szenario mit Freigabe', async () => {
+  await step('LIVE: PDF-Analyse lokal mit Tabelle und Bericht', async () => {
+    await nav('Dashboard')
     await win.getByLabel('Vorlage').selectOption('pdf')
+    await win.getByRole('button', { name: 'PDFs wählen' }).click()
+    await win.getByTestId('picked-files').getByText('Angebot.pdf').waitFor()
+    await win.getByLabel('Erlaubnis für diese Aufgabe').check()
+    await win.getByRole('button', { name: 'Aufgabe starten' }).click()
+    await win.getByText(/2 von 2 PDF\(s\) ausgewertet, 1 ohne Textebene/).first().waitFor({ timeout: 20_000 })
+    await win.getByText('PDF-Bericht.md').first().waitFor()
+    await win.screenshot({ path: join(shots, '07-live-pdf.png') })
+  })
+
+  await step('DEMO: Ordner-Szenario mit Freigabe', async () => {
+    await win.getByLabel('Vorlage').selectOption('wiederholen')
     await win.getByRole('button', { name: 'Demo-Modus öffnen' }).click()
     await win.getByText('DEMO-MODUS', { exact: true }).waitFor()
     await win.getByLabel('Vorlage').selectOption('ordner')
@@ -151,7 +181,7 @@ try {
     await win.getByRole('alertdialog').getByText('DEMO', { exact: true }).waitFor({ timeout: 15_000 })
     await win.getByRole('alertdialog').getByRole('button', { name: 'Erlauben' }).click()
     await win.getByText('Sortierprotokoll.csv').first().waitFor({ timeout: 15_000 })
-    await win.screenshot({ path: join(shots, '07-dashboard-demo.png') })
+    await win.screenshot({ path: join(shots, '08-dashboard-demo.png') })
   })
 
   await step('DEMO: Recherche zeigt Schrittfehler; Kostendiagramm gezeichnet', async () => {
@@ -160,7 +190,7 @@ try {
     await win.getByText(/1 Quelle fehlgeschlagen/).first().waitFor({ timeout: 15_000 })
     await nav('Aktivitäten')
     await win.getByRole('region', { name: 'API-Kosten (simuliert)' }).locator('.recharts-area').waitFor()
-    await win.screenshot({ path: join(shots, '08-aktivitaeten.png') })
+    await win.screenshot({ path: join(shots, '09-aktivitaeten.png') })
   })
 
   await step('Kein Überlauf und keine Überlappung bei 1024×640', async () => {
@@ -176,7 +206,7 @@ try {
     await win.getByRole('button', { name: 'Seitenleiste umschalten' }).click()
     assert.equal(await overflow(), 0)
     await win.getByRole('button', { name: 'Seitenleiste umschalten' }).click()
-    await win.screenshot({ path: join(shots, '09-dashboard-1024.png') })
+    await win.screenshot({ path: join(shots, '10-dashboard-1024.png') })
     await win.setViewportSize({ width: 1440, height: 900 })
   })
 
@@ -185,7 +215,7 @@ try {
     await nav('Aktivitäten')
     await win.locator('tbody tr').first().waitFor()
     assert.equal(await win.locator('tbody').getByText('DEMO', { exact: true }).count(), 0)
-    assert.equal(await win.locator('tbody tr').count(), 4)
+    assert.equal(await win.locator('tbody tr').count(), 5)
   })
 
   await step('Keine Konsolenfehler', async () => {

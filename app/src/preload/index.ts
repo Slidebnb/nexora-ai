@@ -16,6 +16,7 @@ const api: NexoraApi = {
   getWorkerStatus: () => ipcRenderer.invoke('worker:status'),
   getWorkerHistory: () => ipcRenderer.invoke('worker:history'),
   pickFolder: () => ipcRenderer.invoke('dialog:pickFolder'),
+  pickFiles: (kind) => ipcRenderer.invoke('dialog:pickFiles', { kind }),
   createTask: (req) => ipcRenderer.invoke('tasks:create', req),
   cancelTask: (taskId) => ipcRenderer.invoke('tasks:cancel', { taskId }),
   respondApproval: (approvalId, decision) => ipcRenderer.invoke('approvals:respond', { approvalId, decision }),

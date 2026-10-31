@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { NexoraEventSchema, type NexoraEvent } from '@shared/events'
-import type { PickedFolder } from '@shared/ipc-contract'
+import type { PickedFile, PickedFolder } from '@shared/ipc-contract'
 import { applyEvent, initialState, type NexoraState } from './runReducer'
 
 export type Screen = 'dashboard' | 'agents' | 'automations' | 'activity' | 'files' | 'settings'
@@ -20,7 +20,7 @@ export interface ComposerDraft {
   briefing: string
   recipients: string
   subject: string
-  files: PickedFolder[]
+  files: PickedFile[]
   outFolder: PickedFolder | null
   useCloudAi: boolean
 }

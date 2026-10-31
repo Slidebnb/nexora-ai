@@ -123,6 +123,10 @@ class Workflow(ABC):
         """Ressource, die nicht parallel bearbeitet werden darf (z. B. Ordner)."""
         return None
 
+    def required_capabilities(self, data: BaseModel) -> frozenset[str]:
+        """Kann je nach Eingabe zusätzliche Berechtigungen verlangen (z. B. Cloud-KI)."""
+        return self.capabilities
+
     def related_run_id(self, data: BaseModel) -> str | None:
         """Bezug auf einen früheren Run (z. B. Undo)."""
         return None
@@ -170,13 +174,13 @@ class TaskManager:
         wf = self._workflows.get(workflow)
         if wf is None:
             raise TaskError(f"Unbekannter Workflow: {workflow}")
-        missing = wf.capabilities - set(granted)
-        if missing:
-            raise TaskError(f"Fehlende Berechtigungen: {', '.join(sorted(missing))}", 403)
         try:
             data = wf.Input.model_validate(raw_input)
         except ValidationError as e:
             raise TaskError(f"Ungültige Eingabe: {e.errors()[0]['msg']}") from e
+        missing = wf.required_capabilities(data) - set(granted)
+        if missing:
+            raise TaskError(f"Fehlende Berechtigungen: {', '.join(sorted(missing))}", 403)
 
         task_id = f"task-{uuid.uuid4().hex[:16]}"
         run_id = f"run-{uuid.uuid4().hex[:16]}"

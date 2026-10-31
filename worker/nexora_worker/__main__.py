@@ -27,6 +27,8 @@ from .db import Database
 from .runner import TaskManager
 from .safety import redact_text
 from .workflows import OrganizeFolder, UndoOrganize
+from .workflows.pdf_analysis import PdfAnalysis
+from .workflows.web_research import WebResearch
 
 
 class RedactingFormatter(logging.Formatter):
@@ -43,11 +45,8 @@ def build_manager(data_dir: Path) -> TaskManager:
     manager = TaskManager(db, bus, ApprovalBroker(db, bus), data_dir)
     manager.register(OrganizeFolder())
     manager.register(UndoOrganize())
-    try:
-        from .workflows.web_research import WebResearch
-        manager.register(WebResearch())
-    except ImportError:
-        pass
+    manager.register(WebResearch())
+    manager.register(PdfAnalysis())
     return manager
 
 

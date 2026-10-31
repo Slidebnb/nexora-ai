@@ -21,6 +21,8 @@ export function registerIpcHandlers(opts: { devServerUrl?: string; secrets: Secr
   const { devServerUrl, secrets, hub } = opts
   /** Ordner, die der Nutzer im nativen Dialog gewählt hat. Der Renderer kennt nur die ID. */
   const pickedFolders = new Map<string, string>()
+  /** Einzeln gewählte Dateien (nur über den nativen Dialog). */
+  const pickedFiles = new Map<string, string>()
 
   /** Registriert einen Kanal aus der Allowlist mit Absender-, Anfrage- und Antwortprüfung. */
   function handle<C extends IpcChannel>(channel: C, fn: (req: IpcRequest<C>, event: IpcMainInvokeEvent) => IpcResponse<C> | Promise<IpcResponse<C>>): void {
@@ -60,6 +62,19 @@ export function registerIpcHandlers(opts: { devServerUrl?: string; secrets: Secr
     return { folderId, name: basename(path) || path, path }
   })
 
+  handle('dialog:pickFiles', async ({ kind }, event) => {
+    const win = BrowserWindow.fromWebContents(event.sender)
+    const filters = kind === 'pdf' ? [{ name: 'PDF-Dokumente', extensions: ['pdf'] }] : []
+    const options = { title: 'Dateien für NEXORA auswählen', properties: ['openFile' as const, 'multiSelections' as const], filters }
+    const result = win ? await dialog.showOpenDialog(win, options) : await dialog.showOpenDialog(options)
+    if (result.canceled) return []
+    return result.filePaths.slice(0, 20).map((path) => {
+      const fileId = randomUUID()
+      pickedFiles.set(fileId, path)
+      return { fileId, name: basename(path), path }
+    })
+  })
+
   handle('tasks:create', async (req) => {
     switch (req.workflow) {
       case 'organize_folder': {
@@ -71,6 +86,11 @@ export function registerIpcHandlers(opts: { devServerUrl?: string; secrets: Secr
         return hub.createTask('undo_organize', { runId: req.runId }, req.capabilities)
       case 'web_research':
         return hub.createTask('web_research', { question: req.question, urls: req.urls }, req.capabilities)
+      case 'pdf_analysis': {
+        const files = req.fileIds.map((id) => pickedFiles.get(id))
+        if (files.some((f) => !f)) throw new Error('Bitte die Dateien erneut auswählen')
+        return hub.createTask('pdf_analysis', { files, useCloudAi: req.useCloudAi }, req.capabilities)
+      }
     }
   })
   handle('tasks:cancel', async ({ taskId }) => {

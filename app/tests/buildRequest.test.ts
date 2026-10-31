@@ -25,6 +25,13 @@ describe('buildRequest', () => {
     expect(ok).toEqual({ workflow: 'web_research', question: 'Preis?', urls: ['https://a.de', 'https://b.de'], capabilities: ['web.read', 'files.export'] })
   })
 
+  it('PDF: verlangt Dateien; Cloud-KI fügt die Berechtigung ai.cloud hinzu', () => {
+    expect(buildRequest(wf('pdf'), draft(), null).missing).toMatch(/PDF/)
+    const files = [{ fileId: 'a', name: 'a.pdf', path: '/a.pdf' }]
+    expect(buildRequest(wf('pdf'), draft({ files }), null).request).toEqual({ workflow: 'pdf_analysis', fileIds: ['a'], useCloudAi: false, capabilities: ['pdf.read', 'files.export'] })
+    expect(buildRequest(wf('pdf'), draft({ files, useCloudAi: true }), null).request?.capabilities).toContain('ai.cloud')
+  })
+
   it('Vorlagen ohne Live-Ausführung liefern keine Anfrage', () => {
     expect(buildRequest(wf('wiederholen'), draft(), null).request).toBeNull()
   })

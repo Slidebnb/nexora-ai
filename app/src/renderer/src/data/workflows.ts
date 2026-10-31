@@ -9,7 +9,7 @@ export interface WorkflowTemplate {
   /** Szenario für den DEMO-Modus, falls vorhanden. */
   demoScenarioId?: string
   livePhase: string
-  live?: { workflow: 'organize_folder' | 'web_research'; capabilities: Capability[] }
+  live?: { workflow: 'organize_folder' | 'web_research' | 'pdf_analysis'; capabilities: Capability[] }
 }
 
 export const WORKFLOWS: WorkflowTemplate[] = [
@@ -36,7 +36,8 @@ export const WORKFLOWS: WorkflowTemplate[] = [
     title: 'PDF-Analyse',
     description: 'Ausgewählte PDFs lokal auslesen, Zusammenfassung und Tabelle mit Dateiverweisen. OCR optional.',
     capabilities: ['Ausgewählte Dateien lesen'],
-    livePhase: 'Phase 3'
+    livePhase: 'Phase 3',
+    live: { workflow: 'pdf_analysis', capabilities: ['pdf.read', 'files.export'] }
   },
   {
     id: 'entwurf',

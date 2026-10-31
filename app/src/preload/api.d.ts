@@ -1,5 +1,5 @@
 import type { ApprovalDecision, NexoraEvent } from '../shared/events'
-import type { AppInfo, CreateTask, PickedFolder, Provider, SecretStatus, WorkerStatus } from '../shared/ipc-contract'
+import type { AppInfo, CreateTask, PickedFile, PickedFolder, Provider, SecretStatus, WorkerStatus } from '../shared/ipc-contract'
 
 export interface NexoraApi {
   getAppInfo: () => Promise<AppInfo>
@@ -9,6 +9,7 @@ export interface NexoraApi {
   getWorkerStatus: () => Promise<WorkerStatus>
   getWorkerHistory: () => Promise<NexoraEvent[]>
   pickFolder: () => Promise<PickedFolder | null>
+  pickFiles: (kind: 'pdf') => Promise<PickedFile[]>
   createTask: (req: CreateTask) => Promise<{ taskId: string; runId: string }>
   cancelTask: (taskId: string) => Promise<{ ok: boolean }>
   respondApproval: (approvalId: string, decision: ApprovalDecision) => Promise<{ ok: boolean }>

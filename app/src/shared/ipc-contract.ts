@@ -37,11 +37,24 @@ export const WorkerStatusSchema = z.object({
 export type WorkerStatus = z.infer<typeof WorkerStatusSchema>
 
 /** Fähigkeiten, die der Nutzer pro Aufgabe ausdrücklich erlaubt (muss zum Worker-Workflow passen). */
-export const CapabilitySchema = z.enum(['files.read', 'files.move', 'web.read', 'files.export', 'pdf.read', 'drafts.write'])
+export const CapabilitySchema = z.enum(['files.read', 'files.move', 'web.read', 'files.export', 'pdf.read', 'ai.cloud', 'drafts.write', 'files.write'])
+
+export const CAPABILITY_LABEL: Record<z.infer<typeof CapabilitySchema>, string> = {
+  'files.read': 'Dateien lesen',
+  'files.move': 'Dateien verschieben (mit Freigabe)',
+  'web.read': 'öffentliche Webseiten lesen',
+  'files.export': 'Ergebnisse exportieren',
+  'pdf.read': 'ausgewählte PDFs lesen',
+  'ai.cloud': 'Inhalte an KI-Anbieter senden (mit Freigabe, Kosten)',
+  'drafts.write': 'Entwürfe erstellen',
+  'files.write': 'Dateien speichern (mit Freigabe)'
+}
 export type Capability = z.infer<typeof CapabilitySchema>
 
 export const PickedFolderSchema = z.object({ folderId: z.string(), name: z.string(), path: z.string() })
 export type PickedFolder = z.infer<typeof PickedFolderSchema>
+export const PickedFileSchema = z.object({ fileId: z.string(), name: z.string(), path: z.string() })
+export type PickedFile = z.infer<typeof PickedFileSchema>
 
 const Caps = z.array(CapabilitySchema).max(10)
 export const CreateTaskSchema = z.discriminatedUnion('workflow', [
@@ -52,7 +65,8 @@ export const CreateTaskSchema = z.discriminatedUnion('workflow', [
     question: z.string().trim().min(3).max(500),
     urls: z.array(z.url({ protocol: /^https?$/ })).min(1).max(10),
     capabilities: Caps
-  })
+  }),
+  z.object({ workflow: z.literal('pdf_analysis'), fileIds: z.array(z.string().min(1)).min(1).max(20), useCloudAi: z.boolean(), capabilities: Caps })
 ])
 export type CreateTask = z.infer<typeof CreateTaskSchema>
 
@@ -69,6 +83,7 @@ export const IPC_CHANNELS = {
   'worker:status': { request: z.undefined(), response: WorkerStatusSchema },
   'worker:history': { request: z.undefined(), response: z.array(NexoraEventSchema) },
   'dialog:pickFolder': { request: z.undefined(), response: PickedFolderSchema.nullable() },
+  'dialog:pickFiles': { request: z.object({ kind: z.enum(['pdf']) }), response: z.array(PickedFileSchema) },
   'tasks:create': { request: CreateTaskSchema, response: z.object({ taskId: z.string(), runId: z.string() }) },
   'tasks:cancel': { request: z.object({ taskId: z.string().min(1) }), response: Ok },
   'approvals:respond': { request: z.object({ approvalId: z.string().min(1), decision: ApprovalDecisionSchema }), response: Ok },

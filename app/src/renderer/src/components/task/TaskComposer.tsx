@@ -4,6 +4,7 @@ import { useNexora } from '../../state/store'
 import { WORKFLOWS, type WorkflowTemplate } from '../../data/workflows'
 import { enterDemo, startDemoScenario } from '../../demo/controller'
 import { cleanError } from '../../lib/actions'
+import { CAPABILITY_LABEL } from '@shared/ipc-contract'
 import { buildRequest, LiveForm } from './LiveForms'
 
 /** Startet echte Aufgaben über den Worker (Live) oder simulierte Abläufe (Demo). */
@@ -102,10 +103,10 @@ export function TaskComposer() {
 
       {!demoMode && live && (
         <label className="flex items-start gap-2 text-xs text-text">
-          <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} className="mt-0.5 accent-[var(--color-accent)]" />
+          <input type="checkbox" aria-label="Erlaubnis für diese Aufgabe" checked={consent} onChange={(e) => setConsent(e.target.checked)} className="mt-0.5 accent-[var(--color-accent)]" />
           <span>
-            Ich erlaube NEXORA für diese Aufgabe: {workflow.capabilities.join(', ')}. Jede verändernde Aktion wird vorher einzeln zur Freigabe
-            angezeigt.
+            Ich erlaube NEXORA für diese Aufgabe: {(built.request?.capabilities ?? live.capabilities).map((c) => CAPABILITY_LABEL[c]).join(', ')}. Jede
+            verändernde Aktion wird vorher einzeln zur Freigabe angezeigt.
           </span>
         </label>
       )}
