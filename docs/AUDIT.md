@@ -93,7 +93,7 @@ Externe Programme werden an genau drei Stellen gestartet, alle mit fester Argume
 | Content-Security-Policy als HTTP-Header **und** als Meta-Tag im Build (der Header greift bei `file://` nicht) | `app/src/main/index.ts`, `app/electron.vite.config.mts` |
 | Neue Fenster blockiert (`setWindowOpenHandler` → deny), Navigation nur zur eigenen App, `<webview>` blockiert | `app/src/main/index.ts` |
 | Alle Berechtigungsanfragen (Kamera, Mikrofon, Standort …) abgelehnt | `app/src/main/index.ts` |
-| IPC nur über eine Allowlist mit 27 Kanälen; jede Anfrage und Antwort wird mit zod geprüft, der Absender-Frame wird kontrolliert | `app/src/shared/ipc-contract.ts`, `app/src/main/ipc.ts` |
+| IPC nur über eine Allowlist mit 29 Kanälen; jede Anfrage und Antwort wird mit zod geprüft, der Absender-Frame wird kontrolliert | `app/src/shared/ipc-contract.ts`, `app/src/main/ipc.ts` |
 | Pfade nur über native Dialoge; die Oberfläche kennt nur zufällige IDs | `app/src/main/ipc.ts` |
 | Worker nur an 127.0.0.1, Einmal-Token je Start, Browser-Anfragen (Origin) abgelehnt | `worker/nexora_worker/api.py` |
 
@@ -103,15 +103,26 @@ Externe Programme werden an genau drei Stellen gestartet, alle mit fester Argume
 
 | Bereich | Anzahl | Quelle |
 |---|---|---|
-| Worker (pytest) | 60 bestanden (Stand Systemzustand-Commit; beim Audit 55) | `uv run pytest` |
+| Worker (pytest) | 72 bestanden + 1 nur unter Windows (Stand `75ac001`; beim Audit 55) | `uv run pytest` |
 | Lizenzdienst (pytest) | 7 bestanden | `uv run pytest` |
-| App-Unit-Tests (vitest) | 59 bestanden | `pnpm test` |
-| E2E mit echter App, echtem Worker und echten Dateien | 22 Schritte | `tests/e2e/smoke.mjs`; läuft unter Linux und Windows in der CI |
+| App-Unit-Tests (vitest) | 65 bestanden | `pnpm test` |
+| E2E mit echter App, echtem Worker und echten Dateien | 25 Schritte | `tests/e2e/smoke.mjs`; läuft unter Linux und Windows in der CI |
 | Windows-Installationsaudit | 24 Prüfungen | siehe Abschnitt 1 |
 
 Umfang zum Audit-Zeitpunkt (Commit `a34cbda`): 8.575 Zeilen Quellcode und 2.459 Zeilen Testcode (`git ls-files … | wc -l`).
 
 ---
+
+## 5a. Nachprüfung nach Übernahme der restlichen Repos (Stand `75ac001`)
+
+| Prüfung | Ergebnis | Quelle |
+|---|---|---|
+| Gefährliche Muster (wie Abschnitt 3) | 0 Treffer; externe Programme weiterhin nur Tesseract (`ocr.py`, `system.py`) mit fester Argumentliste | `git grep` |
+| `pip-audit` über alle 279 gesperrten Python-Pakete inkl. KI-Browser und Windows-Paketen (pywinauto, comtypes, pywin32) | keine bekannten Schwachstellen | `uv export --all-extras` + `pip-audit --no-deps` |
+| `pnpm audit` | keine bekannten Schwachstellen | `pnpm audit` |
+| Desktop-Bedienung im gebündelten Windows-Worker | pywinauto lädt, Fensterliste antwortet | CI-Lauf 25, `tests/test_process.py` |
+
+Nicht geprüft: ein echter KI-Desktop-Lauf gegen die Anthropic-API (kein Schlüssel in der Testumgebung) und Mausklicks auf einem echten Kunden-Desktop.
 
 ## 6. Nachträglich gefundener Sicherheitsfehler
 
