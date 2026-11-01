@@ -10,6 +10,7 @@ import { useNexora } from '../state/store'
 import { TaskWizard } from '../components/home/TaskWizard'
 import { WorkflowGallery } from '../components/home/WorkflowGallery'
 import { AgentPulse } from '../components/home/AgentPulse'
+import { RecipeGallery } from '../components/home/RecipeGallery'
 import { TaskRuns } from '../components/home/TaskRuns'
 import { useVoice } from '../lib/useVoice'
 import { VoiceMode } from './VoiceMode'
@@ -21,17 +22,6 @@ interface Shown extends ChatMessage {
 
 let counter = 0
 const PROVIDER_LABEL: Record<Provider, string> = { anthropic: 'Claude (Anthropic)', openai: 'OpenAI' }
-
-// Kundenfreundliche Beispiele: zeigen, wie man NEXORA im Chat bedient. Klick füllt das Eingabefeld (nicht sofort
-// senden), damit der Nutzer den Satz anpassen kann. Jedes Beispiel passt zu einer echten Agent-Fähigkeit.
-const EXAMPLES: { label: string; prompt: string }[] = [
-  { label: '🔎 Etwas im Web recherchieren', prompt: 'Recherchiere für mich die aktuellen Öffnungszeiten von ' },
-  { label: '✉️ Eine E-Mail schreiben', prompt: 'Schreib eine freundliche E-Mail an kunde@example.com zum Thema ' },
-  { label: '📨 Eine E-Mail wirklich senden', prompt: 'Sende eine kurze Terminbestätigung an kunde@example.com für ' },
-  { label: '🗂️ Einen Ordner aufräumen', prompt: 'Räum einen Ordner für mich auf und sortiere die Dateien nach Typ.' },
-  { label: '📄 Eine PDF zusammenfassen', prompt: 'Lies eine PDF-Datei und fasse die wichtigsten Punkte zusammen.' },
-  { label: '🔌 Verbundene Dienste zeigen', prompt: 'Welche Dienste sind mit dir verbunden und was können sie?' }
-]
 
 export function Chat() {
   const setScreen = useNexora((s) => s.setScreen)
@@ -151,20 +141,13 @@ export function Chat() {
           <div className="mt-10 text-center text-text-2">
             <p className="text-lg text-text">Wie kann ich dir helfen?</p>
             <p className="mt-1 text-sm">Schreib einfach los – oder tippe ein Beispiel an, um zu sehen, was NEXORA kann.</p>
-            <div className="mx-auto mt-5 grid max-w-xl grid-cols-1 gap-2 sm:grid-cols-2" data-testid="chat-examples">
-              {EXAMPLES.map((ex) => (
-                <button
-                  key={ex.label}
-                  type="button"
-                  className="rounded-lg border border-line bg-panel px-3 py-2.5 text-left text-sm text-text transition-colors hover:border-accent/60 hover:bg-panel-2"
-                  onClick={() => {
-                    setInput(ex.prompt)
-                    inputRef.current?.focus()
-                  }}
-                >
-                  {ex.label}
-                </button>
-              ))}
+            <div className="mt-5" data-testid="chat-examples">
+              <RecipeGallery
+                onPick={(prompt) => {
+                  setInput(prompt)
+                  inputRef.current?.focus()
+                }}
+              />
             </div>
             <p className="mt-6 text-xs uppercase tracking-wider text-text-2/70">Oder nutze eine fertige Aufgabe</p>
             <WorkflowGallery />

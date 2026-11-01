@@ -458,6 +458,20 @@ sofort startklar (behebt „man wusste nicht, wie man anfängt / man konnte nich
 - Tests: Unit 73, Typecheck grün. E2E-Erststart-Test an den neuen Ablauf angepasst (ein Schritt mehr: KI-Schlüssel wird
   im Test übersprungen; Abschluss über „Übungsordner").
 
+## Workflows deutlich erweitert: „Fertige Aufgaben"-Sammlung (2026-11-01) ✅
+
+Die sichtbare Workflow-/Aufgaben-Sammlung wurde von 6 flachen Beispielen auf **~20 kuratierte, kategorisierte
+„Fertige Aufgaben"** erweitert – mit Suchfeld und Gruppierung (Recherche & Web, E-Mail, Dateien & PDF, PC steuern,
+Verbundene Dienste).
+- **Ehrlich:** Jedes Rezept bildet auf eine **bereits vorhandene, echte** Agent-Fähigkeit ab (web_recherche,
+  email_entwurf/email_senden, ordner_aufraeumen, pdf_lesen, offene_fenster/computer_steuern,
+  konnektoren_auflisten/konnektor_aufrufen). Es werden keine Fähigkeiten vorgetäuscht, die NEXORA nicht hat.
+- Klick füllt das Eingabefeld (sendet nicht automatisch); verändernde/sendende Aktionen laufen weiterhin über Freigabe.
+- Neue Dateien: `data/recipes.ts`, `components/home/RecipeGallery.tsx`; ersetzt die frühere kleine Beispiel-Liste im
+  leeren Chat (die geführten 5 Wizard-Workflows in `WorkflowGallery` bleiben daneben bestehen).
+- Tests: Unit **77** (+4: Rezept-Integrität – ≥18 Einträge, eindeutige IDs, gültige Kategorien, alle Kategorien belegt),
+  Typecheck grün.
+
 ## Beeindruckende Live-Visualisierung während der Agent arbeitet (2026-11-01) ✅
 
 Vision-Säule „beeindruckende Live-Visualisierung": Während NEXORA eine Antwort/Aufgabe bearbeitet, zeigt der
