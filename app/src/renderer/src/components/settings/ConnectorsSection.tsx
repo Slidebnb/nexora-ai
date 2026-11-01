@@ -9,64 +9,13 @@
  * fremden Markenlogos ausgeliefert; die Symbole sind neutrale Platzhalter.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import {
-  Boxes, Briefcase, Calendar, Cloud, Code2, FolderOpen, GitBranch, Hash, Link2, ListTodo, Mail, MessageSquare,
-  Plug, RefreshCw, Search, Target, Trash2, Users, Wrench
-} from 'lucide-react'
+import { Link2, Plug, RefreshCw, Search, Trash2, Wrench } from 'lucide-react'
 import type { Connector, ConnectorTool } from '@shared/ipc-contract'
+import { CONNECTOR_CATALOG, CONNECTOR_CATEGORY_ORDER, type ConnectorTemplate } from '../../data/connectors'
 import { useNexora } from '../../state/store'
 import { cleanError } from '../../lib/actions'
 
-type Category = 'E-Mail & Kalender' | 'Dateien & Cloud' | 'Chat & Team' | 'Produktivität' | 'Entwicklung' | 'Vertrieb & CRM' | 'Sonstiges'
-
-interface Template {
-  id: string
-  name: string
-  icon: typeof Mail
-  category: Category
-  desc: string
-  urlPlaceholder: string
-  hint: string
-  needsToken: boolean
-}
-
-const MCP_URL = 'https://…/mcp'
-// Standard-Hinweis für Dienste mit Zugangstoken. {dienst} wird ersetzt.
-const tokenHint = (dienst: string) =>
-  `Füge die MCP-Adresse eines ${dienst}-MCP-Dienstes ein (vom Anbieter oder deinem selbst betriebenen MCP-Server). Meist mit Zugangstoken.`
-
-// Sammlung der einrichtbaren Dienste. Benannt sind echte Dienste; verbunden wird über deren MCP-Adresse.
-const CATALOG: Template[] = [
-  { id: 'gmail', name: 'Gmail', icon: Mail, category: 'E-Mail & Kalender', desc: 'Google-Mail über MCP', urlPlaceholder: MCP_URL, hint: tokenHint('Gmail'), needsToken: true },
-  { id: 'outlook', name: 'Outlook / Microsoft 365', icon: Mail, category: 'E-Mail & Kalender', desc: 'Microsoft-Mail über MCP', urlPlaceholder: MCP_URL, hint: tokenHint('Outlook/Microsoft-365'), needsToken: true },
-  { id: 'gcal', name: 'Google Kalender', icon: Calendar, category: 'E-Mail & Kalender', desc: 'Termine über MCP', urlPlaceholder: MCP_URL, hint: tokenHint('Google-Kalender'), needsToken: true },
-  { id: 'outlook-cal', name: 'Outlook-Kalender', icon: Calendar, category: 'E-Mail & Kalender', desc: 'Microsoft-Termine über MCP', urlPlaceholder: MCP_URL, hint: tokenHint('Outlook-Kalender'), needsToken: true },
-
-  { id: 'gdrive', name: 'Google Drive', icon: FolderOpen, category: 'Dateien & Cloud', desc: 'Dateien in Google Drive', urlPlaceholder: MCP_URL, hint: tokenHint('Google-Drive'), needsToken: true },
-  { id: 'onedrive', name: 'OneDrive', icon: Cloud, category: 'Dateien & Cloud', desc: 'Dateien in OneDrive', urlPlaceholder: MCP_URL, hint: tokenHint('OneDrive'), needsToken: true },
-  { id: 'dropbox', name: 'Dropbox', icon: Cloud, category: 'Dateien & Cloud', desc: 'Dateien in Dropbox', urlPlaceholder: MCP_URL, hint: tokenHint('Dropbox'), needsToken: true },
-
-  { id: 'slack', name: 'Slack', icon: Hash, category: 'Chat & Team', desc: 'Nachrichten in Slack', urlPlaceholder: MCP_URL, hint: tokenHint('Slack'), needsToken: true },
-  { id: 'teams', name: 'Microsoft Teams', icon: Users, category: 'Chat & Team', desc: 'Chats in Teams', urlPlaceholder: MCP_URL, hint: tokenHint('Microsoft-Teams'), needsToken: true },
-  { id: 'discord', name: 'Discord', icon: MessageSquare, category: 'Chat & Team', desc: 'Nachrichten in Discord', urlPlaceholder: MCP_URL, hint: tokenHint('Discord'), needsToken: true },
-
-  { id: 'notion', name: 'Notion', icon: ListTodo, category: 'Produktivität', desc: 'Seiten & Datenbanken', urlPlaceholder: MCP_URL, hint: tokenHint('Notion'), needsToken: true },
-  { id: 'trello', name: 'Trello', icon: ListTodo, category: 'Produktivität', desc: 'Boards & Karten', urlPlaceholder: MCP_URL, hint: tokenHint('Trello'), needsToken: true },
-  { id: 'asana', name: 'Asana', icon: ListTodo, category: 'Produktivität', desc: 'Aufgaben & Projekte', urlPlaceholder: MCP_URL, hint: tokenHint('Asana'), needsToken: true },
-  { id: 'linear', name: 'Linear', icon: ListTodo, category: 'Produktivität', desc: 'Tickets & Projekte', urlPlaceholder: MCP_URL, hint: tokenHint('Linear'), needsToken: true },
-
-  { id: 'github', name: 'GitHub', icon: Code2, category: 'Entwicklung', desc: 'Repos, Issues, PRs', urlPlaceholder: MCP_URL, hint: tokenHint('GitHub'), needsToken: true },
-  { id: 'gitlab', name: 'GitLab', icon: GitBranch, category: 'Entwicklung', desc: 'Repos & Pipelines', urlPlaceholder: MCP_URL, hint: tokenHint('GitLab'), needsToken: true },
-
-  { id: 'hubspot', name: 'HubSpot', icon: Briefcase, category: 'Vertrieb & CRM', desc: 'Kontakte & Deals', urlPlaceholder: MCP_URL, hint: tokenHint('HubSpot'), needsToken: true },
-  { id: 'salesforce', name: 'Salesforce', icon: Target, category: 'Vertrieb & CRM', desc: 'CRM-Daten', urlPlaceholder: MCP_URL, hint: tokenHint('Salesforce'), needsToken: true },
-
-  { id: 'custom', name: 'Eigener Dienst', icon: Boxes, category: 'Sonstiges', desc: 'Beliebiger MCP-Server per Adresse', urlPlaceholder: 'https://…/mcp oder http://127.0.0.1:…/mcp', hint: 'Adresse eines beliebigen MCP-Servers. Lokale Server (127.0.0.1) dürfen http sein.', needsToken: false }
-]
-
-const CATEGORY_ORDER: Category[] = ['E-Mail & Kalender', 'Dateien & Cloud', 'Chat & Team', 'Produktivität', 'Entwicklung', 'Vertrieb & CRM', 'Sonstiges']
-
-function AddForm({ onAdded, disabled, template }: { onAdded: () => void; disabled: boolean; template: Template }) {
+function AddForm({ onAdded, disabled, template }: { onAdded: () => void; disabled: boolean; template: ConnectorTemplate }) {
   const [name, setName] = useState(template.id !== 'custom' ? template.name : '')
   const [url, setUrl] = useState('')
   const [token, setToken] = useState('')
@@ -187,7 +136,7 @@ export function ConnectorsSection() {
   const connected = worker.state === 'connected'
   const [list, setList] = useState<Connector[]>([])
   const [error, setError] = useState<string | null>(null)
-  const [pick, setPick] = useState<Template | null>(null)
+  const [pick, setPick] = useState<ConnectorTemplate | null>(null)
   const [query, setQuery] = useState('')
 
   const load = useCallback(() => {
@@ -199,8 +148,8 @@ export function ConnectorsSection() {
   // Gefilterte Sammlung, nach Kategorie gruppiert.
   const groups = useMemo(() => {
     const q = query.trim().toLowerCase()
-    const matches = CATALOG.filter((t) => !q || t.name.toLowerCase().includes(q) || t.desc.toLowerCase().includes(q) || t.category.toLowerCase().includes(q))
-    return CATEGORY_ORDER.map((cat) => ({ cat, items: matches.filter((t) => t.category === cat) })).filter((g) => g.items.length > 0)
+    const matches = CONNECTOR_CATALOG.filter((t) => !q || t.name.toLowerCase().includes(q) || t.desc.toLowerCase().includes(q) || t.category.toLowerCase().includes(q))
+    return CONNECTOR_CATEGORY_ORDER.map((cat) => ({ cat, items: matches.filter((t) => t.category === cat) })).filter((g) => g.items.length > 0)
   }, [query])
 
   return (

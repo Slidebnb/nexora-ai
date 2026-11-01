@@ -458,6 +458,22 @@ sofort startklar (behebt „man wusste nicht, wie man anfängt / man konnte nich
 - Tests: Unit 73, Typecheck grün. E2E-Erststart-Test an den neuen Ablauf angepasst (ein Schritt mehr: KI-Schlüssel wird
   im Test übersprungen; Abschluss über „Übungsordner").
 
+## Konnektoren-Katalog stark erweitert + ausgelagert (2026-11-01) ✅
+
+Auf Wunsch des Inhabers („sehr viele Konnektoren, schön, auch im Onboarding"): Der Dienste-Katalog wurde von ~18 auf
+**~42 Dienste in 10 Kategorien** erweitert und nach `data/connectors.ts` ausgelagert, damit ihn Einstellungen **und**
+(als nächster Schritt) das Onboarding gemeinsam nutzen.
+- Kategorien: E-Mail & Kalender, Dateien & Cloud, Chat & Team, Produktivität & Aufgaben, Entwicklung, Vertrieb & CRM,
+  Marketing & Social, Finanzen & Commerce, Wissen & Support, Sonstiges (Gmail, Outlook, Drive, Slack, Teams, Notion,
+  Jira, GitHub, HubSpot, Salesforce, Stripe, Shopify, Zendesk, Airtable … + „Eigener Dienst").
+- `ConnectorsSection` nutzt jetzt den ausgelagerten Katalog (Suche + Kategorie-Gruppierung unverändert).
+- **Ehrlich:** keine fremden Markenlogos (neutrale thematische Symbole); kein „Fake-Verbinden" – ein Klick öffnet die
+  Verbinden-Maske (MCP-Adresse/Token). Echtes Ein-Klick-OAuth bräuchte den unter „Weg 3" zurückgestellten Server.
+- Tests: Unit **81** (+4 Katalog-Integrität: ≥40 Dienste, eindeutige IDs, gültige Kategorien, „Eigener Dienst"),
+  Typecheck grün.
+- **Offen/nächster Schritt:** denselben Katalog als schönen Schritt ins Onboarding einbinden; „Tipps"-Framing im Chat
+  (statt technischer Workflow-Begriffe).
+
 ## Workflows deutlich erweitert: „Fertige Aufgaben"-Sammlung (2026-11-01) ✅
 
 Die sichtbare Workflow-/Aufgaben-Sammlung wurde von 6 flachen Beispielen auf **~20 kuratierte, kategorisierte
