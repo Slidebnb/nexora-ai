@@ -38,7 +38,9 @@ export function buildRequest(t: WorkflowTemplate, d: ComposerDraft, folder: Pick
   const capabilities = live.capabilities
   switch (live.workflow) {
     case 'organize_folder':
-      return folder ? { request: { workflow: 'organize_folder', folderId: folder.folderId, capabilities } } : { request: null, missing: 'Bitte einen Ordner wählen' }
+      return folder
+        ? { request: { workflow: 'organize_folder', folderId: folder.folderId, ...(d.organizeRecentOnly ? { newerThanHours: 24 } : {}), capabilities } }
+        : { request: null, missing: 'Bitte einen Ordner wählen' }
     case 'web_research': {
       const urls = parseUrls(d.urls)
       if (d.question.trim().length < 3) return { request: null, missing: 'Bitte eine Frage eingeben' }
@@ -113,6 +115,16 @@ export function LiveForm({ template, onError }: { template: WorkflowTemplate; on
               {folder ? folder.path : 'kein Ordner gewählt'}
             </span>
           </div>
+          <label className="flex items-start gap-2 text-xs text-text-2">
+            <input
+              type="checkbox"
+              checked={d.organizeRecentOnly}
+              onChange={(e) => set({ organizeRecentOnly: e.target.checked })}
+              className="mt-0.5 accent-[var(--color-accent)]"
+              aria-label="Nur neue Dateien einsortieren"
+            />
+            <span>Nur neue Dateien einsortieren (geändert in den letzten 24 Stunden). Ideal, um einen oft genutzten Ordner wie „Downloads" regelmäßig aufzuräumen, ohne ältere Dateien anzufassen.</span>
+          </label>
         </div>
       )
     case 'web_research':

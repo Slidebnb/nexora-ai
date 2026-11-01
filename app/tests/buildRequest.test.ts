@@ -4,7 +4,7 @@ import { WORKFLOWS } from '../src/renderer/src/data/workflows'
 import type { ComposerDraft } from '../src/renderer/src/state/store'
 
 const draft = (p: Partial<ComposerDraft> = {}): ComposerDraft => ({
-  question: '', urls: '', briefing: '', recipients: '', subject: '', files: [], outFolder: null, useCloudAi: false, useAiBrowser: false, useOcr: false, desktopWindow: '', desktopSteps: [], desktopMode: 'steps', desktopGoal: '', ...p
+  question: '', urls: '', briefing: '', recipients: '', subject: '', files: [], outFolder: null, useCloudAi: false, useAiBrowser: false, useOcr: false, organizeRecentOnly: false, desktopWindow: '', desktopSteps: [], desktopMode: 'steps', desktopGoal: '', ...p
 })
 const wf = (id: string) => WORKFLOWS.find((w) => w.id === id)!
 
@@ -13,6 +13,13 @@ describe('buildRequest', () => {
     expect(buildRequest(wf('ordner'), draft(), null).missing).toMatch(/Ordner/)
     const r = buildRequest(wf('ordner'), draft(), { folderId: 'f1', name: 'x', path: 'C:\\x' }).request
     expect(r).toEqual({ workflow: 'organize_folder', folderId: 'f1', capabilities: ['files.read', 'files.move'] })
+  })
+
+  it('Ordner-Wächter: Option „nur neue Dateien" übergibt newerThanHours=24', () => {
+    const folder = { folderId: 'f1', name: 'x', path: 'C:\\x' }
+    expect(buildRequest(wf('ordner'), draft(), folder).request).not.toHaveProperty('newerThanHours')
+    const r = buildRequest(wf('ordner'), draft({ organizeRecentOnly: true }), folder).request
+    expect(r).toEqual({ workflow: 'organize_folder', folderId: 'f1', newerThanHours: 24, capabilities: ['files.read', 'files.move'] })
   })
 
   it('Recherche: prüft Frage und Adressen', () => {

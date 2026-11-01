@@ -34,6 +34,8 @@ export interface ComposerDraft {
   /** Web-Recherche mit KI-Browser (nur wenn browser-use installiert ist) */
   useAiBrowser: boolean
   useOcr: boolean
+  /** Ordner-Wächter: nur Dateien einsortieren, die in den letzten 24 Stunden geändert wurden */
+  organizeRecentOnly: boolean
   /** Desktop-Ablauf: Fenster und aufgezeichnete Schritte */
   desktopWindow: string
   desktopSteps: DesktopStep[]
@@ -95,7 +97,7 @@ export const useNexora = create<NexoraStore>((set, get) => ({
   expertMode: readExpert(),
   wizard: null,
   settings: null,
-  composer: { question: '', urls: '', briefing: '', recipients: '', subject: '', files: [], outFolder: null, useCloudAi: false, useAiBrowser: false, useOcr: false, desktopWindow: '', desktopSteps: [], desktopMode: 'steps', desktopGoal: '' },
+  composer: { question: '', urls: '', briefing: '', recipients: '', subject: '', files: [], outFolder: null, useCloudAi: false, useAiBrowser: false, useOcr: false, organizeRecentOnly: false, desktopWindow: '', desktopSteps: [], desktopMode: 'steps', desktopGoal: '' },
   ingest: (raw) => {
     const parsed = NexoraEventSchema.safeParse(raw)
     if (!parsed.success) return false

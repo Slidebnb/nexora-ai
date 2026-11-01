@@ -112,7 +112,7 @@ export type ConnectorTest = z.infer<typeof ConnectorTestSchema>
 export const ConnectorToolSchema = z.object({ name: z.string().max(100), description: z.string().max(500), inputSchema: z.unknown() })
 export type ConnectorTool = z.infer<typeof ConnectorToolSchema>
 export const CreateTaskSchema = z.discriminatedUnion('workflow', [
-  z.object({ workflow: z.literal('organize_folder'), folderId: z.string().min(1), capabilities: Caps }),
+  z.object({ workflow: z.literal('organize_folder'), folderId: z.string().min(1), newerThanHours: z.number().int().min(1).max(8760).optional(), capabilities: Caps }),
   z.object({ workflow: z.literal('undo_organize'), runId: z.string().regex(/^run-[a-z0-9]+$/), capabilities: Caps }),
   z.object({
     workflow: z.literal('web_research'),

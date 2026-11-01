@@ -106,7 +106,8 @@ export function registerIpcHandlers(opts: { devServerUrl?: string; secrets: Secr
       case 'organize_folder': {
         const folder = pickedFolders.get(req.folderId)
         if (!folder) throw new Error('Bitte den Ordner erneut auswählen')
-        return hub.createTask('organize_folder', { folder }, req.capabilities)
+        const input = req.newerThanHours ? { folder, newer_than_hours: req.newerThanHours } : { folder }
+        return hub.createTask('organize_folder', input, req.capabilities)
       }
       case 'undo_organize':
         return hub.createTask('undo_organize', { runId: req.runId }, req.capabilities)
