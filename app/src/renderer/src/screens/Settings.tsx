@@ -201,6 +201,7 @@ export function Settings() {
             </>
           )}
           <p className="mt-2 text-xs text-text-2">„Verbindung testen“ fragt nur die Modellliste des Anbieters ab und verbraucht keine Tokens.</p>
+          <p className="mt-2 text-xs text-success">Kein Abo, keine Marge: Du zahlst nur deine tatsächliche Nutzung direkt beim Anbieter. Die laufenden Kosten siehst du jederzeit live oben in der Leiste.</p>
         </section>
 
         <OllamaSection />
