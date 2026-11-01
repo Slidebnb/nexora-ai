@@ -30,7 +30,10 @@ const SYSTEM =
   'Programmfenster zu sehen, und dann „computer_steuern“ mit dem genauen Fenstertitel und einem klaren Ziel – NEXORA ' +
   'bedient das Programm Schritt für Schritt und holt vor jeder Aktion deine Freigabe; ' +
   'und die verbundenen Dienste des Nutzers nutzen: rufe „konnektoren_auflisten“ auf, um verfügbare Dienste und ihre ' +
-  'Werkzeuge zu sehen, und „konnektor_aufrufen“, um ein Werkzeug auszuführen (jeder Aufruf wird einzeln freigegeben).'
+  'Werkzeuge zu sehen, und „konnektor_aufrufen“, um ein Werkzeug auszuführen (jeder Aufruf wird einzeln freigegeben). ' +
+  'Wenn das Ziel des Nutzers mehrere Schritte braucht, kombiniere die Werkzeuge selbstständig nacheinander ' +
+  '(z. B. erst „web_recherche“, dann aus dem Ergebnis „email_entwurf“; oder erst „ordner_aufraeumen“, dann „pdf_lesen“). ' +
+  'Verändernde/sendende Aktionen werden dabei weiterhin einzeln freigegeben.'
 
 export class ChatError extends Error {}
 

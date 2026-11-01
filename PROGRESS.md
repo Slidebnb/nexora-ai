@@ -458,6 +458,22 @@ sofort startklar (behebt „man wusste nicht, wie man anfängt / man konnte nich
 - Tests: Unit 73, Typecheck grün. E2E-Erststart-Test an den neuen Ablauf angepasst (ein Schritt mehr: KI-Schlüssel wird
   im Test übersprungen; Abschluss über „Übungsordner").
 
+## Kombinierte Abläufe sichtbar gemacht (2026-11-01) ✅
+
+Rückmeldung des Inhabers: einzelne Werkzeuge wirken „zu wenig". NEXORAs eigentliche Stärke – der Agent **verkettet
+die Werkzeuge im Gespräch selbst** – wird jetzt sichtbar und einfach nutzbar gemacht (statt neuer technischer Bausteine).
+- Neue Tipp-Kategorie **„Kombinierte Abläufe"** (zuoberst): Recherche→E-Mail-Entwurf, Recherche→E-Mail senden,
+  Ordner aufräumen→PDFs zusammenfassen, PDF lesen→Kernpunkte per E-Mail, Dienst abfragen→E-Mail. Ein Klick füllt den
+  passenden Ein-Satz-Auftrag; NEXORA erledigt mehrere Schritte nacheinander (sendende Schritte weiter mit Freigabe).
+- Chat-Ansage klarer: „Sag einfach dein Ziel in einem Satz – NEXORA erledigt alle nötigen Schritte, auch mehrere."
+- System-Prompt ergänzt: Der Agent kombiniert Werkzeuge selbstständig (z. B. web_recherche → email_entwurf).
+- Tests: Unit 81, Typecheck grün.
+
+**Bewusst NICHT übernommen (Grenze gehalten):** Aus evil-ai-viz die schädlichen Teile – Keylogger, Clipboard-/WebRTC-
+Abgriff, Geräte-Fingerprinting, Tipp-Biometrie, Standort-Tracking sowie Fake-Terminal/Fake-OS-Dialoge/„compromised"-
+Karte/erfundene Scans. Das wäre Spyware (DSGVO-widrig, store-unfähig) und täuschende Fake-Daten; schädigt die Endkunden.
+Die harmlosen dekorativen Visualisierungen von evil-ai-viz sind bereits übernommen (mit echten Daten).
+
 ## Operations-Karten aus cyberpunk-dashboard portiert (2026-11-01) ✅
 
 Auf Anweisung: die operations-Kartenoptik (Karten-Grid mit Fortschrittsbalken) aus raheem-dotgit/cyberpunk-dashboard

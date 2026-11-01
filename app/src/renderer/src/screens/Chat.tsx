@@ -140,7 +140,7 @@ export function Chat() {
         {messages.length === 0 && (
           <div className="mt-10 text-center text-text-2">
             <p className="text-lg text-text">Wie kann ich dir helfen?</p>
-            <p className="mt-1 text-sm">Schreib einfach los – oder tippe ein Beispiel an, um zu sehen, was NEXORA kann.</p>
+            <p className="mt-1 text-sm">Sag einfach dein Ziel in einem Satz – NEXORA erledigt alle nötigen Schritte, auch mehrere nacheinander.</p>
             <div className="mt-5" data-testid="chat-examples">
               <RecipeGallery
                 onPick={(prompt) => {

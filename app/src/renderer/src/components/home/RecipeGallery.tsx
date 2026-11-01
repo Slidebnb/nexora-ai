@@ -4,10 +4,11 @@
  * (sendet nicht automatisch). Mit Suchfeld, damit die Sammlung auch bei vielen Einträgen übersichtlich bleibt.
  */
 import { useMemo, useState } from 'react'
-import { FileText, Globe, Mail, Monitor, Plug, Search } from 'lucide-react'
+import { FileText, Globe, Mail, Monitor, Plug, Search, Workflow } from 'lucide-react'
 import { RECIPE_CATEGORIES, RECIPES } from '../../data/recipes'
 
 const CAT_ICON: Record<string, typeof Mail> = {
+  'Kombinierte Abläufe': Workflow,
   'Recherche & Web': Globe,
   'E-Mail': Mail,
   'Dateien & PDF': FileText,

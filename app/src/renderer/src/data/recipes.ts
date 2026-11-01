@@ -11,9 +11,16 @@ export interface Recipe {
   prompt: string
 }
 
-export const RECIPE_CATEGORIES = ['Recherche & Web', 'E-Mail', 'Dateien & PDF', 'PC steuern', 'Verbundene Dienste'] as const
+export const RECIPE_CATEGORIES = ['Kombinierte Abläufe', 'Recherche & Web', 'E-Mail', 'Dateien & PDF', 'PC steuern', 'Verbundene Dienste'] as const
 
 export const RECIPES: Recipe[] = [
+  // Kombinierte Abläufe → NEXORA verkettet MEHRERE echte Werkzeuge in einem Satz (das Alleinstellungsmerkmal).
+  { id: 'k-recherche-mail', category: 'Kombinierte Abläufe', title: 'Recherchieren → E-Mail-Entwurf', prompt: 'Recherchiere kurz die Preise von zwei Anbietern und schreib mir daraus einen E-Mail-Entwurf an kunde@example.com. Thema: ' },
+  { id: 'k-recherche-senden', category: 'Kombinierte Abläufe', title: 'Recherchieren → E-Mail senden', prompt: 'Recherchiere den aktuellen Stand zu folgendem Thema und sende mir eine kurze Zusammenfassung per E-Mail an kunde@example.com: ' },
+  { id: 'k-ordner-pdf', category: 'Kombinierte Abläufe', title: 'Ordner aufräumen → PDFs zusammenfassen', prompt: 'Räum einen Ordner auf und fasse danach die enthaltenen PDF-Dateien für mich zusammen.' },
+  { id: 'k-pdf-mail', category: 'Kombinierte Abläufe', title: 'PDF lesen → Kernpunkte per E-Mail', prompt: 'Lies eine PDF-Datei, zieh die wichtigsten Punkte heraus und schreib daraus einen E-Mail-Entwurf an kunde@example.com.' },
+  { id: 'k-dienst-mail', category: 'Kombinierte Abläufe', title: 'Verbundenen Dienst abfragen → E-Mail', prompt: 'Hol die wichtigsten Infos aus einem meiner verbundenen Dienste und fasse sie mir als E-Mail-Entwurf an kunde@example.com zusammen. Es geht um: ' },
+
   // Recherche & Web  → Werkzeug web_recherche
   { id: 'r-preise', category: 'Recherche & Web', title: 'Preise/Tarife vergleichen', prompt: 'Vergleiche für mich die aktuellen Preise/Tarife von ' },
   { id: 'r-oeffnung', category: 'Recherche & Web', title: 'Öffnungszeiten finden', prompt: 'Finde die aktuellen Öffnungszeiten und die Adresse von ' },
