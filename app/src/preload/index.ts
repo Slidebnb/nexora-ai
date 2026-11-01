@@ -51,6 +51,7 @@ const api: NexoraApi = {
   getChatProvider: () => ipcRenderer.invoke('chat:provider'),
   sendChat: (id, messages) => ipcRenderer.invoke('chat:send', { id, messages }),
   cancelChat: (id) => ipcRenderer.invoke('chat:cancel', { id }),
+  exportAudit: () => ipcRenderer.invoke('audit:export'),
   speakCloud: (text) => ipcRenderer.invoke('voice:speak', { text }),
   transcribeCloud: (audioBase64, mime) => ipcRenderer.invoke('voice:transcribe', { audioBase64, mime }),
   onChatDelta: (cb) => subscribe('chat:delta', cb),

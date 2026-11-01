@@ -266,6 +266,8 @@ export const IPC_CHANNELS = {
   'chat:provider': { request: z.undefined(), response: z.object({ provider: ProviderSchema.nullable(), model: z.string().nullable() }) },
   'chat:send': { request: z.object({ id: z.string().min(1).max(64), messages: z.array(ChatMessageSchema).min(1).max(100) }), response: z.object({ text: z.string(), model: z.string(), provider: ProviderSchema }) },
   'chat:cancel': { request: z.object({ id: z.string().min(1).max(64) }), response: Ok },
+  // Audit-Export: Aktivitätsprotokoll (Markdown + CSV) in einen vom Nutzer gewählten Ordner. null = abgebrochen.
+  'audit:export': { request: z.undefined(), response: z.object({ path: z.string(), runs: z.number().int().nonnegative() }).nullable() },
   // Voicestudio (OpenAI): Text -> Audio (TTS) und Audio -> Text (Whisper). Schlüssel bleibt im Main-Prozess.
   'voice:speak': { request: z.object({ text: z.string().trim().min(1).max(4000) }), response: z.object({ audioBase64: z.string(), mime: z.string() }) },
   'voice:transcribe': { request: z.object({ audioBase64: z.string().min(1), mime: z.string().max(100) }), response: z.object({ text: z.string() }) },

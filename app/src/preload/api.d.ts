@@ -45,6 +45,7 @@ export interface NexoraApi {
   getChatProvider: () => Promise<{ provider: ChatProvider | null; model: string | null }>
   sendChat: (id: string, messages: ChatMessage[]) => Promise<{ text: string; model: string; provider: ChatProvider }>
   cancelChat: (id: string) => Promise<{ ok: boolean }>
+  exportAudit: () => Promise<{ path: string; runs: number } | null>
   speakCloud: (text: string) => Promise<{ audioBase64: string; mime: string }>
   transcribeCloud: (audioBase64: string, mime: string) => Promise<{ text: string }>
   onChatDelta: (cb: (d: ChatDelta) => void) => () => void

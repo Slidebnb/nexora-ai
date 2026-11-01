@@ -513,6 +513,23 @@ eines Ordners. Nutzen für Kunden: „Was steht in meinen Unterlagen?" ohne jede
 - **Ehrlich:** Nutzt Cloud-KI (Anthropic/OpenAI) mit Freigabe. Vollständig lokal ginge nur über Ollama – das läuft
   heute im Hauptprozess, nicht im Worker; eine worker-seitige lokale Variante ist bewusst noch nicht gebaut.
 
+## Audit-Export (#4) und BYOK-Kosten sichtbar (#5) (2026-11-01) ✅
+
+**#4 Aktivitätsprotokoll:** Einstellungen → „Protokoll exportieren" schreibt `NEXORA-Aktivitaetsprotokoll-<Datum>.md`
+(lesbarer Bericht) und `.csv` (Excel, BOM + `;`) in einen selbst gewählten Ordner – je Aufgabe Start/Ende, Agent,
+Ergebnis, **jede Freigabe-Entscheidung mit Ziel**, erzeugte Dateien und geschätzte KI-Kosten. Reine Funktion
+`src/main/audit.ts` (`buildAudit`), Handler `audit:export`; überschreibt nie, Demo-Läufe ausgeschlossen,
+CSV gegen Excel-Formel-Einschleusung geschützt. Quelle: die vom Worker beim Start nachgespielten Ereignisse
+(**ehrlich: die letzten 5 000 Ereignisse**; sehr alte Läufe darüber hinaus fehlen im Export).
+
+**#5 BYOK-Kosten:** Zentrale Schätzung `llm.price()` aus Token je Modell; `pdf_analysis`, `draft_emails` und
+`ask_files` melden jetzt `cost_updated` (vorher fehlten ihre Kosten in der Anzeige ganz). TopBar-Tooltip ehrlich:
+geschätzt, eigener Schlüssel, kein Aufschlag. **Offen:** Chat-Nachrichten und Voicestudio werden noch nicht
+mitgezählt (laufen im Main-Prozess außerhalb der Worker-Ereignisse).
+
+TDD: `test_llm_price.py` (4), Kosten-Assertions in 3 Worker-Cloud-Tests (erst rot, dann grün), `audit.test.ts` (4).
+Worker 100 ✓ / 1 skip, App 91 ✓, Typecheck + Produktions-Build grün.
+
 ## Voicestudio – Stimme & Diktat (OpenAI) (2026-11-01) ✅
 
 Kunden können jetzt **mit der KI sprechen** und bekommen **gesprochene Antworten**. Zwei Betriebsarten im selben Hook

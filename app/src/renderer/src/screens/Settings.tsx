@@ -249,6 +249,41 @@ function VoicestudioSection() {
   )
 }
 
+/** Audit-Export: nachvollziehbares Protokoll aller Aufgaben und Freigaben (z. B. für Datenschutz/Buchhaltung). */
+function AuditSection() {
+  const demoMode = useNexora((s) => s.demoMode)
+  const [msg, setMsg] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+  const run = async () => {
+    setBusy(true)
+    setMsg(null)
+    try {
+      const res = await window.nexora.exportAudit()
+      setMsg(res ? `Gespeichert: ${res.path} (${res.runs} Aufgabe(n)).` : 'Abgebrochen – nichts gespeichert.')
+    } catch (e) {
+      setMsg(cleanError(e))
+    } finally {
+      setBusy(false)
+    }
+  }
+  return (
+    <section className="panel p-5" aria-labelledby="audit-title">
+      <h2 id="audit-title" className="hud-label">Aktivitätsprotokoll (Audit-Export)</h2>
+      <p className="mt-2 text-sm text-text-2">
+        Exportiert alle von NEXORA ausgeführten Aufgaben mit jeder Freigabe-Entscheidung, erzeugten Dateien und geschätzten
+        KI-Kosten – als lesbarer Bericht (Markdown) und Tabelle (CSV, z. B. für Excel). Alles bleibt auf deinem PC.
+      </p>
+      <div className="mt-3 flex items-center gap-3">
+        <button type="button" className="btn-secondary" onClick={() => void run()} disabled={busy || demoMode}>
+          <ShieldCheck className="size-4" aria-hidden /> Protokoll exportieren
+        </button>
+        {demoMode && <span className="text-xs text-text-2">Im Demo-Modus nicht verfügbar.</span>}
+      </div>
+      {msg && <p className="mt-2 break-all text-xs text-text-2" role="status">{msg}</p>}
+    </section>
+  )
+}
+
 export function Settings() {
   const demoMode = useNexora((s) => s.demoMode)
   const expertMode = useNexora((s) => s.expertMode)
@@ -299,6 +334,7 @@ export function Settings() {
 
         <OllamaSection />
         <VoicestudioSection />
+        <AuditSection />
 
         <section className="panel p-5" aria-labelledby="demo-title">
           <h2 id="demo-title" className="hud-label">Demo-Modus</h2>

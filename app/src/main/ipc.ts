@@ -1,12 +1,13 @@
 import { randomUUID } from 'node:crypto'
 import { basename, join } from 'node:path'
-import { mkdirSync } from 'node:fs'
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import { app, BrowserWindow, dialog, ipcMain, safeStorage, shell, type IpcMainInvokeEvent } from 'electron'
 import { IPC_CHANNELS, type IpcChannel, type IpcRequest, type IpcResponse, type Provider } from '@shared/ipc-contract'
 import { isAllowedNavigation } from './security'
 import { SecretStore } from './secrets'
 import { DEFAULT_MODEL, runAgent, ChatError, type ChatMessage, type ToolResult } from './chat'
 import { synthesize, transcribe, VoiceError } from './voice'
+import { buildAudit } from './audit'
 import type { WorkerHub } from './worker/hub'
 import type { Feature, LicenseManager } from './license'
 import { createPracticeFolder, type AppSettingsStore } from './appSettings'
@@ -75,6 +76,23 @@ export function registerIpcHandlers(opts: { devServerUrl?: string; secrets: Secr
 
   handle('worker:status', () => hub.status)
   handle('worker:history', () => hub.history)
+
+  // Audit-Export: Nutzer wählt den Zielordner im nativen Dialog; es wird nie eine vorhandene Datei überschrieben.
+  handle('audit:export', async (_req, event) => {
+    const win = BrowserWindow.fromWebContents(event.sender)
+    const options = { title: 'Ordner für das Aktivitätsprotokoll wählen', properties: ['openDirectory' as const, 'createDirectory' as const] }
+    const result = win ? await dialog.showOpenDialog(win, options) : await dialog.showOpenDialog(options)
+    const dir = result.filePaths[0]
+    if (result.canceled || !dir) return null
+    const audit = buildAudit(hub.history)
+    const day = new Date().toISOString().slice(0, 10)
+    let base = join(dir, `NEXORA-Aktivitaetsprotokoll-${day}`)
+    for (let i = 2; existsSync(`${base}.md`) || existsSync(`${base}.csv`); i++) base = join(dir, `NEXORA-Aktivitaetsprotokoll-${day} (${i})`)
+    writeFileSync(`${base}.md`, audit.markdown, { encoding: 'utf8', flag: 'wx' })
+    writeFileSync(`${base}.csv`, audit.csv, { encoding: 'utf8', flag: 'wx' })
+    shell.showItemInFolder(`${base}.md`)
+    return { path: `${base}.md`, runs: audit.runs }
+  })
 
   handle('dialog:pickFolder', async (_req, event) => {
     const win = BrowserWindow.fromWebContents(event.sender)
