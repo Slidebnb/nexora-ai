@@ -458,7 +458,7 @@ sofort startklar (behebt „man wusste nicht, wie man anfängt / man konnte nich
 - Tests: Unit 73, Typecheck grün. E2E-Erststart-Test an den neuen Ablauf angepasst (ein Schritt mehr: KI-Schlüssel wird
   im Test übersprungen; Abschluss über „Übungsordner").
 
-## Ordner-Wächter (Grundfähigkeit) (2026-11-01) ✅ Backend
+## Ordner-Wächter (Grundfähigkeit) (2026-11-01) ✅ Backend + UI
 
 Differenzierer #2: `organize_folder` kann jetzt als **Wächter** laufen – optionaler Parameter `newer_than_hours`
 sortiert nur Dateien ein, die jünger als N Stunden sind (sonst wie bisher alle). Als wiederkehrender Zeitplan ergibt
@@ -467,9 +467,12 @@ das einen praktischen Ordner-Wächter („sortiere alles Neue der letzten 24 h")
   Titel-Zusatz, Input-Feld (1–8760 h). Freigabe/Undo/Journal unverändert.
 - Worker-Test `test_watcher_only_sorts_recent_files`: alte Dateien werden übersprungen, nur die aktuelle einsortiert.
   Worker 92 (+1), 1 skip.
-- **Ehrlich / offen:** Das ist die Backend-Fähigkeit. Für die Kundennutzung fehlt noch die UI-Anbindung (Option „nur
-  neue Dateien" im Ordner-Assistenten + als Zeitplan-Vorlage speichern). Ein **echter Ereignis-Wächter** (sofort bei
-  neuer Datei) bräuchte zusätzlich einen Datei-Watcher im Worker – bewusst nicht in diesem Schritt (Simplicity First).
+- **UI angebunden (2026-11-01):** Im Ordner-Assistenten gibt es jetzt die Option **„Nur neue Dateien einsortieren"**
+  (letzte 24 h). Der Wert geht als `newerThanHours` über `tasks:create` an den Worker; gespeicherte Vorlagen und
+  Zeitpläne übernehmen die Option automatisch, weil sie den vollständigen Worker-Input sichern (kein Extra-Code).
+  App-Unit-Test für die Durchleitung (`buildRequest`). App 82 Tests.
+- **Ehrlich / offen:** Ein **echter Ereignis-Wächter** (sofort bei neuer Datei) bräuchte zusätzlich einen Datei-Watcher
+  im Worker – bewusst nicht in diesem Schritt (Simplicity First). Heute läuft der Wächter als wiederkehrender Zeitplan.
 
 ## Lokales KI-Modell (Ollama) – Datenschutz-Differenzierer (2026-11-01) ✅
 
@@ -486,8 +489,24 @@ Datenschutz-Hebel gegenüber Cloud-Tools (Zapier/Make/n8n) und Cloud-Chatbots.
 - **Ehrlich:** Werkzeug-/Aktionsnutzung gelingt am besten mit werkzeugfähigen Modellen (z. B. llama3.1); nicht jedes
   lokale Modell kann Werkzeuge. End-to-end hier NICHT testbar (kein lokaler Ollama-Server in dieser Umgebung) – Unit 81,
   Typecheck grün; der Code nutzt denselben getesteten OpenAI-kompatiblen Agent-Pfad.
-- Roadmap der Differenzierer: als Nächstes Audit-Export (#4), Ordner-Wächter (#2), BYOK/Kosten sichtbar (#5),
-  „Frag deine Dateien" (#3).
+- Roadmap der Differenzierer: Ollama (#1) ✅, Ordner-Wächter (#2) ✅, „Frag deine Dateien" (#3) ✅; offen:
+  Audit-Export (#4), BYOK/Kosten sichtbar (#5).
+
+## „Frag deine Dateien" – Dokumenten-Assistent (2026-11-01) ✅
+
+Differenzierer #3: Der neue Worker-Workflow **`ask_files`** beantwortet eine Frage anhand der Text- und PDF-Dateien
+eines Ordners. Nutzen für Kunden: „Was steht in meinen Unterlagen?" ohne jede Datei einzeln zu öffnen.
+- **Lokal zuerst, dann mit Freigabe:** Dateien (`.txt/.md/.csv/.log/.pdf`, max. 40, je ≤2 MB) werden rein lokal
+  gelesen. Nur die zur Frage passenden Ausschnitte (≤12 000 Zeichen) und die Frage gehen – **nach ausdrücklicher
+  Freigabe** – an den KI-Anbieter (kein kompletter Datei-Upload). Ohne Freigabe/ohne KI-Schlüssel wird nichts gesendet.
+- **Schutz:** Verdächtige Anweisungen im Dateitext werden erkannt und ignoriert (`scan_for_prompt_injection`);
+  Ausgabe wird `redact_text`-bereinigt. Ergebnis als Artefakt `Antwort.md` mit Quellenangabe (welche Datei).
+- Im Chat als Werkzeug **„frag_dateien"** verdrahtet (nativer Ordnerdialog, Feature-Gate `cloud_ai`). Die Agenten-Kette
+  kann es mit anderen Werkzeugen kombinieren.
+- 4 neue Worker-Tests (ohne Schlüssel → Fehler ohne Senden; fragt vor Senden; Ablehnung sendet nichts; leerer Ordner).
+  Worker 96 Tests, 1 skip.
+- **Ehrlich:** Nutzt Cloud-KI (Anthropic/OpenAI) mit Freigabe. Vollständig lokal ginge nur über Ollama – das läuft
+  heute im Hauptprozess, nicht im Worker; eine worker-seitige lokale Variante ist bewusst noch nicht gebaut.
 
 ## Kombinierte Abläufe sichtbar gemacht (2026-11-01) ✅
 
