@@ -444,3 +444,24 @@ gerade tut, nicht nur die gesprochene Antwort.
 - Konsistent zum Chat: gleiche Schrittbeschriftungen, gleiches Symbol.
 - Tests: Unit 73, Typecheck grün. Der bestehende E2E-Sprachmodus-Test (Orb öffnet/schließt) bleibt gültig.
 
+## Geführte Komplett-Einrichtung (Erststart) (2026-11-01) ✅
+
+Die Begrüßung beim ersten Start ist jetzt eine echte **geführte Einrichtung** in vier Schritten – der Kunde ist danach
+sofort startklar (behebt „man wusste nicht, wie man anfängt / man konnte nicht schreiben").
+1. **Willkommen:** was NEXORA für dich tut (schreiben/sprechen → erledigen), Freigaben, Daten bleiben lokal.
+2. **KI-Schlüssel eintragen (NEU, der Kern):** Anbieter wählen (Anthropic/OpenAI), Schlüssel eingeben, „Speichern &
+   prüfen" (Testverbindung). Erst dadurch kann man überhaupt mit NEXORA schreiben. Der Schlüssel wird nur verschlüsselt
+   im Betriebssystem gespeichert, nie in der Oberfläche angezeigt. Überspringbar (mit ehrlichem Hinweis).
+3. **Kontrolle/Freigaben:** Beispiel „E-Mail senden" mit Erlauben/Ablehnen; Hinweis, dass weitere Dienste (E-Mail-Konto,
+   Kalender, Slack …) unter „Einstellungen → Verbindungen" (der visuellen Dienste-Sammlung) verbunden werden.
+4. **Loslegen:** zwei Wege – **„Mit NEXORA schreiben"** (direkt in den Chat) oder **„Übungsordner"** (gefahrlos üben).
+- Tests: Unit 73, Typecheck grün. E2E-Erststart-Test an den neuen Ablauf angepasst (ein Schritt mehr: KI-Schlüssel wird
+  im Test übersprungen; Abschluss über „Übungsordner").
+
+**CEO-Statusnotiz:** Alle kundenseitigen Systeme sind damit umgesetzt: Chat-Herzstück, vollständiger Agent (Recherche,
+E-Mail-Entwurf/-Versand, Ordner, PDF, Konnektoren), sichtbare Schritte in Chat + Sprachmodus, Freigaben überall,
+visuelle Dienste-Sammlung, geführte Einrichtung. **Bewusst zurückgestellt** bleibt die Echtzeit-Sprache (OpenAI
+Realtime): Sie braucht einen echten OpenAI-Schlüssel, ein Mikrofon und Live-Audio und ist in der CI/headless nicht
+ehrlich verifizierbar – sie wird als eigenes, sauber testbares Vorhaben gebaut statt als ungetesteter Brocken. Offen
+für die Markteinführung bleiben die menschliche Windows-Abnahme und die vom Kunden selbst einzutragenden Schlüssel.
+

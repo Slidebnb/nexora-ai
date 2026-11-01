@@ -165,9 +165,10 @@ try {
     const onb = win.getByRole('dialog', { name: 'Willkommen bei NEXORA' })
     await onb.waitFor({ timeout: 10_000 })
     await win.screenshot({ path: join(shots, '00-onboarding.png') })
-    await win.getByRole('button', { name: 'Weiter' }).click()
-    await win.getByRole('button', { name: 'Weiter' }).click()
-    await win.getByRole('button', { name: 'Übungsordner anlegen und loslegen' }).click()
+    await win.getByRole('button', { name: 'Weiter' }).click() // → KI-Schlüssel (überspringbar)
+    await win.getByRole('button', { name: 'Weiter' }).click() // → Kontrolle/Freigaben
+    await win.getByRole('button', { name: 'Weiter' }).click() // → Loslegen
+    await win.getByRole('button', { name: 'Übungsordner' }).click()
     const wizard = win.getByRole('dialog', { name: 'Ordner aufräumen' })
     await wizard.getByTestId('picked-folder').getByText('NEXORA Übungsordner').waitFor()
     const practice = join(sandbox, 'NEXORA Übungsordner')
