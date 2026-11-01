@@ -458,6 +458,20 @@ sofort startklar (behebt „man wusste nicht, wie man anfängt / man konnte nich
 - Tests: Unit 73, Typecheck grün. E2E-Erststart-Test an den neuen Ablauf angepasst (ein Schritt mehr: KI-Schlüssel wird
   im Test übersprungen; Abschluss über „Übungsordner").
 
+## Echte Computeraktionen im Chat: NEXORA bedient Programme (2026-11-01) ✅
+
+Vision-Säule „echte Computeraktionen": Der Chat-Agent kann jetzt ein echtes Programm auf dem PC bedienen – über die
+bereits vorhandene, getestete Desktop-Automation des Workers, jetzt als Chat-Werkzeug.
+- **„offene_fenster"** (nur lesend): listet die offenen Programmfenster, damit der Agent das richtige Fenster wählt.
+- **„computer_steuern" ({fenster, ziel})**: bedient das Programm Schritt für Schritt Richtung Ziel über den
+  Worker-Workflow `desktop_ai` (Fähigkeiten `desktop.read`/`desktop.control`/`ai.cloud`). **Vor jeder einzelnen Aktion**
+  holt der Worker eine Freigabe – wie überall sonst. Eigene NEXORA-Fenster sind ausgeschlossen (is_own_window).
+- Mehrstufiger, sicherer Ablauf (erst Fenster sehen, dann gezielt bedienen) statt blinder Steuerung; Schritte
+  erscheinen als sichtbare „arbeitet …"-Karten in Chat und Sprachmodus.
+- **Ehrlich:** Die eigentliche Desktop-Steuerung läuft nur auf einem echten (Windows-)Desktop mit Cloud-KI; die
+  Einbindung nutzt denselben getesteten Freigabe-/Worker-Mechanismus wie die übrigen Werkzeuge, ist hier (Linux/headless)
+  aber nicht end-to-end automatisiert testbar. Unit 73, Typecheck grün.
+
 ## Weg 3: BYOK maximal bequem + UI-Politur (2026-11-01) ✅
 
 Entscheidung des Inhabers: vorerst **kein Server/Hosting**, dafür den vorhandenen BYOK-Weg so einfach wie möglich und

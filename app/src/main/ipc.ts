@@ -325,6 +325,31 @@ export function registerIpcHandlers(opts: { devServerUrl?: string; secrets: Secr
             return { ok: false, summary: err instanceof Error ? err.message : 'Fehler', text: '' }
           }
         }
+        if (name === 'offene_fenster') {
+          try {
+            const wins = (await hub.desktopWindows()) as { title: string; pid: number }[]
+            if (!Array.isArray(wins) || wins.length === 0) return { ok: true, summary: 'Es sind derzeit keine Programmfenster offen.', text: '' }
+            return { ok: true, summary: `${wins.length} offene(s) Fenster`, text: wins.map((w) => `- ${w.title}`).join('\n') }
+          } catch (err) {
+            return { ok: false, summary: err instanceof Error ? err.message : 'Fehler', text: '' }
+          }
+        }
+        if (name === 'computer_steuern') {
+          try {
+            requireFeature('workflows')
+            requireFeature('cloud_ai')
+          } catch (err) {
+            return { ok: false, summary: err instanceof Error ? err.message : 'Fehler', text: '' }
+          }
+          const fenster = String(args['fenster'] ?? '').trim()
+          const ziel = String(args['ziel'] ?? '').trim()
+          if (!fenster || ziel.length < 5) return { ok: false, summary: 'Fenstertitel oder Ziel (mind. 5 Zeichen) fehlt', text: '' }
+          try {
+            return await hub.runToCompletion('desktop_ai', { window: fenster, goal: ziel }, ['desktop.read', 'desktop.control', 'ai.cloud'])
+          } catch (err) {
+            return { ok: false, summary: err instanceof Error ? err.message : 'Fehler', text: '' }
+          }
+        }
         if (name === 'konnektoren_auflisten') {
           try {
             const list = (await hub.listConnectors()) as { id: string; name: string }[]

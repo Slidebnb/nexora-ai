@@ -26,7 +26,9 @@ const SYSTEM =
   'dem Nutzer vorab einzeln zur Freigabe gezeigt; ' +
   'einen Ordner aufräumen/sortieren (Werkzeug „ordner_aufraeumen“ – der Nutzer wählt den Ordner im Fenster, jede ' +
   'Verschiebung wird freigegeben); PDF-Dateien lesen und zusammenfassen (Werkzeug „pdf_lesen“ – der Nutzer wählt die ' +
-  'Dateien im Fenster); ' +
+  'Dateien im Fenster); ein echtes Programm auf dem PC bedienen: rufe zuerst „offene_fenster“ auf, um die offenen ' +
+  'Programmfenster zu sehen, und dann „computer_steuern“ mit dem genauen Fenstertitel und einem klaren Ziel – NEXORA ' +
+  'bedient das Programm Schritt für Schritt und holt vor jeder Aktion deine Freigabe; ' +
   'und die verbundenen Dienste des Nutzers nutzen: rufe „konnektoren_auflisten“ auf, um verfügbare Dienste und ihre ' +
   'Werkzeuge zu sehen, und „konnektor_aufrufen“, um ein Werkzeug auszuführen (jeder Aufruf wird einzeln freigegeben).'
 
@@ -118,7 +120,28 @@ const TOOL_PDF = {
   parameters: { type: 'object', properties: {}, required: [] }
 } as const
 
-const ALL_TOOLS = [TOOL_WEB, TOOL_EMAIL, TOOL_EMAIL_SEND, TOOL_ORGANIZE, TOOL_PDF, TOOL_CONN_LIST, TOOL_CONN_CALL]
+const TOOL_WINDOWS = {
+  name: 'offene_fenster',
+  description: 'Listet die aktuell offenen Programmfenster (Titel) auf, damit ein Fenster zum Bedienen gewählt werden kann. Nur lesend.',
+  parameters: { type: 'object', properties: {}, required: [] }
+} as const
+
+const TOOL_COMPUTER = {
+  name: 'computer_steuern',
+  description:
+    'Bedient ein echtes Programm auf dem PC Schritt für Schritt in Richtung eines Ziels. Vor jeder einzelnen Aktion wird ' +
+    'der Nutzer um Freigabe gebeten. Zuerst „offene_fenster“ aufrufen und den genauen Fenstertitel übernehmen.',
+  parameters: {
+    type: 'object',
+    properties: {
+      fenster: { type: 'string', description: 'Genauer Titel des Programmfensters (aus offene_fenster)' },
+      ziel: { type: 'string', description: 'Was in dem Programm erreicht werden soll (klar und konkret, mind. 5 Zeichen)' }
+    },
+    required: ['fenster', 'ziel']
+  }
+} as const
+
+const ALL_TOOLS = [TOOL_WEB, TOOL_EMAIL, TOOL_EMAIL_SEND, TOOL_ORGANIZE, TOOL_PDF, TOOL_WINDOWS, TOOL_COMPUTER, TOOL_CONN_LIST, TOOL_CONN_CALL]
 
 const MAX_STEPS = 8
 
@@ -209,6 +232,8 @@ function labelFor(name: string): string {
       email_senden: 'Sendet eine E-Mail (nach Freigabe) …',
       ordner_aufraeumen: 'Räumt einen Ordner auf (du wählst ihn, jede Verschiebung mit Freigabe) …',
       pdf_lesen: 'Liest die gewählten PDF-Dateien …',
+      offene_fenster: 'Sieht die offenen Programmfenster durch …',
+      computer_steuern: 'Bedient ein Programm (jede Aktion mit Freigabe) …',
       konnektoren_auflisten: 'Sieht die verbundenen Dienste durch …',
       konnektor_aufrufen: 'Nutzt einen verbundenen Dienst …'
     }[name] ?? `Werkzeug „${name}“ …`
