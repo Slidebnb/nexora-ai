@@ -433,3 +433,14 @@ Damit sind die Agent-Fähigkeiten im Chat vollständig und kundenfreundlich sich
 größere Vorhaben: Echtzeit-Sprache (OpenAI Realtime; braucht echten Schlüssel + Mikrofon, daher separat und ehrlich
 testbar aufzusetzen) und die geführte Komplett-Einrichtung (laut Wunsch zuletzt, bindet die Dienste-Sammlung ein).
 
+## Sichtbare Agent-Schritte auch im Sprachmodus (2026-11-01) ✅
+
+Der Sprachmodus zeigt jetzt dieselben **„arbeitet …"-Schritte** wie der Chat – der Kunde sieht beim Reden, was NEXORA
+gerade tut, nicht nur die gesprochene Antwort.
+- Der Sprachmodus abonniert `chat:delta` und sammelt die Schritte zur laufenden Anfrage (Abgleich über die
+  Anfrage-ID), zeigt sie als kleine Karten unter dem Orb; die aktive Karte dreht sich beim Nachdenken.
+- Freigaben (z. B. vor dem E-Mail-Versand) erscheinen weiterhin als normaler Freigabe-Dialog – auch im Sprachmodus,
+  da derselbe Agent/Worker-Pfad läuft.
+- Konsistent zum Chat: gleiche Schrittbeschriftungen, gleiches Symbol.
+- Tests: Unit 73, Typecheck grün. Der bestehende E2E-Sprachmodus-Test (Orb öffnet/schließt) bleibt gültig.
+

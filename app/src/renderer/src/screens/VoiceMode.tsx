@@ -6,7 +6,7 @@
  * Echte Telefon-Latenz (OpenAI Realtime) ist ein späterer Ausbau; dies gibt schon die Rede-und-Handeln-Erfahrung.
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Mic, Square, X } from 'lucide-react'
+import { Loader2, Mic, Square, X } from 'lucide-react'
 import type { ChatMessage } from '@shared/ipc-contract'
 import { useVoice } from '../lib/useVoice'
 import { cleanError } from '../lib/actions'
@@ -24,10 +24,20 @@ export function VoiceMode({ onClose }: { onClose: () => void }) {
   const [phase, setPhase] = useState<Phase>('idle')
   const [userText, setUserText] = useState('')
   const [reply, setReply] = useState('')
+  const [steps, setSteps] = useState<string[]>([])
   const [error, setError] = useState<string | null>(null)
   const history = useRef<ChatMessage[]>([])
   const active = useRef(true)
   const idCounter = useRef(0)
+  const activeId = useRef<string | null>(null)
+
+  // Sichtbare Agent-Schritte: dieselben „arbeitet …"-Hinweise wie im Chat, hier unter dem Orb.
+  useEffect(() => {
+    return window.nexora.onChatDelta((d) => {
+      if (d.id !== activeId.current || !d.step) return
+      setSteps((s) => [...s, d.step as string])
+    })
+  }, [])
 
   const speak = useCallback((text: string, done: () => void) => {
     if (typeof window === 'undefined' || !('speechSynthesis' in window) || !text) {
@@ -54,8 +64,10 @@ export function VoiceMode({ onClose }: { onClose: () => void }) {
     async (text: string) => {
       setUserText(text)
       setReply('')
+      setSteps([])
       setPhase('thinking')
       const id = `voice-${++idCounter.current}`
+      activeId.current = id
       const msgs: ChatMessage[] = [...history.current, { role: 'user', content: text }]
       try {
         const res = await window.nexora.sendChat(id, msgs)
@@ -131,6 +143,19 @@ export function VoiceMode({ onClose }: { onClose: () => void }) {
           {error ?? PHASE_TEXT[phase]}
         </p>
         {userText && <p className="mt-3 text-sm text-text-2">Du: „{userText}"</p>}
+        {steps.length > 0 && (
+          <ul className="mx-auto mt-3 flex max-w-md flex-col gap-1" aria-label="Was NEXORA gerade tut">
+            {steps.map((s, si) => {
+              const activeStep = phase === 'thinking' && si === steps.length - 1
+              return (
+                <li key={si} className="flex items-center gap-2 rounded-lg border border-accent/30 bg-accent/5 px-3 py-1.5 text-left text-xs text-text-2">
+                  <Loader2 className={`size-3.5 shrink-0 text-accent-hi ${activeStep ? 'motion-safe:animate-spin' : ''}`} aria-hidden />
+                  <span>{s}</span>
+                </li>
+              )
+            })}
+          </ul>
+        )}
         {reply && <p className="mt-2 text-lg text-text">{reply}</p>}
         {!voice.sttSupported && <p className="mt-3 text-xs text-warning">Spracherkennung ist auf diesem System nicht verfügbar. Du kannst stattdessen im Chat schreiben.</p>}
       </div>
