@@ -458,6 +458,15 @@ sofort startklar (behebt „man wusste nicht, wie man anfängt / man konnte nich
 - Tests: Unit 73, Typecheck grün. E2E-Erststart-Test an den neuen Ablauf angepasst (ein Schritt mehr: KI-Schlüssel wird
   im Test übersprungen; Abschluss über „Übungsordner").
 
+## Fertige Workflows als Ein-Klick-Galerie (2026-11-01) ✅
+
+Vision-Säule „fertige Workflows": Die mitgelieferten Workflows erscheinen im leeren Chat jetzt als schöne,
+benannte **Karten mit Symbol, Titel und Nutzen-Satz** (Ordner aufräumen, Webseiten vergleichen, PDFs zusammenfassen,
+E-Mail-Entwürfe, Programm bedienen) statt als kleine Chips. Ein Klick öffnet den passenden Assistenten.
+- Neue Komponente `components/home/WorkflowGallery.tsx`; nutzt die vorhandenen `WORKFLOWS`-Daten und den Wizard.
+- Rein additiv/ersetzend im leeren Chat; `data-testid="task-chips"` und die Titel bleiben erhalten (E2E gültig).
+- Tests: Unit 73, Typecheck grün.
+
 ## Echte Computeraktionen im Chat: NEXORA bedient Programme (2026-11-01) ✅
 
 Vision-Säule „echte Computeraktionen": Der Chat-Agent kann jetzt ein echtes Programm auf dem PC bedienen – über die

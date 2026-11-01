@@ -7,8 +7,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { AudioLines, KeyRound, Loader2, Mic, Send, Sparkles, Square, Volume2, VolumeX } from 'lucide-react'
 import type { ChatMessage, Provider } from '@shared/ipc-contract'
 import { useNexora } from '../state/store'
-import { WORKFLOWS } from '../data/workflows'
 import { TaskWizard } from '../components/home/TaskWizard'
+import { WorkflowGallery } from '../components/home/WorkflowGallery'
 import { TaskRuns } from '../components/home/TaskRuns'
 import { useVoice } from '../lib/useVoice'
 import { VoiceMode } from './VoiceMode'
@@ -34,7 +34,6 @@ const EXAMPLES: { label: string; prompt: string }[] = [
 
 export function Chat() {
   const setScreen = useNexora((s) => s.setScreen)
-  const openWizard = useNexora((s) => s.setWizard)
   const [provider, setProvider] = useState<Provider | null>(null)
   const [checked, setChecked] = useState(false)
   const [messages, setMessages] = useState<Shown[]>([])
@@ -167,13 +166,7 @@ export function Chat() {
               ))}
             </div>
             <p className="mt-6 text-xs uppercase tracking-wider text-text-2/70">Oder nutze eine fertige Aufgabe</p>
-            <div className="mx-auto mt-2 flex max-w-xl flex-wrap justify-center gap-2" data-testid="task-chips">
-              {WORKFLOWS.filter((w) => w.id !== 'wiederholen').map((w) => (
-                <button key={w.id} type="button" className="btn-secondary text-xs" onClick={() => openWizard(w.id)}>
-                  {w.simpleTitle}
-                </button>
-              ))}
-            </div>
+            <WorkflowGallery />
           </div>
         )}
         {messages.map((m, i) => {
