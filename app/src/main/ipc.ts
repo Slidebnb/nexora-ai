@@ -334,6 +334,25 @@ export function registerIpcHandlers(opts: { devServerUrl?: string; secrets: Secr
             return { ok: false, summary: err instanceof Error ? err.message : 'Fehler', text: '' }
           }
         }
+        if (name === 'frag_dateien') {
+          const question = String(args['frage'] ?? '').trim()
+          if (question.length < 3) return { ok: false, summary: 'Es wurde keine Frage angegeben.', text: '' }
+          try {
+            requireFeature('cloud_ai')
+          } catch (err) {
+            return { ok: false, summary: err instanceof Error ? err.message : 'Fehler', text: '' }
+          }
+          const win = BrowserWindow.fromWebContents(event.sender)
+          const options = { title: 'Ordner mit den Unterlagen auswählen', properties: ['openDirectory' as const] }
+          const result = win ? await dialog.showOpenDialog(win, options) : await dialog.showOpenDialog(options)
+          const folder = result.filePaths[0]
+          if (result.canceled || !folder) return { ok: false, summary: 'Es wurde kein Ordner ausgewählt.', text: '' }
+          try {
+            return await hub.runToCompletion('ask_files', { folder, question }, ['files.read', 'ai.cloud'])
+          } catch (err) {
+            return { ok: false, summary: err instanceof Error ? err.message : 'Fehler', text: '' }
+          }
+        }
         if (name === 'offene_fenster') {
           try {
             const wins = (await hub.desktopWindows()) as { title: string; pid: number }[]

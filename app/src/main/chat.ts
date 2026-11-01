@@ -27,7 +27,8 @@ const SYSTEM =
   'dem Nutzer vorab einzeln zur Freigabe gezeigt; ' +
   'einen Ordner aufräumen/sortieren (Werkzeug „ordner_aufraeumen“ – der Nutzer wählt den Ordner im Fenster, jede ' +
   'Verschiebung wird freigegeben); PDF-Dateien lesen und zusammenfassen (Werkzeug „pdf_lesen“ – der Nutzer wählt die ' +
-  'Dateien im Fenster); ein echtes Programm auf dem PC bedienen: rufe zuerst „offene_fenster“ auf, um die offenen ' +
+  'Dateien im Fenster); eine Frage zu den Dateien in einem Ordner beantworten (Werkzeug „frag_dateien“ – der Nutzer ' +
+  'wählt den Ordner, die Dateien werden lokal gelesen, nur relevante Ausschnitte gehen nach Freigabe an die KI); ein echtes Programm auf dem PC bedienen: rufe zuerst „offene_fenster“ auf, um die offenen ' +
   'Programmfenster zu sehen, und dann „computer_steuern“ mit dem genauen Fenstertitel und einem klaren Ziel – NEXORA ' +
   'bedient das Programm Schritt für Schritt und holt vor jeder Aktion deine Freigabe; ' +
   'und die verbundenen Dienste des Nutzers nutzen: rufe „konnektoren_auflisten“ auf, um verfügbare Dienste und ihre ' +
@@ -145,7 +146,22 @@ const TOOL_COMPUTER = {
   }
 } as const
 
-const ALL_TOOLS = [TOOL_WEB, TOOL_EMAIL, TOOL_EMAIL_SEND, TOOL_ORGANIZE, TOOL_PDF, TOOL_WINDOWS, TOOL_COMPUTER, TOOL_CONN_LIST, TOOL_CONN_CALL]
+const TOOL_ASK_FILES = {
+  name: 'frag_dateien',
+  description:
+    'Beantwortet eine Frage anhand der Text- und PDF-Dateien in einem Ordner. Der Nutzer wählt den Ordner im Fenster ' +
+    'selbst aus. Die Dateien werden lokal gelesen; nur relevante Ausschnitte und die Frage gehen – nach Freigabe – an ' +
+    'den KI-Anbieter. Setzt einen hinterlegten KI-Schlüssel voraus.',
+  parameters: {
+    type: 'object',
+    properties: {
+      frage: { type: 'string', description: 'Die Frage, die anhand der Dateien beantwortet werden soll (mind. 3 Zeichen)' }
+    },
+    required: ['frage']
+  }
+} as const
+
+const ALL_TOOLS = [TOOL_WEB, TOOL_EMAIL, TOOL_EMAIL_SEND, TOOL_ORGANIZE, TOOL_PDF, TOOL_ASK_FILES, TOOL_WINDOWS, TOOL_COMPUTER, TOOL_CONN_LIST, TOOL_CONN_CALL]
 
 const MAX_STEPS = 8
 
@@ -242,6 +258,7 @@ function labelFor(name: string): string {
       email_senden: 'Sendet eine E-Mail (nach Freigabe) …',
       ordner_aufraeumen: 'Räumt einen Ordner auf (du wählst ihn, jede Verschiebung mit Freigabe) …',
       pdf_lesen: 'Liest die gewählten PDF-Dateien …',
+      frag_dateien: 'Durchsucht die Dateien im gewählten Ordner und beantwortet deine Frage (nach Freigabe) …',
       offene_fenster: 'Sieht die offenen Programmfenster durch …',
       computer_steuern: 'Bedient ein Programm (jede Aktion mit Freigabe) …',
       konnektoren_auflisten: 'Sieht die verbundenen Dienste durch …',

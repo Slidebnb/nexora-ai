@@ -36,6 +36,7 @@ from .workflows.desktop_ai import DesktopAi
 from .connectors import ConnectorAction, ConnectorStore
 from .workflows.pdf_analysis import PdfAnalysis
 from .workflows.web_research import WebResearch
+from .workflows.ask_files import AskFiles
 
 
 class RedactingFormatter(logging.Formatter):
@@ -60,6 +61,7 @@ def build_manager(data_dir: Path) -> TaskManager:
     manager.register(DesktopAi(desktop))
     manager.register(ConnectorAction(ConnectorStore(manager)))
     manager.register(SendEmail())
+    manager.register(AskFiles())
     return manager
 
 
