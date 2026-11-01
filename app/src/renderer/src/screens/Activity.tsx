@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { BookmarkPlus, CheckCircle2, Hourglass, Play, ShieldQuestion, Undo2, XCircle } from 'lucide-react'
+import { BookmarkPlus, CheckCircle2, Hourglass, LayoutGrid, Play, ShieldQuestion, Table2, Undo2, XCircle } from 'lucide-react'
 import type { RunStatus } from '@shared/events'
 import { useNexora } from '../state/store'
 import { selectPendingApprovals, selectRuns } from '../state/selectors'
@@ -15,6 +15,7 @@ import { formatDuration, formatTime, formatUsd, cx } from '../lib/format'
 import { ScreenHeader } from './ScreenHeader'
 import { StatCard, StatGrid } from '../components/common/Cyber'
 import { RunDetail } from '../components/feed/RunDetail'
+import { OperationsCards } from '../components/feed/OperationsCards'
 
 type Filter = 'all' | 'active' | RunStatus
 
@@ -34,6 +35,7 @@ export function Activity() {
   const [templateName, setTemplateName] = useState('')
   const [saved, setSaved] = useState<string | null>(null)
   const [openRun, setOpenRun] = useState<string | null>(null)
+  const [view, setView] = useState<'table' | 'cards'>('table')
   const expert = useNexora((s) => s.expertMode)
   const act = (p: Promise<unknown>) => {
     setError(null)
@@ -89,22 +91,34 @@ export function Activity() {
         </Suspense>
       </div>
 
-      <div className="mb-3 flex gap-1" role="group" aria-label="Filter">
-        {FILTERS.map((f) => (
-          <button
-            key={f.id}
-            type="button"
-            aria-pressed={filter === f.id}
-            onClick={() => setFilter(f.id)}
-            className={cx('rounded px-3 py-1 text-xs', filter === f.id ? 'bg-accent/20 text-accent-hi' : 'text-text-2 hover:bg-panel')}
-          >
-            {f.label}
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <div className="flex gap-1" role="group" aria-label="Filter">
+          {FILTERS.map((f) => (
+            <button
+              key={f.id}
+              type="button"
+              aria-pressed={filter === f.id}
+              onClick={() => setFilter(f.id)}
+              className={cx('rounded px-3 py-1 text-xs', filter === f.id ? 'bg-accent/20 text-accent-hi' : 'text-text-2 hover:bg-panel')}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+        <div className="flex gap-1" role="group" aria-label="Ansicht">
+          <button type="button" aria-pressed={view === 'table'} aria-label="Tabellenansicht" title="Tabelle" onClick={() => setView('table')} className={cx('rounded p-1.5', view === 'table' ? 'bg-accent/20 text-accent-hi' : 'text-text-2 hover:bg-panel')}>
+            <Table2 className="size-4" aria-hidden />
           </button>
-        ))}
+          <button type="button" aria-pressed={view === 'cards'} aria-label="Kartenansicht" title="Karten" onClick={() => setView('cards')} className={cx('rounded p-1.5', view === 'cards' ? 'bg-accent/20 text-accent-hi' : 'text-text-2 hover:bg-panel')}>
+            <LayoutGrid className="size-4" aria-hidden />
+          </button>
+        </div>
       </div>
 
       {runs.length === 0 ? (
         <EmptyState>Keine Vorgänge für diesen Filter.</EmptyState>
+      ) : view === 'cards' ? (
+        <OperationsCards runs={runs} onOpen={setOpenRun} expert={expert} />
       ) : (
         <div className="panel overflow-hidden">
           <table className="w-full text-left text-sm">

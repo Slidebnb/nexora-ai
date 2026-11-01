@@ -458,6 +458,21 @@ sofort startklar (behebt „man wusste nicht, wie man anfängt / man konnte nich
 - Tests: Unit 73, Typecheck grün. E2E-Erststart-Test an den neuen Ablauf angepasst (ein Schritt mehr: KI-Schlüssel wird
   im Test übersprungen; Abschluss über „Übungsordner").
 
+## Operations-Karten aus cyberpunk-dashboard portiert (2026-11-01) ✅
+
+Auf Anweisung: die operations-Kartenoptik (Karten-Grid mit Fortschrittsbalken) aus raheem-dotgit/cyberpunk-dashboard
+(@8ec7ec7 master, `app/operations/page.tsx`) übernommen und an unseren Stack portiert. Neue Komponente
+`components/feed/OperationsCards.tsx`; in „Aktivitäten" als **Umschaltung Tabelle ↔ Karten** eingebunden.
+- Karten zeigen pro Vorgang: Titel, Status-Badge, Ergebnis/Fehler, Start, Schritte, Kosten (Experten) und einen
+  **Fortschrittsbalken** (aus `progressOf`). Klick öffnet die Vorgangsdetails.
+- **Ehrlich:** Die Vorlage zeigt erfundene Spionage-Operationen (Priorität/Standort/Agentenzahl/Ziele). Diese Felder
+  wurden **weggelassen, nicht erfunden**; es werden nur echte Vorgangsdaten angezeigt. Attribution in
+  `THIRD_PARTY_NOTICES.md`.
+- Hinweis zu den anderen beiden Repo-Ansichten: **agent-network** ist bereits als `Agents.tsx` (Roster-Tabelle mit
+  echten Daten) portiert; **intelligence** (klassifizierte Reports mit Bedrohungsstufen) hat kein echtes
+  NEXORA-Gegenstück und wurde bewusst NICHT 1:1 übernommen (würde erfundene Daten erfordern).
+- Tests: Unit 81, Typecheck grün.
+
 ## Kommandozentrale-Optik aus cyberpunk-dashboard portiert (2026-11-01) ✅
 
 Auf ausdrückliche Anweisung des Inhabers: die command-center-Kartenanordnung aus raheem-dotgit/cyberpunk-dashboard
