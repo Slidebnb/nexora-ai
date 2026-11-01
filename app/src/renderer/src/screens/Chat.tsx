@@ -21,6 +21,17 @@ interface Shown extends ChatMessage {
 let counter = 0
 const PROVIDER_LABEL: Record<Provider, string> = { anthropic: 'Claude (Anthropic)', openai: 'OpenAI' }
 
+// Kundenfreundliche Beispiele: zeigen, wie man NEXORA im Chat bedient. Klick füllt das Eingabefeld (nicht sofort
+// senden), damit der Nutzer den Satz anpassen kann. Jedes Beispiel passt zu einer echten Agent-Fähigkeit.
+const EXAMPLES: { label: string; prompt: string }[] = [
+  { label: '🔎 Etwas im Web recherchieren', prompt: 'Recherchiere für mich die aktuellen Öffnungszeiten von ' },
+  { label: '✉️ Eine E-Mail schreiben', prompt: 'Schreib eine freundliche E-Mail an kunde@example.com zum Thema ' },
+  { label: '📨 Eine E-Mail wirklich senden', prompt: 'Sende eine kurze Terminbestätigung an kunde@example.com für ' },
+  { label: '🗂️ Einen Ordner aufräumen', prompt: 'Räum einen Ordner für mich auf und sortiere die Dateien nach Typ.' },
+  { label: '📄 Eine PDF zusammenfassen', prompt: 'Lies eine PDF-Datei und fasse die wichtigsten Punkte zusammen.' },
+  { label: '🔌 Verbundene Dienste zeigen', prompt: 'Welche Dienste sind mit dir verbunden und was können sie?' }
+]
+
 export function Chat() {
   const setScreen = useNexora((s) => s.setScreen)
   const openWizard = useNexora((s) => s.setWizard)
@@ -32,6 +43,7 @@ export function Chat() {
   const [error, setError] = useState<string | null>(null)
   const idRef = useRef<string | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLTextAreaElement>(null)
   const [speakReplies, setSpeakReplies] = useState(true)
   const [voiceMode, setVoiceMode] = useState(false)
   const sendRef = useRef<(t: string, spoken: boolean) => void>(() => {})
@@ -138,8 +150,23 @@ export function Chat() {
         {messages.length === 0 && (
           <div className="mt-10 text-center text-text-2">
             <p className="text-lg text-text">Wie kann ich dir helfen?</p>
-            <p className="mt-1 text-sm">Schreib einfach los – zum Beispiel eine Frage oder eine Idee.</p>
-            <p className="mt-6 text-xs uppercase tracking-wider text-text-2/70">NEXORA kann auch das für dich erledigen</p>
+            <p className="mt-1 text-sm">Schreib einfach los – oder tippe ein Beispiel an, um zu sehen, was NEXORA kann.</p>
+            <div className="mx-auto mt-5 grid max-w-xl grid-cols-1 gap-2 sm:grid-cols-2" data-testid="chat-examples">
+              {EXAMPLES.map((ex) => (
+                <button
+                  key={ex.label}
+                  type="button"
+                  className="rounded-lg border border-line bg-panel px-3 py-2.5 text-left text-sm text-text transition-colors hover:border-accent/60 hover:bg-panel-2"
+                  onClick={() => {
+                    setInput(ex.prompt)
+                    inputRef.current?.focus()
+                  }}
+                >
+                  {ex.label}
+                </button>
+              ))}
+            </div>
+            <p className="mt-6 text-xs uppercase tracking-wider text-text-2/70">Oder nutze eine fertige Aufgabe</p>
             <div className="mx-auto mt-2 flex max-w-xl flex-wrap justify-center gap-2" data-testid="task-chips">
               {WORKFLOWS.filter((w) => w.id !== 'wiederholen').map((w) => (
                 <button key={w.id} type="button" className="btn-secondary text-xs" onClick={() => openWizard(w.id)}>
@@ -201,6 +228,7 @@ export function Chat() {
         }}
       >
         <textarea
+          ref={inputRef}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => {

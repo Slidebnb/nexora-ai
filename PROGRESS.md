@@ -418,3 +418,18 @@ Gespräch heraus erreichbar.
 - Tests: Unit 73, Typecheck grün (die zugrunde liegenden Workflows sind im Worker getestet). Ehrlich: Der native
   Datei-/Ordnerdialog ist – wie der bestehende Auswahlpfad – nicht per E2E automatisiert.
 
+## Kundenfreundlicher Fähigkeiten-Start im Chat (2026-11-01) ✅
+
+Damit Kunden sofort sehen, wie man NEXORA bedient (frühere Kritik: „man wusste nicht, wie man es bedient"):
+- Der leere Chat zeigt jetzt **klickbare Beispiel-Anfragen** für jede echte Fähigkeit: Web-Recherche, E-Mail schreiben,
+  E-Mail wirklich senden, Ordner aufräumen, PDF zusammenfassen, verbundene Dienste zeigen.
+- Ein Klick **füllt das Eingabefeld** mit einem Beispielsatz (sendet nicht sofort) und setzt den Fokus – so lernt der
+  Kunde beiläufig, wie man mit NEXORA spricht, und kann den Satz vor dem Senden anpassen.
+- Die bisherigen „fertige Aufgabe"-Chips (Assistent/Wizard) bleiben darunter erhalten. Rein additiv.
+- Tests: Unit 73, Typecheck grün. Bestehender E2E-Chat-Test bleibt gültig (Eingabefeld „Nachricht an NEXORA"
+  unverändert).
+
+Damit sind die Agent-Fähigkeiten im Chat vollständig und kundenfreundlich sichtbar. Bewusst noch offen als eigene,
+größere Vorhaben: Echtzeit-Sprache (OpenAI Realtime; braucht echten Schlüssel + Mikrofon, daher separat und ehrlich
+testbar aufzusetzen) und die geführte Komplett-Einrichtung (laut Wunsch zuletzt, bindet die Dienste-Sammlung ein).
+
