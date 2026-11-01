@@ -99,3 +99,5 @@ def test_cloud_ai_text_after_second_approval(api, out, monkeypatch):
     assert api.wait_terminal(run_id)[-1]["type"] == "run_succeeded"
     body = BytesParser(policy=policy.default).parsebytes(sorted(out.iterdir())[0].read_bytes()).get_content()
     assert "gerne würden wir" in body
+    costs = [e for e in api.events(run_id) if e["type"] == "cost_updated"]
+    assert costs and costs[-1]["payload"]["totalUsd"] > 0, "BYOK: KI-Kosten müssen sichtbar sein"

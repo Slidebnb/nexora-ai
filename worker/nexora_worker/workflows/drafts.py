@@ -20,7 +20,7 @@ from typing import ClassVar
 
 from pydantic import BaseModel, Field, field_validator
 
-from ..llm import LlmError, draft_body, provider_for
+from ..llm import LlmError, draft_body, price, provider_for
 from ..runner import RunContext, Workflow, WorkflowError
 from ..safety import redact_text
 from .organizer import validate_root
@@ -144,6 +144,7 @@ class DraftEmails(Workflow):
                 if decision == "allow":
                     try:
                         res = await asyncio.to_thread(draft_body, data.briefing, ctx.secrets)
+                        ctx.cost(price(res))
                         body, by = redact_text(res.text), f"{res.provider} {res.model} ({res.input_tokens}+{res.output_tokens} Token)"
                     except LlmError as e:
                         ctx.step_failed("write", f"{e} – Briefing wird lokal übernommen")

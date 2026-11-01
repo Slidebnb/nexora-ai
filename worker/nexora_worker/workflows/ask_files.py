@@ -13,7 +13,7 @@ from pydantic import BaseModel, Field, field_validator
 from pypdf import PdfReader
 from pypdf.errors import PdfReadError
 
-from ..llm import LlmError, complete, provider_for
+from ..llm import LlmError, complete, price, provider_for
 from ..runner import RunContext, Workflow
 from ..safety import redact_text, scan_for_prompt_injection
 from ..textutil import key_terms
@@ -135,6 +135,7 @@ class AskFiles(Workflow):
             ctx.step_failed("ask", str(e))
             ctx.fail(f"Die KI-Anfrage ist fehlgeschlagen: {e}")
             return
+        ctx.cost(price(res))
         answer = redact_text(res.text)
         ctx.step_succeeded("ask", f"Antwort erstellt ({res.provider} {res.model})")
 

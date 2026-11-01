@@ -32,6 +32,20 @@ class LlmResult:
     output_tokens: int
 
 
+# Geschätzte Preise in USD je 1 Mio. Token (Eingabe, Ausgabe). Dienen der Kosten-Transparenz (BYOK),
+# nicht der Abrechnung – echte Beträge rechnet der Anbieter ab. Unbekannte Modelle: konservativer Aufschlag.
+_PRICES: dict[str, tuple[float, float]] = {
+    ANTHROPIC_MODEL: (0.80, 4.00),
+    OPENAI_MODEL: (0.15, 0.60),
+}
+_PRICE_FALLBACK = (1.00, 5.00)
+
+
+def price(result: "LlmResult") -> float:
+    p_in, p_out = _PRICES.get(result.model, _PRICE_FALLBACK)
+    return round(result.input_tokens / 1e6 * p_in + result.output_tokens / 1e6 * p_out, 6)
+
+
 def provider_for(secrets: dict[str, str]) -> str | None:
     if secrets.get("anthropic"):
         return "anthropic"

@@ -18,7 +18,7 @@ from pydantic import BaseModel, Field, field_validator
 from pypdf import PdfReader
 from pypdf.errors import PdfReadError
 
-from ..llm import LlmError, provider_for, summarize
+from ..llm import LlmError, price, provider_for, summarize
 from ..ocr import OcrError, ocr_pdf
 from ..runner import RunContext, Workflow, WorkflowError
 from ..safety import redact_text, scan_for_prompt_injection
@@ -176,6 +176,7 @@ class PdfAnalysis(Workflow):
                     ctx.step_failed("ai", "Senden abgelehnt – lokale Zusammenfassung verwendet")
                 else:
                     tokens_in = tokens_out = 0
+                    total_usd = 0.0
                     errors = 0
                     for inf in readable:
                         await ctx.checkpoint()
@@ -184,6 +185,8 @@ class PdfAnalysis(Workflow):
                             summaries[inf.path] = (redact_text(res.text), f"{res.provider} {res.model}")
                             tokens_in += res.input_tokens
                             tokens_out += res.output_tokens
+                            total_usd += price(res)
+                            ctx.cost(total_usd)
                         except LlmError as e:
                             errors += 1
                             summaries[inf.path] = (summaries[inf.path][0], f"lokal (KI-Fehler: {e})")

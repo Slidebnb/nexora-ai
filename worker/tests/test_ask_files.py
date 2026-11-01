@@ -71,6 +71,9 @@ def test_asks_before_sending_then_answers(api, docs, data_dir, fake_ai):
     assert "rechnung.txt" in body["messages"][0]["content"]
     report = (data_dir / "runs" / run_id / "Antwort.md").read_text(encoding="utf-8")
     assert "142,50 Euro" in report and "rechnung.txt" in report
+    # BYOK: Kosten sichtbar – nach dem KI-Aufruf wird ein cost_updated-Ereignis mit Betrag > 0 gemeldet.
+    costs = [e for e in api.events(run_id) if e["type"] == "cost_updated"]
+    assert costs and costs[-1]["payload"]["totalUsd"] > 0, costs
 
 
 def test_denied_sends_nothing(api, docs, fake_ai):

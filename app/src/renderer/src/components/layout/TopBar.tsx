@@ -64,7 +64,7 @@ export function TopBar() {
           <HardDrive className="size-3.5" aria-hidden /> {expert ? <><span className="max-xl:hidden">Verarbeitung:</span> lokal</> : 'Läuft auf deinem PC'}
         </span>
         {(expert || kpis.costUsd > 0) && (
-        <span className="inline-flex items-center gap-1.5" title="Summe der von den KI-Anbietern gemeldeten Kosten">
+        <span className="inline-flex items-center gap-1.5" title="Geschätzte API-Kosten deiner Aufgaben auf deinem eigenen Schlüssel (BYOK). Abgerechnet wird direkt vom KI-Anbieter – NEXORA schlägt nichts auf. Chat-Nachrichten sind noch nicht enthalten.">
           <Cpu className="size-3.5" aria-hidden /> <span className="max-xl:hidden">API-Kosten:</span> {formatUsd(kpis.costUsd)}
           {demoMode && kpis.costUsd > 0 && <span className="text-warning">(simuliert)</span>}
         </span>
