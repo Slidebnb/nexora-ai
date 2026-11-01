@@ -190,7 +190,8 @@ export type AiTestResult = z.infer<typeof AiTestResultSchema>
 
 export const ChatMessageSchema = z.object({ role: z.enum(['user', 'assistant']), content: z.string().min(1).max(100000) })
 export type ChatMessage = z.infer<typeof ChatMessageSchema>
-export const ChatDeltaSchema = z.object({ id: z.string(), delta: z.string() })
+// delta = Textstück der Antwort; step = sichtbarer Agent-Schritt („arbeitet …"). Pro Nachricht genau eines.
+export const ChatDeltaSchema = z.object({ id: z.string(), delta: z.string().optional(), step: z.string().max(200).optional() })
 export type ChatDelta = z.infer<typeof ChatDeltaSchema>
 
 export const IPC_CHANNELS = {

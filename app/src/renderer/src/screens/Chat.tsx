@@ -4,7 +4,7 @@
  * Aktionen auf dem PC (Ordner, Dateien …) folgen als nächster Schritt – dann jeweils mit Freigabe.
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { AudioLines, KeyRound, Mic, Send, Sparkles, Square, Volume2, VolumeX } from 'lucide-react'
+import { AudioLines, KeyRound, Loader2, Mic, Send, Sparkles, Square, Volume2, VolumeX } from 'lucide-react'
 import type { ChatMessage, Provider } from '@shared/ipc-contract'
 import { useNexora } from '../state/store'
 import { WORKFLOWS } from '../data/workflows'
@@ -15,6 +15,7 @@ import { VoiceMode } from './VoiceMode'
 
 interface Shown extends ChatMessage {
   pending?: boolean
+  steps?: string[]
 }
 
 let counter = 0
@@ -51,7 +52,13 @@ export function Chat() {
       setMessages((m) => {
         const copy = [...m]
         const last = copy[copy.length - 1]
-        if (last && last.role === 'assistant') copy[copy.length - 1] = { ...last, content: last.content + d.delta, pending: true }
+        if (!last || last.role !== 'assistant') return copy
+        if (d.step) {
+          // Sichtbarer Agent-Schritt: als eigene „arbeitet …"-Karte sammeln (verschwindet nicht mit der Antwort).
+          copy[copy.length - 1] = { ...last, steps: [...(last.steps ?? []), d.step], pending: true }
+        } else if (d.delta) {
+          copy[copy.length - 1] = { ...last, content: last.content + d.delta, pending: true }
+        }
         return copy
       })
     })
@@ -76,7 +83,7 @@ export function Chat() {
       setMessages((m) => {
         const copy = [...m]
         const last = copy[copy.length - 1]
-        if (last && last.role === 'assistant') copy[copy.length - 1] = { role: 'assistant', content: res.text || last.content }
+        if (last && last.role === 'assistant') copy[copy.length - 1] = { role: 'assistant', content: res.text || last.content, steps: last.steps }
         return copy
       })
       if (spoken && speakReplies) voice.speak(res.text)
@@ -96,7 +103,7 @@ export function Chat() {
   const stop = () => {
     if (idRef.current) void window.nexora.cancelChat(idRef.current)
     setStreaming(false)
-    setMessages((m) => m.map((x) => (x.pending ? { role: x.role, content: x.content } : x)))
+    setMessages((m) => m.map((x) => (x.pending ? { role: x.role, content: x.content, steps: x.steps } : x)))
   }
 
   if (checked && !provider) {
@@ -142,19 +149,38 @@ export function Chat() {
             </div>
           </div>
         )}
-        {messages.map((m, i) => (
-          <div key={i} className={m.role === 'user' ? 'flex justify-end' : 'flex justify-start'}>
-            <div
-              className={
-                m.role === 'user'
-                  ? 'max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-br-sm bg-accent/20 px-4 py-2.5 text-sm text-text'
-                  : 'max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-bl-sm border border-line bg-panel px-4 py-2.5 text-sm text-text'
-              }
-            >
-              {m.content || (m.pending ? '…' : '')}
+        {messages.map((m, i) => {
+          if (m.role === 'user') {
+            return (
+              <div key={i} className="flex justify-end">
+                <div className="max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-br-sm bg-accent/20 px-4 py-2.5 text-sm text-text">{m.content}</div>
+              </div>
+            )
+          }
+          const showBubble = m.content || m.pending
+          return (
+            <div key={i} className="flex flex-col items-start gap-1.5">
+              {m.steps && m.steps.length > 0 && (
+                <ul className="flex flex-col gap-1" aria-label="Was NEXORA gerade tut" data-testid="agent-steps">
+                  {m.steps.map((s, si) => {
+                    const active = !!m.pending && si === m.steps!.length - 1
+                    return (
+                      <li key={si} className="flex items-center gap-2 rounded-lg border border-accent/30 bg-accent/5 px-3 py-1.5 text-xs text-text-2">
+                        <Loader2 className={`size-3.5 shrink-0 text-accent-hi ${active ? 'motion-safe:animate-spin' : ''}`} aria-hidden />
+                        <span>{s}</span>
+                      </li>
+                    )
+                  })}
+                </ul>
+              )}
+              {showBubble && (
+                <div className="max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-bl-sm border border-line bg-panel px-4 py-2.5 text-sm text-text">
+                  {m.content || '…'}
+                </div>
+              )}
             </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
 
       <div className="mt-2 empty:hidden">

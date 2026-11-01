@@ -370,3 +370,16 @@ ein eigenes E-Mail-Konto (SMTP), jede Sendung einzeln freigegeben.
 
 Der E-Mail-Entwurf (`email_entwurf`, speichert .eml) bleibt als Alternative bestehen; neu ist das echte Senden daneben.
 
+## Sichtbare Agent-Schritte im Chat (2026-11-01) ✅
+
+Wenn NEXORA im Gespräch ein Werkzeug nutzt, sieht man das jetzt als eigene **„arbeitet …"-Karte** – nicht mehr nur
+als flüchtige Textzeile, die mit der Antwort verschwindet.
+- Jeder Werkzeug-Start (Recherche, E-Mail-Entwurf/-Versand, Konnektor) erscheint als kleine Karte mit laufendem
+  Symbol („Recherchiert im Web …", „Sendet eine E-Mail (nach Freigabe) …" …). Die aktive Karte dreht sich, fertige
+  Schritte bleiben als nachvollziehbare Spur über der Antwort stehen.
+- Technisch: Der Push-Kanal `chat:delta` trägt jetzt entweder ein Textstück (`delta`) **oder** einen Schritt (`step`).
+  Der Chat sammelt Schritte getrennt vom Antworttext (`steps[]` je Nachricht), daher verschwinden sie beim Eintreffen
+  der finalen Antwort nicht mehr.
+- Tests: Unit 73, Typecheck grün. Der bestehende E2E-Agent-Test bleibt gültig (prüft den Schritttext „Recherchiert im
+  Web", jetzt in der Schrittkarte).
+

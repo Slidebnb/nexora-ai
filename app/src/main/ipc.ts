@@ -331,7 +331,7 @@ export function registerIpcHandlers(opts: { devServerUrl?: string; secrets: Secr
         messages: messages as ChatMessage[],
         signal: controller.signal,
         onDelta: (delta) => broadcast('chat:delta', { id, delta }),
-        onTool: (label) => broadcast('chat:delta', { id, delta: `\n🔎 ${label}\n` }),
+        onTool: (label) => broadcast('chat:delta', { id, step: label }),
         exec
       })
       return { text, model, provider }
