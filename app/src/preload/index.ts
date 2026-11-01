@@ -43,6 +43,7 @@ const api: NexoraApi = {
   connectorTools: (id) => ipcRenderer.invoke('connectors:tools', { id }),
   desktopWindows: () => ipcRenderer.invoke('desktop:windows'),
   desktopElements: (window) => ipcRenderer.invoke('desktop:elements', { window }),
+  openExternal: (url) => ipcRenderer.invoke('shell:openExternal', { url }),
   getEmailAccount: () => ipcRenderer.invoke('email:get'),
   setEmailAccount: (config) => ipcRenderer.invoke('email:set', config),
   clearEmailAccount: () => ipcRenderer.invoke('email:clear'),

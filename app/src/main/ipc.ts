@@ -388,4 +388,18 @@ export function registerIpcHandlers(opts: { devServerUrl?: string; secrets: Secr
     shell.showItemInFolder(path)
     return { ok: true }
   })
+
+  // Nur bekannte Hilfe-/Anbieter-Seiten im echten Browser öffnen (feste Allowlist, nur https). Kein beliebiges Öffnen.
+  const EXTERNAL_HOSTS = new Set(['console.anthropic.com', 'platform.openai.com', 'docs.anthropic.com', 'help.openai.com'])
+  handle('shell:openExternal', async ({ url }) => {
+    let parsed: URL
+    try {
+      parsed = new URL(url)
+    } catch {
+      return { ok: false }
+    }
+    if (parsed.protocol !== 'https:' || !EXTERNAL_HOSTS.has(parsed.hostname)) return { ok: false }
+    await shell.openExternal(parsed.toString())
+    return { ok: true }
+  })
 }

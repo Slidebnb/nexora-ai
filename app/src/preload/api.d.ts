@@ -37,6 +37,7 @@ export interface NexoraApi {
   connectorTools: (id: string) => Promise<ConnectorTool[]>
   desktopWindows: () => Promise<DesktopWindow[]>
   desktopElements: (window: string) => Promise<DesktopElement[]>
+  openExternal: (url: string) => Promise<{ ok: boolean }>
   getEmailAccount: () => Promise<SmtpStatus>
   setEmailAccount: (config: SmtpConfig) => Promise<SmtpStatus>
   clearEmailAccount: () => Promise<SmtpStatus>

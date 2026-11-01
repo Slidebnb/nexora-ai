@@ -246,7 +246,9 @@ export const IPC_CHANNELS = {
   'email:get': { request: z.undefined(), response: SmtpStatusSchema },
   'email:set': { request: SmtpConfigSchema, response: SmtpStatusSchema },
   'email:clear': { request: z.undefined(), response: SmtpStatusSchema },
-  'email:test': { request: z.undefined(), response: z.object({ ok: z.boolean(), message: z.string().max(300) }) }
+  'email:test': { request: z.undefined(), response: z.object({ ok: z.boolean(), message: z.string().max(300) }) },
+  // Öffnet eine Hilfe-/Anbieter-Seite im echten Browser. Der Main-Prozess prüft die Adresse gegen eine feste Allowlist.
+  'shell:openExternal': { request: z.object({ url: z.string().url().max(2000) }), response: Ok }
 } as const
 
 /** Kanäle, auf denen der Main-Prozess an den Renderer sendet (kein invoke). */

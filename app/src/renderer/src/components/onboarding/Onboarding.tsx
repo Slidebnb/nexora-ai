@@ -1,13 +1,23 @@
 import { useEffect, useState } from 'react'
-import { CheckCircle2, FolderSync, Hand, HardDrive, KeyRound, MessageSquareText, PlugZap, ShieldCheck, Sparkles, Undo2 } from 'lucide-react'
+import { CheckCircle2, ExternalLink, FolderSync, Hand, HardDrive, KeyRound, MessageSquareText, PlugZap, ShieldCheck, Sparkles, Undo2 } from 'lucide-react'
 import { ApiKeySchema, type Provider, type SecretStatus } from '@shared/ipc-contract'
 import { useNexora } from '../../state/store'
 import { cleanError } from '../../lib/actions'
 
 const PROVIDER_LABEL: Record<Provider, string> = { anthropic: 'Claude (Anthropic)', openai: 'OpenAI' }
 const KEY_HELP: Record<Provider, string> = {
-  anthropic: 'Dein Anthropic-Schlüssel beginnt mit „sk-ant-…". Du bekommst ihn unter console.anthropic.com.',
-  openai: 'Dein OpenAI-Schlüssel beginnt mit „sk-…". Du bekommst ihn unter platform.openai.com.'
+  anthropic: 'Dein Anthropic-Schlüssel beginnt mit „sk-ant-…".',
+  openai: 'Dein OpenAI-Schlüssel beginnt mit „sk-…".'
+}
+// Direkt-Links zur Schlüsselseite des Anbieters (öffnen im echten Browser; Main-Prozess prüft gegen Allowlist).
+const KEY_URL: Record<Provider, string> = {
+  anthropic: 'https://console.anthropic.com/settings/keys',
+  openai: 'https://platform.openai.com/api-keys'
+}
+// Kurze Schritt-für-Schritt-Hilfe, damit auch Laien in Minuten zum Schlüssel kommen.
+const KEY_STEPS: Record<Provider, string[]> = {
+  anthropic: ['Auf „Schlüssel holen" klicken und bei Anthropic anmelden (oder kostenlos registrieren).', 'Auf „Create Key" klicken und dem Schlüssel einen Namen geben.', 'Den Schlüssel kopieren (beginnt mit „sk-ant-…") und hier unten einfügen.'],
+  openai: ['Auf „Schlüssel holen" klicken und bei OpenAI anmelden (oder registrieren).', 'Auf „Create new secret key" klicken.', 'Den Schlüssel kopieren (beginnt mit „sk-…") und hier unten einfügen.']
 }
 
 /** Schritt „KI-Schlüssel eintragen": damit der Kunde sofort mit NEXORA schreiben kann. Der Schlüssel wird nur im
@@ -78,6 +88,19 @@ function KeyStep({ onConfigured }: { onConfigured: (any: boolean) => void }) {
             {status?.configured[p] && <CheckCircle2 className="ml-1 size-3.5 text-success" aria-hidden />}
           </button>
         ))}
+      </div>
+      <div className="rounded-md border border-line bg-panel-2 p-3">
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-xs font-medium text-text">So bekommst du einen {PROVIDER_LABEL[provider]}-Schlüssel:</p>
+          <button type="button" className="btn-secondary text-xs" onClick={() => void window.nexora.openExternal(KEY_URL[provider])}>
+            <ExternalLink className="size-3.5" aria-hidden /> Schlüssel holen
+          </button>
+        </div>
+        <ol className="mt-2 list-decimal space-y-1 pl-5 text-xs text-text-2">
+          {KEY_STEPS[provider].map((s, i) => (
+            <li key={i}>{s}</li>
+          ))}
+        </ol>
       </div>
       <input
         className="input font-mono text-sm"
