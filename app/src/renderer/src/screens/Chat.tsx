@@ -21,7 +21,7 @@ interface Shown extends ChatMessage {
 }
 
 let counter = 0
-const PROVIDER_LABEL: Record<Provider, string> = { anthropic: 'Claude (Anthropic)', openai: 'OpenAI' }
+const PROVIDER_LABEL: Record<Provider, string> = { anthropic: 'Claude (Anthropic)', openai: 'OpenAI', ollama: 'Lokales Modell (Ollama)' }
 
 export function Chat() {
   const setScreen = useNexora((s) => s.setScreen)

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { KeyRound, ShieldCheck, ShieldOff, FlaskConical, PlugZap } from 'lucide-react'
-import { PROVIDERS, type AppInfo, type Provider, type SecretStatus } from '@shared/ipc-contract'
+import { PROVIDERS, type AppInfo, type Provider, type SecretProvider, type SecretStatus } from '@shared/ipc-contract'
 import { useNexora } from '../state/store'
 import { enterDemo, exitDemo } from '../demo/controller'
 import { ScreenHeader } from './ScreenHeader'
@@ -16,7 +16,7 @@ const THEME_OPTIONS = [
   { id: 'minimal', label: 'Minimal', color: '#94a3b8' }
 ] as const
 
-const PROVIDER_LABEL: Record<Provider, string> = { anthropic: 'Anthropic (Claude)', openai: 'OpenAI' }
+const PROVIDER_LABEL: Record<SecretProvider, string> = { anthropic: 'Anthropic (Claude)', openai: 'OpenAI' }
 
 /** IPC-Fehler kommen als „Error invoking remote method …: Error: <Text>“ – nur den Text zeigen. */
 function cleanError(e: unknown): string {
@@ -24,7 +24,7 @@ function cleanError(e: unknown): string {
   return msg.replace(/^Error invoking remote method '[^']+': (Error: )?/, '')
 }
 
-function ApiKeyRow({ provider, configured, disabled, onChange }: { provider: Provider; configured: boolean; disabled: boolean; onChange: (s: SecretStatus) => void }) {
+function ApiKeyRow({ provider, configured, disabled, onChange }: { provider: SecretProvider; configured: boolean; disabled: boolean; onChange: (s: SecretStatus) => void }) {
   const [value, setValue] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -105,6 +105,57 @@ function ApiKeyRow({ provider, configured, disabled, onChange }: { provider: Pro
   )
 }
 
+const OLLAMA_DEFAULT = { enabled: false, model: 'llama3.1', baseUrl: 'http://127.0.0.1:11434/v1/chat/completions' }
+
+/** Lokales KI-Modell (Ollama): läuft auf dem PC, ohne Cloud/Schlüssel – maximaler Datenschutz. */
+function OllamaSection() {
+  const appSettings = useNexora((s) => s.settings)
+  const saveSettings = useNexora((s) => s.saveSettings)
+  const cfg = appSettings?.ollama ?? OLLAMA_DEFAULT
+  const [model, setModel] = useState(cfg.model)
+  const [baseUrl, setBaseUrl] = useState(cfg.baseUrl)
+  const [msg, setMsg] = useState<string | null>(null)
+  const store = (ollama: { enabled: boolean; model: string; baseUrl: string }) =>
+    saveSettings({ ollama }).then(() => setMsg('Gespeichert.'), (e: unknown) => setMsg(cleanError(e)))
+
+  return (
+    <section className="panel p-5" aria-labelledby="ollama-title">
+      <h2 id="ollama-title" className="hud-label">Lokales KI-Modell (Ollama)</h2>
+      <p className="mt-2 text-sm text-text-2">
+        Maximaler Datenschutz: NEXORA nutzt ein Modell, das komplett auf deinem PC läuft – ohne Cloud, ohne Schlüssel. Voraussetzung:
+        Ollama ist installiert (ollama.com) und ein Modell geladen. Werkzeuge/Aktionen gelingen am besten mit werkzeugfähigen Modellen
+        wie „llama3.1". Ist das lokale Modell aktiv, hat es Vorrang vor Anthropic/OpenAI.
+      </p>
+      <label className="mt-3 flex items-start gap-2 text-sm text-text">
+        <input
+          type="checkbox"
+          checked={cfg.enabled}
+          onChange={(e) => void store({ enabled: e.target.checked, model: model.trim() || 'llama3.1', baseUrl: baseUrl.trim() || OLLAMA_DEFAULT.baseUrl })}
+          className="mt-1 accent-[var(--color-accent)]"
+          aria-label="Lokales Modell (Ollama) nutzen"
+        />
+        <span>Lokales Modell (Ollama) nutzen</span>
+      </label>
+      <div className="mt-3 grid gap-2 sm:grid-cols-2">
+        <label className="grid gap-1 text-xs text-text-2">
+          Modellname
+          <input className="input text-sm" value={model} onChange={(e) => setModel(e.target.value)} maxLength={100} placeholder="llama3.1" aria-label="Modellname" />
+        </label>
+        <label className="grid gap-1 text-xs text-text-2">
+          Adresse (OpenAI-kompatibel)
+          <input className="input font-mono text-sm" value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} maxLength={300} placeholder={OLLAMA_DEFAULT.baseUrl} aria-label="Adresse" />
+        </label>
+      </div>
+      {msg && <p className="mt-2 text-xs text-text-2">{msg}</p>}
+      <div className="mt-3 flex justify-end">
+        <button type="button" className="btn-secondary" onClick={() => void store({ enabled: cfg.enabled, model: model.trim() || 'llama3.1', baseUrl: baseUrl.trim() || OLLAMA_DEFAULT.baseUrl })}>
+          Speichern
+        </button>
+      </div>
+    </section>
+  )
+}
+
 export function Settings() {
   const demoMode = useNexora((s) => s.demoMode)
   const expertMode = useNexora((s) => s.expertMode)
@@ -151,6 +202,8 @@ export function Settings() {
           )}
           <p className="mt-2 text-xs text-text-2">„Verbindung testen“ fragt nur die Modellliste des Anbieters ab und verbraucht keine Tokens.</p>
         </section>
+
+        <OllamaSection />
 
         <section className="panel p-5" aria-labelledby="demo-title">
           <h2 id="demo-title" className="hud-label">Demo-Modus</h2>

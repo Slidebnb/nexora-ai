@@ -21,7 +21,8 @@ describe('App-Einstellungen', () => {
   it('Standardwerte, Speichern, beschädigte Datei', () => {
     const file = join(mkdtempSync(join(tmpdir(), 'nx-set-')), 'settings.json')
     const s = new AppSettingsStore(file)
-    expect(s.get()).toEqual({ onboarded: false, theme: 'crimson', notifications: true })
+    expect(s.get()).toMatchObject({ onboarded: false, theme: 'crimson', notifications: true })
+    expect(s.get().ollama).toMatchObject({ enabled: false, model: 'llama3.1' })
     s.update({ onboarded: true, theme: 'cyan' })
     expect(new AppSettingsStore(file).get()).toMatchObject({ onboarded: true, theme: 'cyan' })
     writeFileSync(file, '{kaputt')

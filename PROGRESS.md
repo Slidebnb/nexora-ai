@@ -458,6 +458,24 @@ sofort startklar (behebt „man wusste nicht, wie man anfängt / man konnte nich
 - Tests: Unit 73, Typecheck grün. E2E-Erststart-Test an den neuen Ablauf angepasst (ein Schritt mehr: KI-Schlüssel wird
   im Test übersprungen; Abschluss über „Übungsordner").
 
+## Lokales KI-Modell (Ollama) – Datenschutz-Differenzierer (2026-11-01) ✅
+
+NEXORA kann die KI jetzt **komplett lokal** über Ollama laufen lassen – ohne Cloud, ohne Schlüssel. Das ist der stärkste
+Datenschutz-Hebel gegenüber Cloud-Tools (Zapier/Make/n8n) und Cloud-Chatbots.
+- Neuer KI-Anbieter **„ollama"** (lokal). Spricht denselben OpenAI-kompatiblen Endpunkt wie OpenAI, nur auf
+  `127.0.0.1` und **ohne Authorization-Header**. Ist das lokale Modell aktiv, hat es Vorrang vor Anthropic/OpenAI und
+  **braucht keine Cloud-KI-Lizenz** (es ist ja lokal).
+- **Einstellungen → „Lokales KI-Modell (Ollama)":** aktivieren, Modellname (Standard `llama3.1`), Adresse
+  (Standard `http://127.0.0.1:11434/v1/chat/completions`), Speichern. Konfiguration liegt in den App-Einstellungen
+  (kein Secret nötig).
+- Sauber getrennt: `PROVIDERS` (Schlüssel-Anbieter: anthropic/openai) vs. `CHAT_PROVIDERS` (+ ollama) und neuer Typ
+  `SecretProvider`; `SecretStatus.configured` bleibt auf die Schlüssel-Anbieter beschränkt.
+- **Ehrlich:** Werkzeug-/Aktionsnutzung gelingt am besten mit werkzeugfähigen Modellen (z. B. llama3.1); nicht jedes
+  lokale Modell kann Werkzeuge. End-to-end hier NICHT testbar (kein lokaler Ollama-Server in dieser Umgebung) – Unit 81,
+  Typecheck grün; der Code nutzt denselben getesteten OpenAI-kompatiblen Agent-Pfad.
+- Roadmap der Differenzierer: als Nächstes Audit-Export (#4), Ordner-Wächter (#2), BYOK/Kosten sichtbar (#5),
+  „Frag deine Dateien" (#3).
+
 ## Kombinierte Abläufe sichtbar gemacht (2026-11-01) ✅
 
 Rückmeldung des Inhabers: einzelne Werkzeuge wirken „zu wenig". NEXORAs eigentliche Stärke – der Agent **verkettet

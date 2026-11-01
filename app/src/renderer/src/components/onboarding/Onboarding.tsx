@@ -1,22 +1,22 @@
 import { useEffect, useState } from 'react'
 import { CheckCircle2, ExternalLink, FolderSync, Hand, HardDrive, KeyRound, MessageSquareText, PlugZap, ShieldCheck, Sparkles, Undo2 } from 'lucide-react'
-import { ApiKeySchema, type Provider, type SecretStatus } from '@shared/ipc-contract'
+import { ApiKeySchema, type SecretProvider, type SecretStatus } from '@shared/ipc-contract'
 import { CONNECTOR_CATALOG, CONNECTOR_CATEGORY_ORDER } from '../../data/connectors'
 import { useNexora } from '../../state/store'
 import { cleanError } from '../../lib/actions'
 
-const PROVIDER_LABEL: Record<Provider, string> = { anthropic: 'Claude (Anthropic)', openai: 'OpenAI' }
-const KEY_HELP: Record<Provider, string> = {
+const PROVIDER_LABEL: Record<SecretProvider, string> = { anthropic: 'Claude (Anthropic)', openai: 'OpenAI' }
+const KEY_HELP: Record<SecretProvider, string> = {
   anthropic: 'Dein Anthropic-Schlüssel beginnt mit „sk-ant-…".',
   openai: 'Dein OpenAI-Schlüssel beginnt mit „sk-…".'
 }
 // Direkt-Links zur Schlüsselseite des Anbieters (öffnen im echten Browser; Main-Prozess prüft gegen Allowlist).
-const KEY_URL: Record<Provider, string> = {
+const KEY_URL: Record<SecretProvider, string> = {
   anthropic: 'https://console.anthropic.com/settings/keys',
   openai: 'https://platform.openai.com/api-keys'
 }
 // Kurze Schritt-für-Schritt-Hilfe, damit auch Laien in Minuten zum Schlüssel kommen.
-const KEY_STEPS: Record<Provider, string[]> = {
+const KEY_STEPS: Record<SecretProvider, string[]> = {
   anthropic: ['Auf „Schlüssel holen" klicken und bei Anthropic anmelden (oder kostenlos registrieren).', 'Auf „Create Key" klicken und dem Schlüssel einen Namen geben.', 'Den Schlüssel kopieren (beginnt mit „sk-ant-…") und hier unten einfügen.'],
   openai: ['Auf „Schlüssel holen" klicken und bei OpenAI anmelden (oder registrieren).', 'Auf „Create new secret key" klicken.', 'Den Schlüssel kopieren (beginnt mit „sk-…") und hier unten einfügen.']
 }
@@ -24,7 +24,7 @@ const KEY_STEPS: Record<Provider, string[]> = {
 /** Schritt „KI-Schlüssel eintragen": damit der Kunde sofort mit NEXORA schreiben kann. Der Schlüssel wird nur im
  *  Hauptprozess verschlüsselt gespeichert (die Oberfläche sieht ihn nie). */
 function KeyStep({ onConfigured }: { onConfigured: (any: boolean) => void }) {
-  const [provider, setProvider] = useState<Provider>('anthropic')
+  const [provider, setProvider] = useState<SecretProvider>('anthropic')
   const [value, setValue] = useState('')
   const [status, setStatus] = useState<SecretStatus | null>(null)
   const [busy, setBusy] = useState(false)
@@ -76,7 +76,7 @@ function KeyStep({ onConfigured }: { onConfigured: (any: boolean) => void }) {
         </p>
       )}
       <div className="flex gap-2" role="tablist" aria-label="Anbieter">
-        {(['anthropic', 'openai'] as Provider[]).map((p) => (
+        {(['anthropic', 'openai'] as SecretProvider[]).map((p) => (
           <button
             key={p}
             type="button"

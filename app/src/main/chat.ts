@@ -12,7 +12,8 @@ export interface ChatMessage {
 
 export const DEFAULT_MODEL: Record<Provider, string> = {
   anthropic: 'claude-opus-5-5',
-  openai: 'gpt-4o'
+  openai: 'gpt-4o',
+  ollama: 'llama3.1'
 }
 
 const SYSTEM =
@@ -157,7 +158,10 @@ export async function runAgent(opts: {
   onDelta: (text: string) => void
   onTool: (label: string) => void
   exec: ToolExec
+  /** Für Ollama (lokal): abweichende, OpenAI-kompatible Adresse. */
+  baseUrl?: string
 }): Promise<string> {
+  // Ollama spricht denselben OpenAI-kompatiblen Endpunkt wie OpenAI, nur lokal und ohne Schlüssel.
   return opts.provider === 'anthropic' ? runAnthropic(opts) : runOpenai(opts)
 }
 
@@ -197,11 +201,14 @@ async function runAnthropic(o: Parameters<typeof runAgent>[0]): Promise<string> 
 
 // ---------- OpenAI ----------
 async function runOpenai(o: Parameters<typeof runAgent>[0]): Promise<string> {
-  const url = (!process.env['NEXORA_PACKAGED'] && process.env['NEXORA_CHAT_OPENAI_URL']) || 'https://api.openai.com/v1/chat/completions'
+  // Ollama (lokal) nutzt denselben OpenAI-kompatiblen Pfad, aber eine lokale Adresse und keinen Schlüssel.
+  const url = o.baseUrl ?? ((!process.env['NEXORA_PACKAGED'] && process.env['NEXORA_CHAT_OPENAI_URL']) || 'https://api.openai.com/v1/chat/completions')
+  const headers: Record<string, string> = { 'content-type': 'application/json' }
+  if (o.key) headers['Authorization'] = `Bearer ${o.key}`
   const convo: any[] = [{ role: 'system', content: SYSTEM }, ...o.messages.map((m) => ({ role: m.role, content: m.content }))]
   const tools = ALL_TOOLS.map((t) => ({ type: 'function', function: t }))
   for (let step = 0; step < MAX_STEPS; step++) {
-    const res = await fetch(url, { method: 'POST', signal: o.signal, headers: { Authorization: `Bearer ${o.key}`, 'content-type': 'application/json' }, body: JSON.stringify({ model: o.model, max_tokens: 4096, tools, messages: convo }) })
+    const res = await fetch(url, { method: 'POST', signal: o.signal, headers, body: JSON.stringify({ model: o.model, max_tokens: 4096, tools, messages: convo }) })
     if (!res.ok) throw new ChatError(providerError(res.status, await res.text().catch(() => '')))
     const json: any = await res.json()
     const msg = json.choices?.[0]?.message ?? {}

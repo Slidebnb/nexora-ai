@@ -2,7 +2,12 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { AppSettingsSchema, type AppSettings } from '../shared/ipc-contract'
 
-const DEFAULTS: AppSettings = { onboarded: false, theme: 'crimson', notifications: true }
+const DEFAULTS: AppSettings = {
+  onboarded: false,
+  theme: 'crimson',
+  notifications: true,
+  ollama: { enabled: false, model: 'llama3.1', baseUrl: 'http://127.0.0.1:11434/v1/chat/completions' }
+}
 
 /** Nicht geheime App-Einstellungen (Onboarding, Theme, Benachrichtigungen). */
 export class AppSettingsStore {

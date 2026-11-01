@@ -12,16 +12,21 @@ export const AppInfoSchema = z.object({
 })
 export type AppInfo = z.infer<typeof AppInfoSchema>
 
+// Secret-Provider (brauchen einen Schlüssel). Ollama läuft lokal ohne Schlüssel und ist KEIN Secret-Provider.
 export const PROVIDERS = ['anthropic', 'openai'] as const
+// KI-Anbieter im Chat: zusätzlich „ollama" (lokales Modell, datenschutzfreundlich, ohne Cloud).
+export const CHAT_PROVIDERS = ['anthropic', 'openai', 'ollama'] as const
 /** Zusätzlicher, nicht als API-Anbieter angezeigter Eintrag im verschlüsselten Speicher. */
 export const LICENSE_SECRET = 'license' as const
-export const ProviderSchema = z.enum(PROVIDERS)
+export const ProviderSchema = z.enum(CHAT_PROVIDERS)
 export type Provider = z.infer<typeof ProviderSchema>
+/** Anbieter, die einen Schlüssel brauchen (anthropic/openai); Ollama ist lokal und gehört NICHT dazu. */
+export type SecretProvider = (typeof PROVIDERS)[number]
 
 /** Der Renderer erfährt nur, ob ein Schlüssel hinterlegt ist – nie den Schlüssel selbst. */
 export const SecretStatusSchema = z.object({
   encryptionAvailable: z.boolean(),
-  configured: z.record(ProviderSchema, z.boolean())
+  configured: z.record(z.enum(PROVIDERS), z.boolean())
 })
 export type SecretStatus = z.infer<typeof SecretStatusSchema>
 
@@ -136,10 +141,18 @@ export type CreateTask = z.infer<typeof CreateTaskSchema>
 const Ok = z.object({ ok: z.boolean() })
 
 export const THEMES = ['crimson', 'cyan', 'violet', 'minimal'] as const
+// Lokales KI-Modell (Ollama): läuft auf dem PC, ohne Cloud/Schlüssel. Datenschutzfreundlich.
+export const OllamaSettingsSchema = z.object({
+  enabled: z.boolean(),
+  model: z.string().trim().min(1).max(100),
+  baseUrl: z.string().trim().url().max(300)
+})
+export type OllamaSettings = z.infer<typeof OllamaSettingsSchema>
 export const AppSettingsSchema = z.object({
   onboarded: z.boolean(),
   theme: z.enum(THEMES),
-  notifications: z.boolean()
+  notifications: z.boolean(),
+  ollama: OllamaSettingsSchema.optional()
 })
 export type AppSettings = z.infer<typeof AppSettingsSchema>
 

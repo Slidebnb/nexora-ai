@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { basename, join } from 'node:path'
 import { mkdirSync } from 'node:fs'
 import { app, BrowserWindow, dialog, ipcMain, safeStorage, shell, type IpcMainInvokeEvent } from 'electron'
-import { IPC_CHANNELS, type IpcChannel, type IpcRequest, type IpcResponse } from '@shared/ipc-contract'
+import { IPC_CHANNELS, type IpcChannel, type IpcRequest, type IpcResponse, type Provider } from '@shared/ipc-contract'
 import { isAllowedNavigation } from './security'
 import { SecretStore } from './secrets'
 import { DEFAULT_MODEL, runAgent, ChatError, type ChatMessage, type ToolResult } from './chat'
@@ -29,7 +29,12 @@ export function registerIpcHandlers(opts: { devServerUrl?: string; secrets: Secr
   const envKey = (provider: 'anthropic' | 'openai'): string | undefined =>
     (!app.isPackaged && process.env[provider === 'anthropic' ? 'NEXORA_TEST_ANTHROPIC_KEY' : 'NEXORA_TEST_OPENAI_KEY']) || undefined
   const chatKey = (provider: 'anthropic' | 'openai'): string | undefined => secrets.get(provider) ?? envKey(provider)
-  const activeProvider = (): 'anthropic' | 'openai' | null => (chatKey('anthropic') ? 'anthropic' : chatKey('openai') ? 'openai' : null)
+  // Lokales Modell (Ollama) hat Vorrang, wenn aktiviert: datenschutzfreundlich, ohne Schlüssel und ohne Cloud-KI-Lizenz.
+  const ollamaCfg = () => {
+    const o = settings.get().ollama
+    return o?.enabled ? o : null
+  }
+  const activeProvider = (): Provider | null => (ollamaCfg() ? 'ollama' : chatKey('anthropic') ? 'anthropic' : chatKey('openai') ? 'openai' : null)
 
   /** Lizenzprüfung im Main-Prozess (der Renderer kann sie nicht umgehen). */
   function requireFeature(feature: Feature): void {
@@ -240,14 +245,18 @@ export function registerIpcHandlers(opts: { devServerUrl?: string; secrets: Secr
 
   handle('chat:provider', () => {
     const provider = activeProvider()
-    return { provider, model: provider ? DEFAULT_MODEL[provider] : null }
+    const model = provider === 'ollama' ? (ollamaCfg()?.model ?? DEFAULT_MODEL.ollama) : provider ? DEFAULT_MODEL[provider] : null
+    return { provider, model }
   })
   handle('chat:send', async ({ id, messages }, event) => {
     const provider = activeProvider()
-    if (!provider) throw new Error('Kein KI-Schlüssel hinterlegt. Bitte unter Einstellungen einen Anthropic- oder OpenAI-Schlüssel eintragen.')
-    requireFeature('cloud_ai')
-    const key = chatKey(provider)!
-    const model = DEFAULT_MODEL[provider]
+    if (!provider) throw new Error('Kein KI-Anbieter aktiv. Bitte unter Einstellungen einen Anthropic-/OpenAI-Schlüssel eintragen oder das lokale Modell (Ollama) aktivieren.')
+    // Ollama ist lokal (kein Schlüssel, keine Cloud-KI-Lizenz nötig); Cloud-Anbieter brauchen die Fähigkeit „Cloud-KI".
+    const ol = provider === 'ollama' ? ollamaCfg() : null
+    if (!ol) requireFeature('cloud_ai')
+    const key = ol ? '' : chatKey(provider as 'anthropic' | 'openai')!
+    const model = ol ? ol.model : DEFAULT_MODEL[provider]
+    const baseUrl = ol ? ol.baseUrl : undefined
     const controller = new AbortController()
     chats.get(id)?.abort()
     chats.set(id, controller)
@@ -387,6 +396,7 @@ export function registerIpcHandlers(opts: { devServerUrl?: string; secrets: Secr
         provider,
         key,
         model,
+        baseUrl,
         messages: messages as ChatMessage[],
         signal: controller.signal,
         onDelta: (delta) => broadcast('chat:delta', { id, delta }),
