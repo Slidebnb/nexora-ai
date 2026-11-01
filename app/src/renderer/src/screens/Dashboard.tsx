@@ -12,7 +12,7 @@ import { NeuralNetwork } from '../components/hud/NeuralNetwork'
 import { GlitchOverlay } from '../components/hud/GlitchOverlay'
 import type { NexoraEvent } from '@shared/events'
 import { formatUsd } from '../lib/format'
-import { KpiGrid } from '../components/kpi/KpiGrid'
+import { CommandCenter } from '../components/kpi/CommandCenter'
 import { TaskComposer } from '../components/task/TaskComposer'
 import { AgentsPanel } from '../components/agents/AgentsPanel'
 import { ActivityFeed } from '../components/feed/ActivityFeed'
@@ -34,7 +34,7 @@ export function Dashboard() {
     <div className="relative grid h-full min-h-[760px] grid-rows-[auto_minmax(0,1fr)_220px] gap-3 p-4">
       <NeuralNetwork opacity={0.1} />
       <GlitchOverlay />
-      <KpiGrid />
+      <CommandCenter />
       <div className={cx('grid min-h-0 gap-3', rightOpen ? 'grid-cols-[minmax(0,1fr)_340px]' : 'grid-cols-1')}>
         <div className="grid min-h-0 min-w-0 grid-rows-[minmax(0,1fr)_auto] gap-3 xl:grid-cols-[minmax(0,1fr)_340px] xl:grid-rows-1">
           <div data-testid="orbit-panel" className="panel hud-grid relative min-h-[200px] overflow-hidden p-3">

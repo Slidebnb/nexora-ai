@@ -458,6 +458,22 @@ sofort startklar (behebt „man wusste nicht, wie man anfängt / man konnte nich
 - Tests: Unit 73, Typecheck grün. E2E-Erststart-Test an den neuen Ablauf angepasst (ein Schritt mehr: KI-Schlüssel wird
   im Test übersprungen; Abschluss über „Übungsordner").
 
+## Kommandozentrale-Optik aus cyberpunk-dashboard portiert (2026-11-01) ✅
+
+Auf ausdrückliche Anweisung des Inhabers: die command-center-Kartenanordnung aus raheem-dotgit/cyberpunk-dashboard
+(@8ec7ec7 master, `app/command-center/page.tsx`) **übernommen und an unseren Stack portiert** (React 19 + Tailwind 4
++ Theme-Tokens statt Next.js/shadcn/neutral+orange). Neue Komponente `components/kpi/CommandCenter.tsx`, ersetzt im
+Dashboard die schlichte `KpiGrid`-Zeile.
+- Karten: Vorgänge (aktiv/erledigt/fehlgeschlagen + Agentenliste), Aktivität (letzte Ereignisse), Status (Wireframe-
+  Kugel + Freigaben/Kosten), Kostenverlauf (Gitter + Linie), Ergebnisse.
+- **Ehrlich (zwingend):** Die Vorlage zeigt erfundene Spionage-Dummy-Daten (Agenten „VENGEFUL SPIRIT", Missionen,
+  Chat-Logs, feste Zahlen). Diese wurden **vollständig durch echte Zustandsdaten ersetzt** (`selectKpis`,
+  `selectAgents`, `selectCostSeries`, echte Ereignisse) – es werden keine Werte erfunden. Attribution in
+  `THIRD_PARTY_NOTICES.md` (Repo/Commit, „im README als MIT bezeichnet, keine LICENSE-Datei").
+- `orbit-panel` und restliches Dashboard unverändert (E2E gültig). Tests: Unit 81, Typecheck grün.
+- **Lizenz-Hinweis (ehrlich):** Das Repo hat keine LICENSE-Datei, nur „MIT" im README. Übernahme auf Anweisung des
+  Inhabers; Empfehlung weiterhin: schriftliche Zustimmung des Autors archivieren.
+
 ## Konnektoren-Katalog stark erweitert + ausgelagert (2026-11-01) ✅
 
 Auf Wunsch des Inhabers („sehr viele Konnektoren, schön, auch im Onboarding"): Der Dienste-Katalog wurde von ~18 auf
