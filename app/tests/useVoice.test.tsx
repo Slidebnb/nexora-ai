@@ -52,3 +52,33 @@ describe('useVoice – Sprachmodus einfach & lokal', () => {
     expect(onFinal).toHaveBeenCalledWith('Räum den Ordner auf')
   })
 })
+
+describe('useVoice – Cloud (Voicestudio, OpenAI)', () => {
+  it('liest Antworten über die Cloud-Stimme vor (speakCloud + Audio-Wiedergabe)', async () => {
+    const speakCloud = vi.fn().mockResolvedValue({ audioBase64: 'QUJD', mime: 'audio/mpeg' })
+    vi.stubGlobal('nexora', { speakCloud })
+    let played: string | undefined
+    vi.stubGlobal(
+      'Audio',
+      function (this: Record<string, unknown>, src: string) {
+        played = src
+        this.play = vi.fn().mockResolvedValue(undefined)
+        this.pause = vi.fn()
+      }
+    )
+    const { result } = renderHook(() => useVoice(() => {}, { cloud: true }))
+    expect(result.current.ttsSupported).toBe(true)
+    await act(async () => {
+      result.current.speak('Hallo zusammen')
+      await Promise.resolve()
+    })
+    expect(speakCloud).toHaveBeenCalledWith('Hallo zusammen')
+    expect(played).toBe('data:audio/mpeg;base64,QUJD')
+  })
+
+  it('meldet Diktat als nicht verfügbar, wenn kein Mikrofon-Zugriff besteht', () => {
+    vi.stubGlobal('navigator', {})
+    const { result } = renderHook(() => useVoice(() => {}, { cloud: true }))
+    expect(result.current.sttSupported).toBe(false)
+  })
+})

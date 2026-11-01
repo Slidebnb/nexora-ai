@@ -10,6 +10,7 @@ import { Loader2, Mic, Square, X } from 'lucide-react'
 import type { ChatMessage } from '@shared/ipc-contract'
 import { useVoice } from '../lib/useVoice'
 import { cleanError } from '../lib/actions'
+import { useNexora } from '../state/store'
 
 type Phase = 'idle' | 'listening' | 'thinking' | 'speaking'
 
@@ -30,6 +31,8 @@ export function VoiceMode({ onClose }: { onClose: () => void }) {
   const active = useRef(true)
   const idCounter = useRef(0)
   const activeId = useRef<string | null>(null)
+  const cloud = !!useNexora((s) => s.settings?.voice?.enabled)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
 
   // Sichtbare Agent-Schritte: dieselben „arbeitet …"-Hinweise wie im Chat, hier unter dem Orb.
   useEffect(() => {
@@ -39,24 +42,50 @@ export function VoiceMode({ onClose }: { onClose: () => void }) {
     })
   }, [])
 
-  const speak = useCallback((text: string, done: () => void) => {
-    if (typeof window === 'undefined' || !('speechSynthesis' in window) || !text) {
-      done()
-      return
-    }
-    try {
-      window.speechSynthesis.cancel()
-      const u = new SpeechSynthesisUtterance(text)
-      u.lang = 'de-DE'
-      const v = window.speechSynthesis.getVoices().find((x) => x.lang?.toLowerCase().startsWith('de'))
-      if (v) u.voice = v
-      u.onend = done
-      u.onerror = done
-      window.speechSynthesis.speak(u)
-    } catch {
-      done()
-    }
-  }, [])
+  const speak = useCallback(
+    (text: string, done: () => void) => {
+      if (!text) {
+        done()
+        return
+      }
+      // Cloud (Voicestudio): Premium-Stimme über OpenAI; sonst System-Stimme.
+      if (cloud) {
+        window.nexora.speakCloud(text).then(
+          ({ audioBase64, mime }) => {
+            try {
+              audioRef.current?.pause()
+              const audio = new Audio(`data:${mime};base64,${audioBase64}`)
+              audioRef.current = audio
+              audio.onended = done
+              audio.onerror = done
+              void audio.play().catch(done)
+            } catch {
+              done()
+            }
+          },
+          () => done()
+        )
+        return
+      }
+      if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+        done()
+        return
+      }
+      try {
+        window.speechSynthesis.cancel()
+        const u = new SpeechSynthesisUtterance(text)
+        u.lang = 'de-DE'
+        const v = window.speechSynthesis.getVoices().find((x) => x.lang?.toLowerCase().startsWith('de'))
+        if (v) u.voice = v
+        u.onend = done
+        u.onerror = done
+        window.speechSynthesis.speak(u)
+      } catch {
+        done()
+      }
+    },
+    [cloud]
+  )
 
   const listenRef = useRef<() => void>(() => {})
 
@@ -90,7 +119,7 @@ export function VoiceMode({ onClose }: { onClose: () => void }) {
 
   const voice = useVoice((t) => {
     if (t.trim()) void ask(t)
-  })
+  }, { cloud })
 
   const listen = useCallback(() => {
     setError(null)
@@ -104,6 +133,7 @@ export function VoiceMode({ onClose }: { onClose: () => void }) {
       active.current = false
       voice.stop()
       try {
+        audioRef.current?.pause()
         window.speechSynthesis?.cancel()
       } catch {
         /* egal */

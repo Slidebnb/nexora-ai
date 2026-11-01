@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { KeyRound, ShieldCheck, ShieldOff, FlaskConical, PlugZap } from 'lucide-react'
-import { PROVIDERS, type AppInfo, type Provider, type SecretProvider, type SecretStatus } from '@shared/ipc-contract'
+import { OPENAI_VOICES, PROVIDERS, type AppInfo, type Provider, type SecretProvider, type SecretStatus, type VoiceSettings } from '@shared/ipc-contract'
 import { useNexora } from '../state/store'
 import { enterDemo, exitDemo } from '../demo/controller'
 import { ScreenHeader } from './ScreenHeader'
@@ -182,6 +182,73 @@ function OllamaSection() {
   )
 }
 
+const VOICE_LABEL: Record<(typeof OPENAI_VOICES)[number], string> = {
+  alloy: 'Alloy (neutral)',
+  echo: 'Echo (ruhig)',
+  fable: 'Fable (warm)',
+  onyx: 'Onyx (tief)',
+  nova: 'Nova (freundlich)',
+  shimmer: 'Shimmer (hell)'
+}
+const VOICE_DEFAULT: VoiceSettings = { enabled: false, voice: 'alloy', autoSpeak: true }
+
+/** Voicestudio: Premium-Stimmen + Diktat über OpenAI. Audio/Text geht mit Kosten an die Cloud. */
+function VoicestudioSection() {
+  const appSettings = useNexora((s) => s.settings)
+  const saveSettings = useNexora((s) => s.saveSettings)
+  const cfg = appSettings?.voice ?? VOICE_DEFAULT
+  const [msg, setMsg] = useState<string | null>(null)
+  const store = (voice: VoiceSettings) =>
+    saveSettings({ voice }).then(() => setMsg('Gespeichert.'), (e: unknown) => setMsg(cleanError(e)))
+
+  return (
+    <section className="panel p-5" aria-labelledby="voice-title">
+      <h2 id="voice-title" className="hud-label">Voicestudio (Stimme & Diktat)</h2>
+      <p className="mt-2 text-sm text-text-2">
+        Natürliche Stimmen: NEXORA liest Antworten vor und du kannst per Mikrofon sprechen. Nutzt deinen
+        hinterlegten OpenAI-Schlüssel. Ehrlich: Text und aufgenommenes Audio werden zur Verarbeitung an OpenAI
+        gesendet, es fallen API-Kosten an. Ohne Aktivierung bleibt alles per Tastatur.
+      </p>
+      <label className="mt-3 flex items-start gap-2 text-sm text-text">
+        <input
+          type="checkbox"
+          checked={cfg.enabled}
+          onChange={(e) => void store({ ...cfg, enabled: e.target.checked })}
+          className="mt-1 accent-[var(--color-accent)]"
+          aria-label="Voicestudio nutzen"
+        />
+        <span>Voicestudio nutzen (Premium-Stimmen + Diktat über OpenAI)</span>
+      </label>
+      <div className="mt-3 grid gap-2 sm:grid-cols-2">
+        <label className="grid gap-1 text-xs text-text-2">
+          Stimme
+          <select
+            className="input text-sm"
+            value={cfg.voice}
+            onChange={(e) => void store({ ...cfg, voice: e.target.value as VoiceSettings['voice'] })}
+            aria-label="Stimme"
+          >
+            {OPENAI_VOICES.map((v) => (
+              <option key={v} value={v}>{VOICE_LABEL[v]}</option>
+            ))}
+          </select>
+        </label>
+        <label className="flex items-start gap-2 self-end pb-2 text-xs text-text-2">
+          <input
+            type="checkbox"
+            checked={cfg.autoSpeak}
+            onChange={(e) => void store({ ...cfg, autoSpeak: e.target.checked })}
+            className="mt-0.5 accent-[var(--color-accent)]"
+            aria-label="Antworten automatisch vorlesen"
+          />
+          <span>Antworten im Chat automatisch vorlesen</span>
+        </label>
+      </div>
+      {msg && <p className="mt-2 text-xs text-text-2">{msg}</p>}
+    </section>
+  )
+}
+
 export function Settings() {
   const demoMode = useNexora((s) => s.demoMode)
   const expertMode = useNexora((s) => s.expertMode)
@@ -231,6 +298,7 @@ export function Settings() {
         </section>
 
         <OllamaSection />
+        <VoicestudioSection />
 
         <section className="panel p-5" aria-labelledby="demo-title">
           <h2 id="demo-title" className="hud-label">Demo-Modus</h2>

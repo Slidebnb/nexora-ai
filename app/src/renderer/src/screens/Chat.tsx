@@ -34,10 +34,12 @@ export function Chat() {
   const idRef = useRef<string | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
-  const [speakReplies, setSpeakReplies] = useState(true)
+  const settings = useNexora((s) => s.settings)
+  const voiceCloud = !!settings?.voice?.enabled
+  const [speakReplies, setSpeakReplies] = useState(settings?.voice?.autoSpeak ?? true)
   const [voiceMode, setVoiceMode] = useState(false)
   const sendRef = useRef<(t: string, spoken: boolean) => void>(() => {})
-  const voice = useVoice((t) => sendRef.current(t, true))
+  const voice = useVoice((t) => sendRef.current(t, true), { cloud: voiceCloud })
 
   const refreshProvider = useCallback(() => {
     window.nexora.getChatProvider().then((p) => {

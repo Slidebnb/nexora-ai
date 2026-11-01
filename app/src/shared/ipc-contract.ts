@@ -148,11 +148,21 @@ export const OllamaSettingsSchema = z.object({
   baseUrl: z.string().trim().url().max(300)
 })
 export type OllamaSettings = z.infer<typeof OllamaSettingsSchema>
+/** Voicestudio: Premium-Stimmen von OpenAI (TTS) + Diktat (Whisper). Nutzt den vorhandenen OpenAI-Schlüssel. */
+export const OPENAI_VOICES = ['alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer'] as const
+export const VoiceSettingsSchema = z.object({
+  enabled: z.boolean(),
+  voice: z.enum(OPENAI_VOICES),
+  /** KI-Antworten im Chat automatisch vorlesen. */
+  autoSpeak: z.boolean()
+})
+export type VoiceSettings = z.infer<typeof VoiceSettingsSchema>
 export const AppSettingsSchema = z.object({
   onboarded: z.boolean(),
   theme: z.enum(THEMES),
   notifications: z.boolean(),
-  ollama: OllamaSettingsSchema.optional()
+  ollama: OllamaSettingsSchema.optional(),
+  voice: VoiceSettingsSchema.optional()
 })
 export type AppSettings = z.infer<typeof AppSettingsSchema>
 
@@ -256,6 +266,9 @@ export const IPC_CHANNELS = {
   'chat:provider': { request: z.undefined(), response: z.object({ provider: ProviderSchema.nullable(), model: z.string().nullable() }) },
   'chat:send': { request: z.object({ id: z.string().min(1).max(64), messages: z.array(ChatMessageSchema).min(1).max(100) }), response: z.object({ text: z.string(), model: z.string(), provider: ProviderSchema }) },
   'chat:cancel': { request: z.object({ id: z.string().min(1).max(64) }), response: Ok },
+  // Voicestudio (OpenAI): Text -> Audio (TTS) und Audio -> Text (Whisper). Schlüssel bleibt im Main-Prozess.
+  'voice:speak': { request: z.object({ text: z.string().trim().min(1).max(4000) }), response: z.object({ audioBase64: z.string(), mime: z.string() }) },
+  'voice:transcribe': { request: z.object({ audioBase64: z.string().min(1), mime: z.string().max(100) }), response: z.object({ text: z.string() }) },
   'email:get': { request: z.undefined(), response: SmtpStatusSchema },
   'email:set': { request: SmtpConfigSchema, response: SmtpStatusSchema },
   'email:clear': { request: z.undefined(), response: SmtpStatusSchema },

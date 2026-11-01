@@ -6,6 +6,7 @@ import { IPC_CHANNELS, type IpcChannel, type IpcRequest, type IpcResponse, type 
 import { isAllowedNavigation } from './security'
 import { SecretStore } from './secrets'
 import { DEFAULT_MODEL, runAgent, ChatError, type ChatMessage, type ToolResult } from './chat'
+import { synthesize, transcribe, VoiceError } from './voice'
 import type { WorkerHub } from './worker/hub'
 import type { Feature, LicenseManager } from './license'
 import { createPracticeFolder, type AppSettingsStore } from './appSettings'
@@ -435,6 +436,33 @@ export function registerIpcHandlers(opts: { devServerUrl?: string; secrets: Secr
     chats.get(id)?.abort()
     chats.delete(id)
     return { ok: true }
+  })
+
+  /** Voicestudio: nur wenn aktiviert, Cloud-KI-Lizenz vorhanden und OpenAI-Schlüssel hinterlegt. */
+  function voiceKey(): string {
+    if (!settings.get().voice?.enabled) throw new Error('Voicestudio ist nicht aktiviert (Einstellungen → Voicestudio).')
+    requireFeature('cloud_ai')
+    const key = chatKey('openai')
+    if (!key) throw new Error('Voicestudio benötigt einen OpenAI-Schlüssel (Einstellungen → KI-Schlüssel).')
+    return key
+  }
+
+  handle('voice:speak', async ({ text }) => {
+    const key = voiceKey()
+    try {
+      return await synthesize(text, key, settings.get().voice?.voice ?? 'alloy')
+    } catch (err) {
+      throw err instanceof VoiceError ? new Error(err.message) : err
+    }
+  })
+
+  handle('voice:transcribe', async ({ audioBase64, mime }) => {
+    const key = voiceKey()
+    try {
+      return await transcribe(audioBase64, mime, key)
+    } catch (err) {
+      throw err instanceof VoiceError ? new Error(err.message) : err
+    }
   })
 
   handle('files:reveal', ({ artifactId }) => {

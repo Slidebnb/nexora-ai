@@ -513,6 +513,24 @@ eines Ordners. Nutzen für Kunden: „Was steht in meinen Unterlagen?" ohne jede
 - **Ehrlich:** Nutzt Cloud-KI (Anthropic/OpenAI) mit Freigabe. Vollständig lokal ginge nur über Ollama – das läuft
   heute im Hauptprozess, nicht im Worker; eine worker-seitige lokale Variante ist bewusst noch nicht gebaut.
 
+## Voicestudio – Stimme & Diktat (OpenAI) (2026-11-01) ✅
+
+Kunden können jetzt **mit der KI sprechen** und bekommen **gesprochene Antworten**. Zwei Betriebsarten im selben Hook
+(`useVoice`): lokal (kostenlos, Browser-Stimme/-Erkennung, bisher) und neu **Cloud-Premium über OpenAI** (Wahl des
+Nutzers: „Beides" + „Cloud-Premium").
+- **TTS**: `/v1/audio/speech` (Modell `gpt-4o-mini-tts`) → MP3; **STT**: `/v1/audio/transcriptions` (`whisper-1`).
+  Beides im **Main-Prozess** (`src/main/voice.ts`); der OpenAI-Schlüssel verlässt den Main-Prozess nie, der Renderer
+  bekommt nur base64-Audio bzw. Text. Neue IPC-Kanäle `voice:speak` / `voice:transcribe`.
+- **Diktat** nimmt das Mikrofon per `MediaRecorder` auf und schickt das Audio an Whisper; **Vorlesen** spielt das
+  MP3 ab. Im Chat (Mic-Button + Vorlese-Umschalter) und im Live-Sprachmodus (`VoiceMode`, Freisprech-Schleife).
+- **Einstellungen → Voicestudio**: aktivieren, Stimme wählen (alloy/echo/fable/onyx/nova/shimmer), „Antworten
+  automatisch vorlesen". Gate: nur mit Cloud-KI-Lizenz **und** hinterlegtem OpenAI-Schlüssel.
+- **Ehrlich / Datenschutz:** Text und aufgenommenes Audio gehen zur Verarbeitung an OpenAI, es fallen API-Kosten an.
+  Ohne Aktivierung bleibt alles bei Tastatur/lokal. Die Aktivierung in den Einstellungen ist die bewusste Zustimmung
+  (wie beim Cloud-Chat), nicht pro Satz – sonst wäre Sprache unbedienbar.
+- Tests: `voice.test.ts` (TTS/STT-Request-Form, Fehlerfall) + Cloud-Fälle in `useVoice.test.tsx`. App 87 Tests,
+  Typecheck grün. End-to-end mit echtem Mikrofon/echtem Key hier nicht testbar.
+
 ## Kombinierte Abläufe sichtbar gemacht (2026-11-01) ✅
 
 Rückmeldung des Inhabers: einzelne Werkzeuge wirken „zu wenig". NEXORAs eigentliche Stärke – der Agent **verkettet

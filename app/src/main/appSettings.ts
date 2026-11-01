@@ -6,7 +6,8 @@ const DEFAULTS: AppSettings = {
   onboarded: false,
   theme: 'crimson',
   notifications: true,
-  ollama: { enabled: false, model: 'llama3.1', baseUrl: 'http://127.0.0.1:11434/v1/chat/completions' }
+  ollama: { enabled: false, model: 'llama3.1', baseUrl: 'http://127.0.0.1:11434/v1/chat/completions' },
+  voice: { enabled: false, voice: 'alloy', autoSpeak: true }
 }
 
 /** Nicht geheime App-Einstellungen (Onboarding, Theme, Benachrichtigungen). */
