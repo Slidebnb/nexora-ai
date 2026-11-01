@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { CheckCircle2, ExternalLink, FolderSync, Hand, HardDrive, KeyRound, MessageSquareText, PlugZap, ShieldCheck, Sparkles, Undo2 } from 'lucide-react'
 import { ApiKeySchema, type Provider, type SecretStatus } from '@shared/ipc-contract'
+import { CONNECTOR_CATALOG, CONNECTOR_CATEGORY_ORDER } from '../../data/connectors'
 import { useNexora } from '../../state/store'
 import { cleanError } from '../../lib/actions'
 
@@ -208,6 +209,34 @@ export function Onboarding() {
           <p className="flex gap-3 text-text-2">
             <PlugZap className="size-5 shrink-0 text-accent-hi" aria-hidden /> Weitere Dienste (E-Mail-Konto, Kalender, Slack …) verbindest du jederzeit unter „Einstellungen → Verbindungen".
           </p>
+        </div>
+      )
+    },
+    {
+      title: 'Deine Dienste verbinden',
+      body: (
+        <div className="space-y-3 text-sm text-text-2">
+          <p className="flex items-center gap-2 text-text">
+            <PlugZap className="size-5 text-accent-hi" aria-hidden /> NEXORA arbeitet mit über {CONNECTOR_CATALOG.length - 1} Diensten.
+          </p>
+          <p>Verbinde deine Dienste – danach kann NEXORA sie direkt im Gespräch nutzen (jede Aktion mit deiner Freigabe). Optional, du kannst es jederzeit nachholen.</p>
+          <div className="grid grid-cols-2 gap-1.5">
+            {CONNECTOR_CATEGORY_ORDER.filter((c) => c !== 'Sonstiges').map((cat) => {
+              const n = CONNECTOR_CATALOG.filter((t) => t.category === cat).length
+              return (
+                <div key={cat} className="flex items-center justify-between rounded-md border border-line bg-panel-2 px-2.5 py-1.5 text-xs">
+                  <span className="truncate text-text">{cat}</span>
+                  <span className="ml-2 shrink-0 text-text-2">{n}</span>
+                </div>
+              )
+            })}
+          </div>
+          <div className="flex justify-center pt-1">
+            <button type="button" className="btn-secondary" onClick={() => { finish(); setScreen('settings') }}>
+              <PlugZap className="size-4" aria-hidden /> Jetzt Dienste verbinden
+            </button>
+          </div>
+          <p className="text-center text-xs">… oder mit „Weiter" erst später verbinden.</p>
         </div>
       )
     },

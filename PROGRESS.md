@@ -471,8 +471,10 @@ Auf Wunsch des Inhabers („sehr viele Konnektoren, schön, auch im Onboarding")
   Verbinden-Maske (MCP-Adresse/Token). Echtes Ein-Klick-OAuth bräuchte den unter „Weg 3" zurückgestellten Server.
 - Tests: Unit **81** (+4 Katalog-Integrität: ≥40 Dienste, eindeutige IDs, gültige Kategorien, „Eigener Dienst"),
   Typecheck grün.
-- **Offen/nächster Schritt:** denselben Katalog als schönen Schritt ins Onboarding einbinden; „Tipps"-Framing im Chat
-  (statt technischer Workflow-Begriffe).
+- **Onboarding-Integration erledigt:** Neuer Erststart-Schritt „Deine Dienste verbinden" zeigt die Kategorien samt
+  Dienste-Anzahl („über 40 Dienste") und bietet „Jetzt Dienste verbinden" (führt zu Einstellungen → Verbindungen) oder
+  „Weiter" zum späteren Verbinden. E2E-Erststart-Test um diesen Schritt ergänzt. Unit 81, Typecheck grün.
+- **Offen/nächster Schritt:** „Tipps"-Framing im Chat (statt technischer Workflow-Begriffe) weiter schärfen.
 
 ## Workflows deutlich erweitert: „Fertige Aufgaben"-Sammlung (2026-11-01) ✅
 
