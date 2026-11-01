@@ -107,6 +107,14 @@ function ApiKeyRow({ provider, configured, disabled, onChange }: { provider: Sec
 
 const OLLAMA_DEFAULT = { enabled: false, model: 'llama3.1', baseUrl: 'http://127.0.0.1:11434/v1/chat/completions' }
 
+/** Empfohlene lokale Modelle mit Werkzeug-Unterstützung (ein Klick setzt den Namen; „ollama pull <name>" lädt es). */
+const OLLAMA_PRESETS: { name: string; label: string }[] = [
+  { name: 'hermes3', label: 'Hermes 3 (Nous)' },
+  { name: 'llama3.1', label: 'Llama 3.1' },
+  { name: 'qwen2.5', label: 'Qwen 2.5' },
+  { name: 'mistral', label: 'Mistral' }
+]
+
 /** Lokales KI-Modell (Ollama): läuft auf dem PC, ohne Cloud/Schlüssel – maximaler Datenschutz. */
 function OllamaSection() {
   const appSettings = useNexora((s) => s.settings)
@@ -124,7 +132,12 @@ function OllamaSection() {
       <p className="mt-2 text-sm text-text-2">
         Maximaler Datenschutz: NEXORA nutzt ein Modell, das komplett auf deinem PC läuft – ohne Cloud, ohne Schlüssel. Voraussetzung:
         Ollama ist installiert (ollama.com) und ein Modell geladen. Werkzeuge/Aktionen gelingen am besten mit werkzeugfähigen Modellen
-        wie „llama3.1". Ist das lokale Modell aktiv, hat es Vorrang vor Anthropic/OpenAI.
+        wie „Hermes 3" oder „llama3.1". Ist das lokale Modell aktiv, hat es Vorrang vor Anthropic/OpenAI.
+      </p>
+      <p className="mt-2 rounded-md bg-panel-2 p-2 text-xs text-text-2">
+        Modell holen (einmalig, im Terminal/PowerShell): <code className="font-mono text-text">ollama pull hermes3</code>. Danach unten
+        „Hermes 3" wählen, Haken setzen und speichern. Hinweis: Hermes ist ein eigenständiges lokales Modell – es läuft nicht über die
+        Claude-/Cloud-Schnittstelle, sondern vollständig auf deinem PC.
       </p>
       <label className="mt-3 flex items-start gap-2 text-sm text-text">
         <input
@@ -140,6 +153,19 @@ function OllamaSection() {
         <label className="grid gap-1 text-xs text-text-2">
           Modellname
           <input className="input text-sm" value={model} onChange={(e) => setModel(e.target.value)} maxLength={100} placeholder="llama3.1" aria-label="Modellname" />
+          <span className="mt-1 flex flex-wrap gap-1">
+            {OLLAMA_PRESETS.map((p) => (
+              <button
+                key={p.name}
+                type="button"
+                onClick={() => setModel(p.name)}
+                aria-pressed={model === p.name}
+                className={`rounded-full border px-2 py-0.5 text-[11px] ${model === p.name ? 'border-accent text-accent' : 'border-line text-text-2 hover:text-text'}`}
+              >
+                {p.label}
+              </button>
+            ))}
+          </span>
         </label>
         <label className="grid gap-1 text-xs text-text-2">
           Adresse (OpenAI-kompatibel)

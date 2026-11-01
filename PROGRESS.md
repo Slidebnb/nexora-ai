@@ -489,6 +489,11 @@ Datenschutz-Hebel gegenüber Cloud-Tools (Zapier/Make/n8n) und Cloud-Chatbots.
 - **Ehrlich:** Werkzeug-/Aktionsnutzung gelingt am besten mit werkzeugfähigen Modellen (z. B. llama3.1); nicht jedes
   lokale Modell kann Werkzeuge. End-to-end hier NICHT testbar (kein lokaler Ollama-Server in dieser Umgebung) – Unit 81,
   Typecheck grün; der Code nutzt denselben getesteten OpenAI-kompatiblen Agent-Pfad.
+- **Hermes als Ein-Klick-Voreinstellung (2026-11-01):** In den Einstellungen gibt es jetzt Modell-Chips
+  (Hermes 3 / Llama 3.1 / Qwen 2.5 / Mistral), die den Modellnamen setzen, plus Hinweis `ollama pull hermes3`.
+  Wichtig/ehrlich: Hermes (Nous Research) ist ein **eigenständiges lokales Modell** – es läuft über Ollama, **nicht**
+  über die Claude-/Cloud-Schnittstelle (das sind verschiedene Modelle, kein „Hermes über Claude API"). Kein neuer
+  Code-Pfad nötig, da der Ollama-Provider jeden OpenAI-kompatiblen Modellnamen akzeptiert.
 - Roadmap der Differenzierer: Ollama (#1) ✅, Ordner-Wächter (#2) ✅, „Frag deine Dateien" (#3) ✅; offen:
   Audit-Export (#4), BYOK/Kosten sichtbar (#5).
 
