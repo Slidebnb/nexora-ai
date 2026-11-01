@@ -21,11 +21,22 @@ body,
   height: 100%;
 }
 
+html {
+  /* Dunkles Theme: native Steuerelemente (Auswahllisten, Scrollbars, Autofill) passend einfärben */
+  color-scheme: dark;
+}
+
 body {
   margin: 0;
   background: var(--color-base);
   color: var(--color-text);
   font-family: 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif;
+}
+
+/* Klickbare Schaltflächen zeigen den Hand-Cursor (Chromium-Standard für <button> ist sonst der Pfeil) */
+button:not(:disabled),
+[role='tab']:not([aria-disabled='true']) {
+  cursor: pointer;
 }
 
 @media (prefers-reduced-motion: reduce) {

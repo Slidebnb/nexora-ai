@@ -458,6 +458,19 @@ sofort startklar (behebt „man wusste nicht, wie man anfängt / man konnte nich
 - Tests: Unit 73, Typecheck grün. E2E-Erststart-Test an den neuen Ablauf angepasst (ein Schritt mehr: KI-Schlüssel wird
   im Test übersprungen; Abschluss über „Übungsordner").
 
+## Weg 3: BYOK maximal bequem + UI-Politur (2026-11-01) ✅
+
+Entscheidung des Inhabers: vorerst **kein Server/Hosting**, dafür den vorhandenen BYOK-Weg so einfach wie möglich und
+die Oberfläche polieren.
+- **Onboarding (Schlüssel-Schritt):** pro Anbieter eine Schritt-für-Schritt-Anleitung und ein „Schlüssel holen"-Knopf,
+  der die richtige Anbieterseite im echten Browser öffnet. Neuer, eng begrenzter IPC-Kanal `shell:openExternal`
+  (nur https, nur Allowlist-Hosts – console.anthropic.com, platform.openai.com, docs/help – im Main geprüft).
+- **UI-Politur (via UI/UX-Checkliste):** Die Style-Grundlage war bereits solide (Design-Tokens, globales
+  `prefers-reduced-motion`, Fokusringe, Disabled-States, 4 Themes). Gezielt ergänzt: `color-scheme: dark` (native
+  Auswahllisten/Scrollbars/Autofill passend zum dunklen Theme) und `cursor: pointer` für Schaltflächen/Tabs
+  (Chromium-Standard für `<button>` ist sonst der Pfeil). Risikoarm, global wirksam.
+- Tests: Unit 73, Typecheck grün.
+
 **CEO-Statusnotiz:** Alle kundenseitigen Systeme sind damit umgesetzt: Chat-Herzstück, vollständiger Agent (Recherche,
 E-Mail-Entwurf/-Versand, Ordner, PDF, Konnektoren), sichtbare Schritte in Chat + Sprachmodus, Freigaben überall,
 visuelle Dienste-Sammlung, geführte Einrichtung. **Bewusst zurückgestellt** bleibt die Echtzeit-Sprache (OpenAI
