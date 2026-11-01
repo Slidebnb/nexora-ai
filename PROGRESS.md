@@ -383,3 +383,22 @@ als flüchtige Textzeile, die mit der Antwort verschwindet.
 - Tests: Unit 73, Typecheck grün. Der bestehende E2E-Agent-Test bleibt gültig (prüft den Schritttext „Recherchiert im
   Web", jetzt in der Schrittkarte).
 
+## Visuelle Dienste-Sammlung („Connection wie bei Claude") (2026-11-01) ✅
+
+Auf Wunsch des Inhabers: die Einrichtung kommt später; jetzt zählt die **benutzerfreundliche, visuelle Sammlung** der
+Dienste, die Kunden verbinden können – ähnlich der Konnektor-Übersicht in Claude.
+- **Erweiterte Galerie (Einstellungen → „Verbindungen"):** benannte Dienste in Kategorien – E-Mail & Kalender
+  (Gmail, Outlook/Microsoft 365, Google-/Outlook-Kalender), Dateien & Cloud (Google Drive, OneDrive, Dropbox),
+  Chat & Team (Slack, Teams, Discord), Produktivität (Notion, Trello, Asana, Linear), Entwicklung (GitHub, GitLab),
+  Vertrieb & CRM (HubSpot, Salesforce) und „Eigener Dienst".
+- **Suche:** Textfeld „Dienst suchen" filtert die Sammlung live; passende Dienste erscheinen gruppiert nach Kategorie.
+- Klick auf eine Karte öffnet die Verbinden-Maske, vorbelegt mit Name und dienstspezifischem Hinweis, wo die
+  MCP-Adresse herkommt. Verbinden/Testen/Werkzeuge/Entfernen wie zuvor; Token verschlüsselt (DPAPI).
+- **Ehrlich:** kein automatisches „Fake-Verbinden" – jede Karte ist eine Starthilfe zur echten MCP-Adresse; es werden
+  **keine fremden Markenlogos** ausgeliefert, die Symbole sind neutrale Platzhalter. Diese Sammlung wird später in die
+  geführte Einrichtung eingebettet.
+- Nebenbei behoben: Der „Verbindung testen"-Knopf des E-Mail-Kontos heißt jetzt **„E-Mail-Verbindung testen"**, damit
+  er nicht mit dem KI-Verbindungstest kollidiert (eindeutiger Name, stabiler E2E-Test).
+- Tests: Unit 73, Typecheck grün. Bestehender E2E-Konnektor-Test bleibt gültig (Karte „Eigener Dienst" → verbinden →
+  testen → Werkzeuge → entfernen).
+

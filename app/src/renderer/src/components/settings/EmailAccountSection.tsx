@@ -175,7 +175,7 @@ export function EmailAccountSection() {
                 </button>
               )}
               <button type="button" className="btn-secondary" disabled={busy || !current} onClick={() => void test()} title={current ? 'Verbindung prüfen' : 'Erst speichern, dann prüfen'}>
-                Verbindung testen
+                E-Mail-Verbindung testen
               </button>
               <button type="submit" className="btn-primary" disabled={busy || !host.trim() || !user.trim() || !fromAddr.trim() || (!current && !password)}>
                 <Send className="size-4" aria-hidden /> Speichern

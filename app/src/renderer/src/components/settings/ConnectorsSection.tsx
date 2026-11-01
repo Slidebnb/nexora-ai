@@ -1,40 +1,78 @@
 /*
- * Verbindungen (Konnektoren über MCP): der Kunde fügt einen Dienst per Adresse hinzu, testet ihn und
- * sieht dessen Werkzeuge. Verändernde/sendende Aktionen laufen später nur über eine Freigabe (Workflow
- * connector_action). Das Token wird im sicheren Speicher des Betriebssystems gehalten, nie im Klartext.
+ * Verbindungen (Konnektoren über MCP): eine visuelle Sammlung der Dienste, die der Kunde einrichten kann –
+ * ähnlich der Konnektor-Übersicht in Claude. Der Kunde wählt einen Dienst, fügt ihn per Adresse hinzu, testet ihn
+ * und sieht dessen Werkzeuge. Verändernde/sendende Aktionen laufen nur über eine Freigabe (Workflow connector_action).
+ * Das Token wird im sicheren Speicher des Betriebssystems gehalten, nie im Klartext.
+ *
+ * Ehrlich: Es gibt keine universelle Adresse je Dienst. Jede Karte ist eine Starthilfe, die die Maske vorbelegt und
+ * erklärt, wo die MCP-Adresse des jeweiligen Dienstes herkommt – kein automatisches „Fake-Verbinden“. Es werden keine
+ * fremden Markenlogos ausgeliefert; die Symbole sind neutrale Platzhalter.
  */
-import { useCallback, useEffect, useState } from 'react'
-import { Boxes, Calendar, FolderOpen, Link2, Mail, MessageSquare, Plug, RefreshCw, Trash2, Wrench } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import {
+  Boxes, Briefcase, Calendar, Cloud, Code2, FolderOpen, GitBranch, Hash, Link2, ListTodo, Mail, MessageSquare,
+  Plug, RefreshCw, Search, Target, Trash2, Users, Wrench
+} from 'lucide-react'
 import type { Connector, ConnectorTool } from '@shared/ipc-contract'
 import { useNexora } from '../../state/store'
 import { cleanError } from '../../lib/actions'
+
+type Category = 'E-Mail & Kalender' | 'Dateien & Cloud' | 'Chat & Team' | 'Produktivität' | 'Entwicklung' | 'Vertrieb & CRM' | 'Sonstiges'
 
 interface Template {
   id: string
   name: string
   icon: typeof Mail
+  category: Category
   desc: string
   urlPlaceholder: string
   hint: string
   needsToken: boolean
 }
 
-// Vorlagen für die Galerie. Ehrlich: Es gibt keine universelle Adresse je Dienst – jede Vorlage füllt die
-// Maske vor und sagt, wo du die MCP-Adresse deines Dienstes bekommst. Kein automatisches „Fake-Verbinden“.
+const MCP_URL = 'https://…/mcp'
+// Standard-Hinweis für Dienste mit Zugangstoken. {dienst} wird ersetzt.
+const tokenHint = (dienst: string) =>
+  `Füge die MCP-Adresse eines ${dienst}-MCP-Dienstes ein (vom Anbieter oder deinem selbst betriebenen MCP-Server). Meist mit Zugangstoken.`
+
+// Sammlung der einrichtbaren Dienste. Benannt sind echte Dienste; verbunden wird über deren MCP-Adresse.
 const CATALOG: Template[] = [
-  { id: 'email', name: 'E-Mail', icon: Mail, desc: 'Gmail, Outlook u. a. über einen MCP-Dienst', urlPlaceholder: 'https://…/mcp', hint: 'Füge die MCP-Adresse deines E-Mail-Dienstes ein (vom Anbieter oder deinem selbst betriebenen MCP-Server). Meist mit Zugangstoken.', needsToken: true },
-  { id: 'calendar', name: 'Kalender', icon: Calendar, desc: 'Google/Outlook-Kalender über MCP', urlPlaceholder: 'https://…/mcp', hint: 'Adresse des Kalender-MCP-Dienstes einfügen. Meist mit Zugangstoken.', needsToken: true },
-  { id: 'files', name: 'Dateien / Cloud', icon: FolderOpen, desc: 'Drive, OneDrive u. a. über MCP', urlPlaceholder: 'https://…/mcp', hint: 'Adresse des Datei-/Cloud-MCP-Dienstes einfügen.', needsToken: true },
-  { id: 'chat', name: 'Chat / Messaging', icon: MessageSquare, desc: 'Slack, Teams u. a. über MCP', urlPlaceholder: 'https://…/mcp', hint: 'Adresse des Chat-MCP-Dienstes einfügen.', needsToken: true },
-  { id: 'custom', name: 'Eigener Dienst', icon: Boxes, desc: 'Beliebiger MCP-Server per Adresse', urlPlaceholder: 'https://…/mcp oder http://127.0.0.1:…/mcp', hint: 'Adresse eines beliebigen MCP-Servers. Lokale Server (127.0.0.1) dürfen http sein.', needsToken: false }
+  { id: 'gmail', name: 'Gmail', icon: Mail, category: 'E-Mail & Kalender', desc: 'Google-Mail über MCP', urlPlaceholder: MCP_URL, hint: tokenHint('Gmail'), needsToken: true },
+  { id: 'outlook', name: 'Outlook / Microsoft 365', icon: Mail, category: 'E-Mail & Kalender', desc: 'Microsoft-Mail über MCP', urlPlaceholder: MCP_URL, hint: tokenHint('Outlook/Microsoft-365'), needsToken: true },
+  { id: 'gcal', name: 'Google Kalender', icon: Calendar, category: 'E-Mail & Kalender', desc: 'Termine über MCP', urlPlaceholder: MCP_URL, hint: tokenHint('Google-Kalender'), needsToken: true },
+  { id: 'outlook-cal', name: 'Outlook-Kalender', icon: Calendar, category: 'E-Mail & Kalender', desc: 'Microsoft-Termine über MCP', urlPlaceholder: MCP_URL, hint: tokenHint('Outlook-Kalender'), needsToken: true },
+
+  { id: 'gdrive', name: 'Google Drive', icon: FolderOpen, category: 'Dateien & Cloud', desc: 'Dateien in Google Drive', urlPlaceholder: MCP_URL, hint: tokenHint('Google-Drive'), needsToken: true },
+  { id: 'onedrive', name: 'OneDrive', icon: Cloud, category: 'Dateien & Cloud', desc: 'Dateien in OneDrive', urlPlaceholder: MCP_URL, hint: tokenHint('OneDrive'), needsToken: true },
+  { id: 'dropbox', name: 'Dropbox', icon: Cloud, category: 'Dateien & Cloud', desc: 'Dateien in Dropbox', urlPlaceholder: MCP_URL, hint: tokenHint('Dropbox'), needsToken: true },
+
+  { id: 'slack', name: 'Slack', icon: Hash, category: 'Chat & Team', desc: 'Nachrichten in Slack', urlPlaceholder: MCP_URL, hint: tokenHint('Slack'), needsToken: true },
+  { id: 'teams', name: 'Microsoft Teams', icon: Users, category: 'Chat & Team', desc: 'Chats in Teams', urlPlaceholder: MCP_URL, hint: tokenHint('Microsoft-Teams'), needsToken: true },
+  { id: 'discord', name: 'Discord', icon: MessageSquare, category: 'Chat & Team', desc: 'Nachrichten in Discord', urlPlaceholder: MCP_URL, hint: tokenHint('Discord'), needsToken: true },
+
+  { id: 'notion', name: 'Notion', icon: ListTodo, category: 'Produktivität', desc: 'Seiten & Datenbanken', urlPlaceholder: MCP_URL, hint: tokenHint('Notion'), needsToken: true },
+  { id: 'trello', name: 'Trello', icon: ListTodo, category: 'Produktivität', desc: 'Boards & Karten', urlPlaceholder: MCP_URL, hint: tokenHint('Trello'), needsToken: true },
+  { id: 'asana', name: 'Asana', icon: ListTodo, category: 'Produktivität', desc: 'Aufgaben & Projekte', urlPlaceholder: MCP_URL, hint: tokenHint('Asana'), needsToken: true },
+  { id: 'linear', name: 'Linear', icon: ListTodo, category: 'Produktivität', desc: 'Tickets & Projekte', urlPlaceholder: MCP_URL, hint: tokenHint('Linear'), needsToken: true },
+
+  { id: 'github', name: 'GitHub', icon: Code2, category: 'Entwicklung', desc: 'Repos, Issues, PRs', urlPlaceholder: MCP_URL, hint: tokenHint('GitHub'), needsToken: true },
+  { id: 'gitlab', name: 'GitLab', icon: GitBranch, category: 'Entwicklung', desc: 'Repos & Pipelines', urlPlaceholder: MCP_URL, hint: tokenHint('GitLab'), needsToken: true },
+
+  { id: 'hubspot', name: 'HubSpot', icon: Briefcase, category: 'Vertrieb & CRM', desc: 'Kontakte & Deals', urlPlaceholder: MCP_URL, hint: tokenHint('HubSpot'), needsToken: true },
+  { id: 'salesforce', name: 'Salesforce', icon: Target, category: 'Vertrieb & CRM', desc: 'CRM-Daten', urlPlaceholder: MCP_URL, hint: tokenHint('Salesforce'), needsToken: true },
+
+  { id: 'custom', name: 'Eigener Dienst', icon: Boxes, category: 'Sonstiges', desc: 'Beliebiger MCP-Server per Adresse', urlPlaceholder: 'https://…/mcp oder http://127.0.0.1:…/mcp', hint: 'Adresse eines beliebigen MCP-Servers. Lokale Server (127.0.0.1) dürfen http sein.', needsToken: false }
 ]
 
-function AddForm({ onAdded, disabled, template }: { onAdded: () => void; disabled: boolean; template: Template | null }) {
-  const [name, setName] = useState(template && template.id !== 'custom' ? template.name : '')
+const CATEGORY_ORDER: Category[] = ['E-Mail & Kalender', 'Dateien & Cloud', 'Chat & Team', 'Produktivität', 'Entwicklung', 'Vertrieb & CRM', 'Sonstiges']
+
+function AddForm({ onAdded, disabled, template }: { onAdded: () => void; disabled: boolean; template: Template }) {
+  const [name, setName] = useState(template.id !== 'custom' ? template.name : '')
   const [url, setUrl] = useState('')
   const [token, setToken] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const Icon = template.icon
   return (
     <form
       className="mt-3 grid gap-2 rounded-md border border-line p-3"
@@ -55,12 +93,15 @@ function AddForm({ onAdded, disabled, template }: { onAdded: () => void; disable
         }
       }}
     >
+      <p className="flex items-center gap-2 text-sm font-medium text-text">
+        <Icon className="size-4 text-accent-hi" aria-hidden /> {template.name} verbinden
+      </p>
       <div className="grid gap-2 sm:grid-cols-2">
         <input className="input text-sm" placeholder="Name, z. B. „Mein Kalender“" aria-label="Name des Dienstes" value={name} onChange={(e) => setName(e.target.value)} maxLength={80} />
-        <input className="input text-sm" placeholder={template ? template.urlPlaceholder : 'Adresse (https://…/mcp)'} aria-label="Adresse des Dienstes" value={url} onChange={(e) => setUrl(e.target.value)} maxLength={2000} />
+        <input className="input text-sm" placeholder={template.urlPlaceholder} aria-label="Adresse des Dienstes" value={url} onChange={(e) => setUrl(e.target.value)} maxLength={2000} />
       </div>
       <input className="input font-mono text-sm" type="password" autoComplete="off" placeholder="Zugangstoken (optional)" aria-label="Zugangstoken" value={token} onChange={(e) => setToken(e.target.value)} maxLength={4000} />
-      {template && <p className="text-xs text-text-2">{template.hint}</p>}
+      <p className="text-xs text-text-2">{template.hint}</p>
       {error && <p role="alert" className="text-xs text-danger">{error}</p>}
       <div className="flex items-center justify-between gap-2">
         <p className="text-xs text-text-2">Für entfernte Dienste ist HTTPS nötig. Das Token wird verschlüsselt gespeichert.</p>
@@ -147,12 +188,20 @@ export function ConnectorsSection() {
   const [list, setList] = useState<Connector[]>([])
   const [error, setError] = useState<string | null>(null)
   const [pick, setPick] = useState<Template | null>(null)
+  const [query, setQuery] = useState('')
 
   const load = useCallback(() => {
     if (!connected) return
     window.nexora.listConnectors().then(setList, (e: unknown) => setError(cleanError(e)))
   }, [connected])
   useEffect(() => load(), [load])
+
+  // Gefilterte Sammlung, nach Kategorie gruppiert.
+  const groups = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    const matches = CATALOG.filter((t) => !q || t.name.toLowerCase().includes(q) || t.desc.toLowerCase().includes(q) || t.category.toLowerCase().includes(q))
+    return CATEGORY_ORDER.map((cat) => ({ cat, items: matches.filter((t) => t.category === cat) })).filter((g) => g.items.length > 0)
+  }, [query])
 
   return (
     <section className="panel p-5" aria-labelledby="connectors-title">
@@ -175,25 +224,52 @@ export function ConnectorsSection() {
             <p className="mt-3 text-sm text-text-2">Noch keine Verbindung. Wähle unten einen Dienst zum Verbinden.</p>
           )}
 
-          <p className="mt-4 text-xs uppercase tracking-wider text-text-2/70">Dienst verbinden</p>
-          <div className="mt-2 grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-2" aria-label="Verfügbare Dienste">
-            {CATALOG.map((t) => {
-              const Icon = t.icon
-              const activeCard = pick?.id === t.id
-              return (
-                <button
-                  key={t.id}
-                  type="button"
-                  onClick={() => setPick(t)}
-                  className={`flex flex-col items-start gap-1.5 rounded-md border p-3 text-left transition-colors ${activeCard ? 'border-accent bg-accent/10' : 'border-line hover:border-accent/60 hover:bg-panel-2'}`}
-                >
-                  <Icon className="size-5 text-accent-hi" aria-hidden />
-                  <span className="text-sm font-medium text-text">{t.name}</span>
-                  <span className="text-[11px] text-text-2">{t.desc}</span>
-                </button>
-              )
-            })}
+          <div className="mt-4 flex items-center justify-between gap-2">
+            <p className="text-xs uppercase tracking-wider text-text-2/70">Dienst verbinden</p>
+            <label className="input flex items-center gap-2 py-0" aria-label="Dienste durchsuchen">
+              <Search className="size-3.5 text-text-2" aria-hidden />
+              <input
+                type="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Dienst suchen …"
+                aria-label="Dienst suchen"
+                className="w-40 bg-transparent py-1.5 text-sm text-text outline-none placeholder:text-text-2/60"
+                maxLength={60}
+              />
+            </label>
           </div>
+
+          {groups.length === 0 ? (
+            <p className="mt-3 text-sm text-text-2">Kein passender Dienst. Wähle „Eigener Dienst“, um eine beliebige MCP-Adresse einzutragen.</p>
+          ) : (
+            <div className="mt-2 space-y-4" aria-label="Verfügbare Dienste">
+              {groups.map(({ cat, items }) => (
+                <div key={cat}>
+                  <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wider text-text-2/70">{cat}</p>
+                  <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-2">
+                    {items.map((t) => {
+                      const Icon = t.icon
+                      const activeCard = pick?.id === t.id
+                      return (
+                        <button
+                          key={t.id}
+                          type="button"
+                          onClick={() => setPick(t)}
+                          className={`flex flex-col items-start gap-1.5 rounded-md border p-3 text-left transition-colors ${activeCard ? 'border-accent bg-accent/10' : 'border-line hover:border-accent/60 hover:bg-panel-2'}`}
+                        >
+                          <Icon className="size-5 text-accent-hi" aria-hidden />
+                          <span className="text-sm font-medium text-text">{t.name}</span>
+                          <span className="text-[11px] text-text-2">{t.desc}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
           {pick && <AddForm key={pick.id} onAdded={() => { load(); setPick(null) }} disabled={!connected} template={pick} />}
         </>
       )}
