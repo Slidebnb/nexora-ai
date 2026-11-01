@@ -47,7 +47,9 @@ export interface NexoraApi {
   cancelChat: (id: string) => Promise<{ ok: boolean }>
   exportAudit: () => Promise<{ path: string; runs: number } | null>
   speakCloud: (text: string) => Promise<{ audioBase64: string; mime: string }>
-  transcribeCloud: (audioBase64: string, mime: string) => Promise<{ text: string }>
+  transcribeCloud: (audioBase64: string, mime: string, durationMs?: number) => Promise<{ text: string }>
+  getUsage: () => Promise<{ chatUsd: number; voiceUsd: number }>
+  onUsageUpdate: (cb: (u: { chatUsd: number; voiceUsd: number }) => void) => () => void
   onChatDelta: (cb: (d: ChatDelta) => void) => () => void
   onWorkerEvent: (cb: (event: unknown) => void) => () => void
   onWorkerStatus: (cb: (status: WorkerStatus) => void) => () => void

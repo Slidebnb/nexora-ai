@@ -176,6 +176,8 @@ export async function runAgent(opts: {
   exec: ToolExec
   /** Für Ollama (lokal): abweichende, OpenAI-kompatible Adresse. */
   baseUrl?: string
+  /** Token-Verbrauch je Anbieter-Antwort (für die Kostenanzeige). */
+  onUsage?: (inputTokens: number, outputTokens: number) => void
 }): Promise<string> {
   // Ollama spricht denselben OpenAI-kompatiblen Endpunkt wie OpenAI, nur lokal und ohne Schlüssel.
   return opts.provider === 'anthropic' ? runAnthropic(opts) : runOpenai(opts)
@@ -196,6 +198,7 @@ async function runAnthropic(o: Parameters<typeof runAgent>[0]): Promise<string> 
     const res = await fetch(url, { method: 'POST', signal: o.signal, headers: { 'x-api-key': o.key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' }, body: JSON.stringify(body) })
     if (!res.ok) throw new ChatError(providerError(res.status, await res.text().catch(() => '')))
     const json: any = await res.json()
+    if (json.usage) o.onUsage?.(Number(json.usage.input_tokens) || 0, Number(json.usage.output_tokens) || 0)
     const content: any[] = json.content ?? []
     const toolUses = content.filter((b) => b.type === 'tool_use')
     const textBlocks = content.filter((b) => b.type === 'text').map((b) => b.text).join('')
@@ -227,6 +230,7 @@ async function runOpenai(o: Parameters<typeof runAgent>[0]): Promise<string> {
     const res = await fetch(url, { method: 'POST', signal: o.signal, headers, body: JSON.stringify({ model: o.model, max_tokens: 4096, tools, messages: convo }) })
     if (!res.ok) throw new ChatError(providerError(res.status, await res.text().catch(() => '')))
     const json: any = await res.json()
+    if (json.usage) o.onUsage?.(Number(json.usage.prompt_tokens) || 0, Number(json.usage.completion_tokens) || 0)
     const msg = json.choices?.[0]?.message ?? {}
     const calls = msg.tool_calls ?? []
     if (!calls.length) {

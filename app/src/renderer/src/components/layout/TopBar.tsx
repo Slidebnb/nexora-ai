@@ -20,6 +20,16 @@ export function TopBar() {
   const worker = useNexora((s) => s.worker)
   const expert = useNexora((s) => s.expertMode)
   const [now, setNow] = useState(() => new Date())
+  // Chat + Voicestudio laufen im Main-Prozess; ihre geschätzten Kosten kommen getrennt dazu (live per Push).
+  const [usage, setUsage] = useState({ chatUsd: 0, voiceUsd: 0 })
+  useEffect(() => {
+    const api = window.nexora
+    if (!api?.getUsage) return
+    api.getUsage().then(setUsage, () => undefined)
+    return api.onUsageUpdate(setUsage)
+  }, [])
+  const extraUsd = demoMode ? 0 : usage.chatUsd + usage.voiceUsd
+  const totalUsd = kpis.costUsd + extraUsd
   const setScreen = useNexora((s) => s.setScreen)
   const [license, setLicense] = useState<LicenseStatus | null>(null)
 
@@ -63,9 +73,12 @@ export function TopBar() {
         <span className="inline-flex items-center gap-1.5" title="Deine Daten bleiben auf deinem PC, außer du erlaubst ausdrücklich Cloud-KI.">
           <HardDrive className="size-3.5" aria-hidden /> {expert ? <><span className="max-xl:hidden">Verarbeitung:</span> lokal</> : 'Läuft auf deinem PC'}
         </span>
-        {(expert || kpis.costUsd > 0) && (
-        <span className="inline-flex items-center gap-1.5" title="Geschätzte API-Kosten deiner Aufgaben auf deinem eigenen Schlüssel (BYOK). Abgerechnet wird direkt vom KI-Anbieter – NEXORA schlägt nichts auf. Chat-Nachrichten sind noch nicht enthalten.">
-          <Cpu className="size-3.5" aria-hidden /> <span className="max-xl:hidden">API-Kosten:</span> {formatUsd(kpis.costUsd)}
+        {(expert || totalUsd > 0) && (
+        <span
+          className="inline-flex items-center gap-1.5"
+          title={`Geschätzte API-Kosten auf deinem eigenen Schlüssel (BYOK) – Aufgaben ${formatUsd(kpis.costUsd)}, Chat ${formatUsd(demoMode ? 0 : usage.chatUsd)}, Voicestudio ${formatUsd(demoMode ? 0 : usage.voiceUsd)}. Abgerechnet wird direkt vom KI-Anbieter – NEXORA schlägt nichts auf.`}
+        >
+          <Cpu className="size-3.5" aria-hidden /> <span className="max-xl:hidden">API-Kosten:</span> {formatUsd(totalUsd)}
           {demoMode && kpis.costUsd > 0 && <span className="text-warning">(simuliert)</span>}
         </span>
         )}

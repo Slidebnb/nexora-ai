@@ -83,7 +83,11 @@ function local(ts: string): string {
   return Number.isNaN(d.getTime()) ? ts : d.toLocaleString('de-DE', { timeZone: 'Europe/Berlin' })
 }
 
-export function buildAudit(events: NexoraEvent[], now = new Date()): { markdown: string; csv: string; runs: number } {
+export function buildAudit(
+  events: NexoraEvent[],
+  now = new Date(),
+  usage: { chatUsd: number; voiceUsd: number } = { chatUsd: 0, voiceUsd: 0 }
+): { markdown: string; csv: string; runs: number } {
   const runs = collect(events)
   const rows = runs.map((r) =>
     [local(r.start), local(r.end), r.title, r.agent, r.result, r.approvals.join(' | '), r.files.join(', '), String(r.costUsd), r.runId].map(cell).join(';')
@@ -91,11 +95,14 @@ export function buildAudit(events: NexoraEvent[], now = new Date()): { markdown:
   // BOM, damit Excel Umlaute korrekt anzeigt; CRLF für Windows.
   const csv = '﻿' + [HEADER.join(';'), ...rows].join('\r\n') + '\r\n'
 
-  const total = runs.reduce((s, r) => s + r.costUsd, 0)
+  const tasksUsd = runs.reduce((s, r) => s + r.costUsd, 0)
+  const total = tasksUsd + usage.chatUsd + usage.voiceUsd
   const md: string[] = [
     '# NEXORA – Aktivitätsprotokoll',
     '',
     `Erstellt am ${now.toLocaleString('de-DE', { timeZone: 'Europe/Berlin' })} · ${runs.length} Aufgabe(n) · geschätzte KI-Kosten gesamt: ${total.toFixed(4)} USD`,
+    '',
+    `Davon Aufgaben: ${tasksUsd.toFixed(4)} USD · Chat: ${usage.chatUsd.toFixed(4)} USD · Voicestudio: ${usage.voiceUsd.toFixed(4)} USD (Schätzung; abgerechnet wird direkt von deinem KI-Anbieter).`,
     '',
     'Enthält jede von NEXORA ausgeführte Aufgabe mit allen Freigabe-Entscheidungen. Verändernde oder sendende Aktionen liefen nur nach Freigabe. Demo-Läufe sind nicht enthalten.',
     ''

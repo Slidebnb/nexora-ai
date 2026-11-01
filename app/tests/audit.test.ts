@@ -65,4 +65,11 @@ describe('Audit-Export (#4)', () => {
     expect(audit.markdown).toContain('Ordner „Downloads" aufräumen')
     expect(audit.markdown).toContain('abgelehnt')
   })
+
+  it('nennt zusätzlich die Kosten von Chat und Voicestudio und rechnet sie in die Gesamtsumme ein', () => {
+    const withUsage = buildAudit(events, new Date('2026-11-01T12:00:00Z'), { chatUsd: 0.5, voiceUsd: 0.25 })
+    expect(withUsage.markdown).toContain('Chat: 0.5000 USD')
+    expect(withUsage.markdown).toContain('Voicestudio: 0.2500 USD')
+    expect(withUsage.markdown).toContain('gesamt: 0.7623 USD')
+  })
 })

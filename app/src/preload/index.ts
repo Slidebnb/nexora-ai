@@ -1,7 +1,7 @@
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron'
 import type { NexoraApi } from './api'
 
-function subscribe<T>(channel: 'worker:event' | 'worker:status' | 'chat:delta', cb: (payload: T) => void): () => void {
+function subscribe<T>(channel: 'worker:event' | 'worker:status' | 'chat:delta' | 'usage:update', cb: (payload: T) => void): () => void {
   const listener = (_e: IpcRendererEvent, payload: T) => cb(payload)
   ipcRenderer.on(channel, listener)
   return () => ipcRenderer.removeListener(channel, listener)
@@ -53,7 +53,9 @@ const api: NexoraApi = {
   cancelChat: (id) => ipcRenderer.invoke('chat:cancel', { id }),
   exportAudit: () => ipcRenderer.invoke('audit:export'),
   speakCloud: (text) => ipcRenderer.invoke('voice:speak', { text }),
-  transcribeCloud: (audioBase64, mime) => ipcRenderer.invoke('voice:transcribe', { audioBase64, mime }),
+  transcribeCloud: (audioBase64, mime, durationMs) => ipcRenderer.invoke('voice:transcribe', { audioBase64, mime, durationMs }),
+  getUsage: () => ipcRenderer.invoke('usage:get'),
+  onUsageUpdate: (cb) => subscribe('usage:update', cb),
   onChatDelta: (cb) => subscribe('chat:delta', cb),
   onWorkerEvent: (cb) => subscribe('worker:event', cb),
   onWorkerStatus: (cb) => subscribe('worker:status', cb)

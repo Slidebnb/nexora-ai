@@ -8,6 +8,7 @@ import { SecretStore } from './secrets'
 import { DEFAULT_MODEL, runAgent, ChatError, type ChatMessage, type ToolResult } from './chat'
 import { synthesize, transcribe, VoiceError } from './voice'
 import { buildAudit } from './audit'
+import { chatCostUsd, sttCostUsd, ttsCostUsd, UsageStore } from './usage'
 import type { WorkerHub } from './worker/hub'
 import type { Feature, LicenseManager } from './license'
 import { createPracticeFolder, type AppSettingsStore } from './appSettings'
@@ -25,6 +26,11 @@ export function createSecretStore(): SecretStore {
 
 export function registerIpcHandlers(opts: { devServerUrl?: string; secrets: SecretStore; hub: WorkerHub; license: LicenseManager; settings: AppSettingsStore; broadcast: (channel: string, payload: unknown) => void }): void {
   const { devServerUrl, secrets, hub, license, settings, broadcast } = opts
+  // Kosten von Chat und Voicestudio (laufen im Main-Prozess, nicht als Worker-Aufgabe).
+  const usage = new UsageStore(join(app.getPath('userData'), 'usage.json'))
+  const addUsage = (kind: 'chat' | 'voice', usd: number): void => {
+    if (usd > 0) broadcast('usage:update', usage.add(kind, usd))
+  }
 
   const chats = new Map<string, AbortController>()
   // Nur Entwicklungsversion (E2E): Test-Schlüssel aus Umgebungsvariable, nie in der gepackten App.
@@ -76,6 +82,7 @@ export function registerIpcHandlers(opts: { devServerUrl?: string; secrets: Secr
 
   handle('worker:status', () => hub.status)
   handle('worker:history', () => hub.history)
+  handle('usage:get', () => usage.get())
 
   // Audit-Export: Nutzer wählt den Zielordner im nativen Dialog; es wird nie eine vorhandene Datei überschrieben.
   handle('audit:export', async (_req, event) => {
@@ -84,7 +91,7 @@ export function registerIpcHandlers(opts: { devServerUrl?: string; secrets: Secr
     const result = win ? await dialog.showOpenDialog(win, options) : await dialog.showOpenDialog(options)
     const dir = result.filePaths[0]
     if (result.canceled || !dir) return null
-    const audit = buildAudit(hub.history)
+    const audit = buildAudit(hub.history, new Date(), usage.get())
     const day = new Date().toISOString().slice(0, 10)
     let base = join(dir, `NEXORA-Aktivitaetsprotokoll-${day}`)
     for (let i = 2; existsSync(`${base}.md`) || existsSync(`${base}.csv`); i++) base = join(dir, `NEXORA-Aktivitaetsprotokoll-${day} (${i})`)
@@ -440,6 +447,7 @@ export function registerIpcHandlers(opts: { devServerUrl?: string; secrets: Secr
         signal: controller.signal,
         onDelta: (delta) => broadcast('chat:delta', { id, delta }),
         onTool: (label) => broadcast('chat:delta', { id, step: label }),
+        onUsage: (tin, tout) => addUsage('chat', chatCostUsd(provider, model, tin, tout)),
         exec
       })
       return { text, model, provider }
@@ -468,16 +476,21 @@ export function registerIpcHandlers(opts: { devServerUrl?: string; secrets: Secr
   handle('voice:speak', async ({ text }) => {
     const key = voiceKey()
     try {
-      return await synthesize(text, key, settings.get().voice?.voice ?? 'alloy')
+      const res = await synthesize(text, key, settings.get().voice?.voice ?? 'alloy')
+      addUsage('voice', ttsCostUsd(text.length))
+      return res
     } catch (err) {
       throw err instanceof VoiceError ? new Error(err.message) : err
     }
   })
 
-  handle('voice:transcribe', async ({ audioBase64, mime }) => {
+  handle('voice:transcribe', async ({ audioBase64, mime, durationMs }) => {
     const key = voiceKey()
     try {
-      return await transcribe(audioBase64, mime, key)
+      const res = await transcribe(audioBase64, mime, key)
+      // Whisper rechnet je Minute ab; ohne Dauerangabe mindestens eine Sekunde.
+      addUsage('voice', sttCostUsd(durationMs ?? 1000))
+      return res
     } catch (err) {
       throw err instanceof VoiceError ? new Error(err.message) : err
     }

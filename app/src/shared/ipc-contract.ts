@@ -217,6 +217,9 @@ export type ChatMessage = z.infer<typeof ChatMessageSchema>
 export const ChatDeltaSchema = z.object({ id: z.string(), delta: z.string().optional(), step: z.string().max(200).optional() })
 export type ChatDelta = z.infer<typeof ChatDeltaSchema>
 
+export const UsageSchema = z.object({ chatUsd: z.number().nonnegative(), voiceUsd: z.number().nonnegative() })
+export type Usage = z.infer<typeof UsageSchema>
+
 export const IPC_CHANNELS = {
   'app:getInfo': { request: z.undefined(), response: AppInfoSchema },
   'secrets:status': { request: z.undefined(), response: SecretStatusSchema },
@@ -270,7 +273,12 @@ export const IPC_CHANNELS = {
   'audit:export': { request: z.undefined(), response: z.object({ path: z.string(), runs: z.number().int().nonnegative() }).nullable() },
   // Voicestudio (OpenAI): Text -> Audio (TTS) und Audio -> Text (Whisper). Schlüssel bleibt im Main-Prozess.
   'voice:speak': { request: z.object({ text: z.string().trim().min(1).max(4000) }), response: z.object({ audioBase64: z.string(), mime: z.string() }) },
-  'voice:transcribe': { request: z.object({ audioBase64: z.string().min(1), mime: z.string().max(100) }), response: z.object({ text: z.string() }) },
+  'voice:transcribe': {
+    request: z.object({ audioBase64: z.string().min(1), mime: z.string().max(100), durationMs: z.number().int().nonnegative().max(3_600_000).optional() }),
+    response: z.object({ text: z.string() })
+  },
+  // Geschätzte Kosten von Chat und Voicestudio (Main-Prozess, eigener Schlüssel).
+  'usage:get': { request: z.undefined(), response: UsageSchema },
   'email:get': { request: z.undefined(), response: SmtpStatusSchema },
   'email:set': { request: SmtpConfigSchema, response: SmtpStatusSchema },
   'email:clear': { request: z.undefined(), response: SmtpStatusSchema },
@@ -280,7 +288,7 @@ export const IPC_CHANNELS = {
 } as const
 
 /** Kanäle, auf denen der Main-Prozess an den Renderer sendet (kein invoke). */
-export const PUSH_CHANNELS = ['worker:event', 'worker:status', 'chat:delta'] as const
+export const PUSH_CHANNELS = ['worker:event', 'worker:status', 'chat:delta', 'usage:update'] as const
 
 export type IpcChannel = keyof typeof IPC_CHANNELS
 export type IpcRequest<C extends IpcChannel> = z.infer<(typeof IPC_CHANNELS)[C]['request']>

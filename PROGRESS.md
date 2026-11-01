@@ -524,8 +524,15 @@ CSV gegen Excel-Formel-Einschleusung geschützt. Quelle: die vom Worker beim Sta
 
 **#5 BYOK-Kosten:** Zentrale Schätzung `llm.price()` aus Token je Modell; `pdf_analysis`, `draft_emails` und
 `ask_files` melden jetzt `cost_updated` (vorher fehlten ihre Kosten in der Anzeige ganz). TopBar-Tooltip ehrlich:
-geschätzt, eigener Schlüssel, kein Aufschlag. **Offen:** Chat-Nachrichten und Voicestudio werden noch nicht
-mitgezählt (laufen im Main-Prozess außerhalb der Worker-Ereignisse).
+geschätzt, eigener Schlüssel, kein Aufschlag.
+
+**Nachtrag – Chat & Voicestudio mitgezählt:** `runAgent` meldet je Anbieter-Antwort die Token (`onUsage`;
+Anthropic `input/output_tokens`, OpenAI `prompt/completion_tokens`). Neues `src/main/usage.ts`: Schätzpreise
+(Chat je Modell, Ollama = 0 $; Vorlesen 15 $/1 Mio. Zeichen; Diktat 0,006 $/Min. – Dauer misst der Renderer) und
+dauerhafter Zähler `userData/usage.json`. Änderungen gehen live per Push `usage:update` an die TopBar; dort steht
+jetzt die **Gesamtsumme** (Aufgaben + Chat + Voice, Aufschlüsselung im Tooltip). Der Audit-Export nennt die
+Summen ebenfalls. TDD: `usage.test.ts` (8) + Audit-Fall (erst rot, dann grün). App 100 ✓, Typecheck + Build grün.
+Ehrlich: Preise sind Schätzungen; die Rechnung des Anbieters ist maßgeblich.
 
 TDD: `test_llm_price.py` (4), Kosten-Assertions in 3 Worker-Cloud-Tests (erst rot, dann grün), `audit.test.ts` (4).
 Worker 100 ✓ / 1 skip, App 91 ✓, Typecheck + Produktions-Build grün.

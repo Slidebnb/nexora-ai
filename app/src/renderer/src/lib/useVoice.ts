@@ -103,6 +103,7 @@ export function useVoice(onFinal: (text: string) => void, opts: VoiceOptions = {
     const mime = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : ''
     const recorder = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined)
     const chunks: Blob[] = []
+    const startedAt = Date.now()
     mediaRef.current = { recorder, stream, chunks }
     recorder.ondataavailable = (e) => {
       if (e.data.size > 0) chunks.push(e.data)
@@ -116,7 +117,7 @@ export function useVoice(onFinal: (text: string) => void, opts: VoiceOptions = {
       setBusy(true)
       try {
         const base64 = await blobToBase64(blob)
-        const res = await window.nexora.transcribeCloud(base64, blob.type)
+        const res = await window.nexora.transcribeCloud(base64, blob.type, Math.min(3_600_000, Date.now() - startedAt))
         if (res.text) onFinalRef.current(res.text)
         else setError('Ich habe nichts verstanden. Bitte erneut versuchen.')
       } catch (e) {
