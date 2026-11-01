@@ -14,12 +14,13 @@ import csv
 import json
 import os
 import sys
+import time
 from collections import Counter
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import ClassVar
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 
 from ..runner import RunCancelled, RunContext, Workflow, WorkflowError
 
@@ -147,6 +148,8 @@ def journal_path(data_dir: Path, run_id: str) -> Path:
 
 class OrganizeInput(BaseModel):
     folder: str
+    # Ordner-Wächter: nur Dateien einsortieren, die jünger als so viele Stunden sind (None = alle, normales Aufräumen).
+    newer_than_hours: int | None = Field(default=None, ge=1, le=8760)
 
     @field_validator("folder")
     @classmethod
@@ -163,7 +166,8 @@ class OrganizeFolder(Workflow):
 
     def title(self, data: BaseModel) -> str:
         assert isinstance(data, OrganizeInput)
-        return f"Ordner „{Path(data.folder).name}“ sortieren"
+        base = f"Ordner „{Path(data.folder).name}“ sortieren"
+        return f"{base} (Wächter: neue Dateien der letzten {data.newer_than_hours} h)" if data.newer_than_hours else base
 
     def resource_key(self, data: BaseModel) -> str | None:
         assert isinstance(data, OrganizeInput)
@@ -176,6 +180,9 @@ class OrganizeFolder(Workflow):
 
         ctx.step_started("scan", "Ordnerinhalt einlesen")
         entries = scan(root)
+        if data.newer_than_hours is not None:
+            cutoff = time.time() - data.newer_than_hours * 3600
+            entries = [e for e in entries if e.stat(follow_symlinks=False).st_mtime >= cutoff]
         ctx.step_succeeded("scan", f"{len(entries)} Dateien gefunden")
         if not entries:
             for sid, title in (("plan", "Sortiervorschlag erstellen"), ("move", "Dateien verschieben"), ("verify", "Ergebnis prüfen")):

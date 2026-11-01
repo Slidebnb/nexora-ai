@@ -458,6 +458,19 @@ sofort startklar (behebt „man wusste nicht, wie man anfängt / man konnte nich
 - Tests: Unit 73, Typecheck grün. E2E-Erststart-Test an den neuen Ablauf angepasst (ein Schritt mehr: KI-Schlüssel wird
   im Test übersprungen; Abschluss über „Übungsordner").
 
+## Ordner-Wächter (Grundfähigkeit) (2026-11-01) ✅ Backend
+
+Differenzierer #2: `organize_folder` kann jetzt als **Wächter** laufen – optionaler Parameter `newer_than_hours`
+sortiert nur Dateien ein, die jünger als N Stunden sind (sonst wie bisher alle). Als wiederkehrender Zeitplan ergibt
+das einen praktischen Ordner-Wächter („sortiere alles Neue der letzten 24 h"), ohne Dauer-Daemon.
+- Chirurgisch am vorhandenen Organizer umgesetzt (kein neuer Workflow, keine Duplizierung): Zeitfilter nach `scan`,
+  Titel-Zusatz, Input-Feld (1–8760 h). Freigabe/Undo/Journal unverändert.
+- Worker-Test `test_watcher_only_sorts_recent_files`: alte Dateien werden übersprungen, nur die aktuelle einsortiert.
+  Worker 92 (+1), 1 skip.
+- **Ehrlich / offen:** Das ist die Backend-Fähigkeit. Für die Kundennutzung fehlt noch die UI-Anbindung (Option „nur
+  neue Dateien" im Ordner-Assistenten + als Zeitplan-Vorlage speichern). Ein **echter Ereignis-Wächter** (sofort bei
+  neuer Datei) bräuchte zusätzlich einen Datei-Watcher im Worker – bewusst nicht in diesem Schritt (Simplicity First).
+
 ## Lokales KI-Modell (Ollama) – Datenschutz-Differenzierer (2026-11-01) ✅
 
 NEXORA kann die KI jetzt **komplett lokal** über Ollama laufen lassen – ohne Cloud, ohne Schlüssel. Das ist der stärkste

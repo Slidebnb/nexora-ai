@@ -1,6 +1,7 @@
 import json
 import os
 import sys
+import time
 from pathlib import Path
 
 import pytest
@@ -43,6 +44,29 @@ def test_nothing_moves_before_approval_then_allow_moves_and_verifies(api, folder
     assert (data_dir / "journals" / f"{t['runId']}.json").is_file()
     # Freigabe kann nicht zweimal beantwortet werden
     assert api.post(f"/api/approvals/{req['approvalId']}/respond", {"decision": "allow"}).status_code == 409
+
+
+def test_watcher_only_sorts_recent_files(api, folder):
+    """Ordner-Wächter (newer_than_hours): nur kürzlich geänderte Dateien werden einsortiert."""
+    old = time.time() - 48 * 3600
+    recent = None
+    for p in sorted(folder.iterdir()):
+        if p.is_file() and not p.name.startswith("."):
+            if recent is None:
+                recent = p.name  # diese bleibt aktuell
+            else:
+                os.utime(p, (old, old))
+    r = api.post("/api/tasks", {"workflow": "organize_folder", "input": {"folder": str(folder), "newer_than_hours": 1}, "capabilities": ORG_CAPS})
+    assert r.status_code == 201, r.text
+    t = r.json()
+    evs = api.wait_type(t["runId"], "approval_requested")
+    req = [e for e in evs if e["type"] == "approval_requested"][0]["payload"]
+    assert req["data"].startswith("1 Dateien"), req["data"]
+    assert api.post(f"/api/approvals/{req['approvalId']}/respond", {"decision": "allow"}).status_code == 200
+    evs = api.wait_terminal(t["runId"])
+    assert evs[-1]["type"] == "run_succeeded", evs[-1]
+    moved = {f for f in files(folder) if "/" in f}
+    assert len(moved) == 1 and moved.pop().endswith(recent), (moved, recent)
 
 
 def test_undo_restores_original_state(api, folder):
