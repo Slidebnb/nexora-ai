@@ -22,6 +22,7 @@ a = Analysis(
         "nexora_worker.workflows.web_research",
         "nexora_worker.workflows.pdf_analysis",
         "nexora_worker.workflows.drafts",
+        "nexora_worker.workflows.send_email",
         "nexora_worker.workflows.desktop_routine",
         "nexora_worker.workflows.desktop_ai",
         "nexora_worker.connectors",

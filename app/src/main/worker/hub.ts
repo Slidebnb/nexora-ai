@@ -89,7 +89,8 @@ export class WorkerHub {
       await this.client.request('PUT', '/api/session/secrets', {
         anthropic: this.secrets.get('anthropic') ?? null,
         openai: this.secrets.get('openai') ?? null,
-        connectors: this.secrets.connectorTokens()
+        connectors: this.secrets.connectorTokens(),
+        smtp: this.secrets.getSmtp() ?? null
       })
     } catch {
       /* Worker noch nicht bereit – wird beim nächsten Verbinden erneut gesendet */
@@ -151,6 +152,10 @@ export class WorkerHub {
 
   testAi(provider: string): Promise<unknown> {
     return this.client.request('POST', '/api/ai/test', { provider })
+  }
+
+  emailTest(config: unknown): Promise<unknown> {
+    return this.client.request('POST', '/api/email/test', config)
   }
 
   listConnectors(): Promise<unknown> {

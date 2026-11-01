@@ -39,7 +39,7 @@ export const WorkerStatusSchema = z.object({
 export type WorkerStatus = z.infer<typeof WorkerStatusSchema>
 
 /** Fähigkeiten, die der Nutzer pro Aufgabe ausdrücklich erlaubt (muss zum Worker-Workflow passen). */
-export const CapabilitySchema = z.enum(['files.read', 'files.move', 'web.read', 'files.export', 'pdf.read', 'ai.cloud', 'drafts.write', 'files.write', 'desktop.read', 'desktop.control', 'connectors.use'])
+export const CapabilitySchema = z.enum(['files.read', 'files.move', 'web.read', 'files.export', 'pdf.read', 'ai.cloud', 'drafts.write', 'files.write', 'desktop.read', 'desktop.control', 'connectors.use', 'email.send'])
 
 export const CAPABILITY_LABEL: Record<z.infer<typeof CapabilitySchema>, string> = {
   'files.read': 'Dateien lesen',
@@ -52,7 +52,8 @@ export const CAPABILITY_LABEL: Record<z.infer<typeof CapabilitySchema>, string> 
   'files.write': 'Dateien speichern (mit Freigabe)',
   'desktop.read': 'Programmfenster lesen',
   'desktop.control': 'Programm bedienen (mit Freigabe)',
-  'connectors.use': 'Verbundene Dienste nutzen (mit Freigabe)'
+  'connectors.use': 'Verbundene Dienste nutzen (mit Freigabe)',
+  'email.send': 'E-Mails senden (mit Freigabe)'
 }
 export type Capability = z.infer<typeof CapabilitySchema>
 
@@ -60,6 +61,18 @@ export const PickedFolderSchema = z.object({ folderId: z.string(), name: z.strin
 export type PickedFolder = z.infer<typeof PickedFolderSchema>
 export const PickedFileSchema = z.object({ fileId: z.string(), name: z.string(), path: z.string() })
 export type PickedFile = z.infer<typeof PickedFileSchema>
+
+export const SmtpConfigSchema = z.object({
+  host: z.string().trim().min(1).max(255),
+  port: z.number().int().min(1).max(65535),
+  security: z.enum(['ssl', 'starttls', 'none']),
+  user: z.string().trim().min(1).max(320),
+  password: z.string().min(1).max(1024),
+  fromAddr: z.string().trim().email()
+})
+export type SmtpConfig = z.infer<typeof SmtpConfigSchema>
+export const SmtpStatusSchema = z.object({ host: z.string(), port: z.number().int(), security: z.enum(['ssl', 'starttls', 'none']), user: z.string(), fromAddr: z.string() }).nullable()
+export type SmtpStatus = z.infer<typeof SmtpStatusSchema>
 
 const Caps = z.array(CapabilitySchema).max(10)
 
@@ -228,7 +241,11 @@ export const IPC_CHANNELS = {
   'connectors:tools': { request: z.object({ id: z.string().min(1) }), response: z.array(ConnectorToolSchema).max(200) },
   'chat:provider': { request: z.undefined(), response: z.object({ provider: ProviderSchema.nullable(), model: z.string().nullable() }) },
   'chat:send': { request: z.object({ id: z.string().min(1).max(64), messages: z.array(ChatMessageSchema).min(1).max(100) }), response: z.object({ text: z.string(), model: z.string(), provider: ProviderSchema }) },
-  'chat:cancel': { request: z.object({ id: z.string().min(1).max(64) }), response: Ok }
+  'chat:cancel': { request: z.object({ id: z.string().min(1).max(64) }), response: Ok },
+  'email:get': { request: z.undefined(), response: SmtpStatusSchema },
+  'email:set': { request: SmtpConfigSchema, response: SmtpStatusSchema },
+  'email:clear': { request: z.undefined(), response: SmtpStatusSchema },
+  'email:test': { request: z.undefined(), response: z.object({ ok: z.boolean(), message: z.string().max(300) }) }
 } as const
 
 /** Kanäle, auf denen der Main-Prozess an den Renderer sendet (kein invoke). */

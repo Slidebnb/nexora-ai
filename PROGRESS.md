@@ -348,3 +348,25 @@ selbst, nutzt echte Werkzeuge und hält sich an die Freigaben.
 Offen Richtung „alles erledigen": echtes Senden über verbundene Dienste (mit Freigabe), Echtzeit-Sprache (OpenAI Realtime),
 geführte Komplett-Einrichtung, sichtbare Agent-Schritte.
 
+## Echtes E-Mail-Senden statt Entwürfe (2026-11-01) ✅
+
+Auf Wunsch des Inhabers („Ich möchte keine Entwürfe haben"): NEXORA kann jetzt **wirklich E-Mails senden** – über
+ein eigenes E-Mail-Konto (SMTP), jede Sendung einzeln freigegeben.
+- **Einstellungen → „E-Mail-Konto (zum Senden)":** Server, Port, Verschlüsselung (SSL/STARTTLS/keine), Benutzer,
+  Absender und Passwort. Vorlagen für Gmail/Outlook/WEB.DE/GMX füllen Server/Port/Verschlüsselung vor.
+  „Verbindung testen" prüft die Anmeldung, ohne eine E-Mail zu senden.
+- **Sicherheit:** Das Passwort liegt ausschließlich verschlüsselt im Betriebssystem (DPAPI/safeStorage), wird pro
+  Sitzung nur an den lokalen Worker übergeben und **nie** im Renderer oder in der Datenbank gehalten; die Maske
+  zeigt es nie an. Nur der Kontostatus (ohne Passwort) geht an die Oberfläche.
+- **Agent-Werkzeug „email_senden":** Die KI kann aus dem Gespräch heraus eine echte E-Mail senden. Vor **jedem**
+  Versand erscheint die gewohnte Freigabe mit Empfängern, Betreff und Textvorschau (Worker-Workflow `send_email`,
+  Fähigkeit `email.send`). Ohne hinterlegtes Konto meldet das Werkzeug das ehrlich und sendet nichts.
+- **Worker:** `workflows/send_email.py` (SMTP über smtplib, SSL/STARTTLS, Header-Injektion wird blockiert,
+  Teilerfolg „N von M gesendet" wird ehrlich gemeldet), Testendpunkt `/api/email/test` (verify ohne Versand).
+  Der Versand ist über ein eingespeistes Sender-Objekt vollständig testbar (keine echten Netzverbindungen im Test).
+- Tests: Worker 91 (+7 send_email: Freigabe-vor-Versand, Ablehnung, kein Konto, Teilfehler, Testendpunkt,
+  Header-Injektion blockiert, ungültige Konfiguration), Unit 73 (+5: SMTP-Konto verschlüsselt/entfernen/ohne
+  OS-Verschlüsselung, Status ohne Passwort, email:set-Schema). Typecheck grün.
+
+Der E-Mail-Entwurf (`email_entwurf`, speichert .eml) bleibt als Alternative bestehen; neu ist das echte Senden daneben.
+

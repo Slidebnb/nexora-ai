@@ -24,6 +24,7 @@ from .events import Decision
 from .runner import TaskError, TaskManager
 from .templates import Schedule, TemplateStore
 from .connectors import ConnectorAction, ConnectorStore
+from .workflows.send_email import SmtpConfig
 from .system import system_status, check_ai_connection
 from .desktop import DesktopError, public_element
 
@@ -46,6 +47,8 @@ class SecretsRequest(BaseModel):
     openai: str | None = None
     # Konnektor-Token je Konnektor-ID (aus dem sicheren Speicher der App), optional
     connectors: dict[str, str] = Field(default_factory=dict)
+    # SMTP-Konfiguration (aus dem sicheren Speicher der App), optional
+    smtp: dict[str, Any] | None = None
 
 
 class ConnectorRequest(BaseModel):
@@ -244,6 +247,17 @@ def create_app(manager: TaskManager, token: str, templates: TemplateStore | None
     async def ai_test(body: AiTestRequest) -> dict[str, Any]:
         return await asyncio.to_thread(check_ai_connection, body.provider, manager.secrets)
 
+    @app.post("/api/email/test")
+    async def email_test(body: SmtpConfig) -> dict[str, Any]:
+        wf = manager.workflows.get("send_email")
+        if wf is None:
+            raise HTTPException(404, "E-Mail-Versand nicht verfügbar")
+        try:
+            await asyncio.to_thread(wf.sender.verify, body)  # type: ignore[attr-defined]
+            return {"ok": True, "message": f"Anmeldung bei {body.host} erfolgreich"}
+        except Exception as e:  # noqa: BLE001
+            return {"ok": False, "message": f"Anmeldung fehlgeschlagen ({type(e).__name__})"}
+
     @app.put("/api/session/secrets", status_code=204)
     async def set_secrets(body: SecretsRequest) -> None:
         manager.secrets.clear()
@@ -254,6 +268,8 @@ def create_app(manager: TaskManager, token: str, templates: TemplateStore | None
         for cid, tok in body.connectors.items():
             if tok:
                 manager.secrets[f"connector:{cid}"] = tok
+        if body.smtp:
+            manager.secrets["smtp"] = json.dumps(body.smtp)
 
     @app.get("/api/connectors")
     async def list_connectors() -> list[dict[str, Any]]:

@@ -29,6 +29,7 @@ from .templates import TemplateStore
 from .safety import redact_text
 from .workflows import OrganizeFolder, UndoOrganize
 from .workflows.drafts import DraftEmails
+from .workflows.send_email import SendEmail
 from .desktop import default_backend
 from .workflows.desktop_routine import DesktopRoutine
 from .workflows.desktop_ai import DesktopAi
@@ -58,6 +59,7 @@ def build_manager(data_dir: Path) -> TaskManager:
     manager.register(DesktopRoutine(desktop))
     manager.register(DesktopAi(desktop))
     manager.register(ConnectorAction(ConnectorStore(manager)))
+    manager.register(SendEmail())
     return manager
 
 

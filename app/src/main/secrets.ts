@@ -88,6 +88,31 @@ export class SecretStore {
     return out
   }
 
+  /** SMTP-Konfiguration verschlüsselt ablegen (ganzes Objekt als JSON). */
+  setSmtp(config: object): void {
+    if (!this.cipher.isEncryptionAvailable()) throw new Error('Sichere Speicherung ist auf diesem System nicht verfügbar.')
+    const data = this.read()
+    data['smtp'] = this.cipher.encryptString(JSON.stringify(config)).toString('base64')
+    this.write(data)
+  }
+
+  clearSmtp(): void {
+    const data = this.read()
+    delete data['smtp']
+    this.write(data)
+  }
+
+  /** Entschlüsselte SMTP-Konfiguration (nur Main-Prozess). */
+  getSmtp(): Record<string, unknown> | undefined {
+    const v = this.read()['smtp']
+    if (!v || !this.cipher.isEncryptionAvailable()) return undefined
+    try {
+      return JSON.parse(this.cipher.decryptString(Buffer.from(v, 'base64'))) as Record<string, unknown>
+    } catch {
+      return undefined
+    }
+  }
+
   private read(): StoredFile {
     if (!existsSync(this.file)) return {}
     try {
@@ -95,7 +120,7 @@ export class SecretStore {
       if (!parsed || typeof parsed !== 'object') return {}
       const out: StoredFile = {}
       for (const [k, v] of Object.entries(parsed as Record<string, unknown>)) {
-        if (typeof v === 'string' && ((NAMES as readonly string[]).includes(k) || k.startsWith('connector:'))) out[k] = v
+        if (typeof v === 'string' && ((NAMES as readonly string[]).includes(k) || k.startsWith('connector:') || k === 'smtp')) out[k] = v
       }
       return out
     } catch {

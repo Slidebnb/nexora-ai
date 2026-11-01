@@ -22,6 +22,8 @@ const SYSTEM =
   'Fasse danach das Ergebnis verständlich zusammen und nenne die Quellen. Weitere Aktionen auf dem PC folgen – diese ' +
   'werden dem Nutzer stets vorab zur Freigabe gezeigt. Du kannst außerdem: E-Mail-Entwürfe erstellen ' +
   '(Werkzeug „email_entwurf“ – es wird nichts gesendet, nur ein Entwurf gespeichert, und der Nutzer gibt das Speichern frei); ' +
+  'E-Mails wirklich senden (Werkzeug „email_senden“), wenn der Nutzer ein E-Mail-Konto hinterlegt hat – jeder Versand wird ' +
+  'dem Nutzer vorab einzeln zur Freigabe gezeigt; ' +
   'und die verbundenen Dienste des Nutzers nutzen: rufe „konnektoren_auflisten“ auf, um verfügbare Dienste und ihre ' +
   'Werkzeuge zu sehen, und „konnektor_aufrufen“, um ein Werkzeug auszuführen (jeder Aufruf wird einzeln freigegeben).'
 
@@ -81,7 +83,23 @@ const TOOL_CONN_CALL = {
   }
 } as const
 
-const ALL_TOOLS = [TOOL_WEB, TOOL_EMAIL, TOOL_CONN_LIST, TOOL_CONN_CALL]
+const TOOL_EMAIL_SEND = {
+  name: 'email_senden',
+  description:
+    'Sendet eine E-Mail wirklich über das vom Nutzer hinterlegte E-Mail-Konto (SMTP). Der Nutzer gibt jeden Versand einzeln frei. ' +
+    'Setzt voraus, dass unter Einstellungen ein E-Mail-Konto eingerichtet ist. Nur verwenden, wenn der Nutzer ausdrücklich senden möchte.',
+  parameters: {
+    type: 'object',
+    properties: {
+      betreff: { type: 'string', description: 'Betreff der E-Mail' },
+      text: { type: 'string', description: 'Der Nachrichtentext' },
+      empfaenger: { type: 'array', items: { type: 'string' }, description: 'E-Mail-Adressen der Empfänger' }
+    },
+    required: ['betreff', 'text', 'empfaenger']
+  }
+} as const
+
+const ALL_TOOLS = [TOOL_WEB, TOOL_EMAIL, TOOL_EMAIL_SEND, TOOL_CONN_LIST, TOOL_CONN_CALL]
 
 const MAX_STEPS = 8
 
@@ -169,6 +187,7 @@ function labelFor(name: string): string {
     {
       web_recherche: 'Recherchiert im Web …',
       email_entwurf: 'Erstellt E-Mail-Entwürfe …',
+      email_senden: 'Sendet eine E-Mail (nach Freigabe) …',
       konnektoren_auflisten: 'Sieht die verbundenen Dienste durch …',
       konnektor_aufrufen: 'Nutzt einen verbundenen Dienst …'
     }[name] ?? `Werkzeug „${name}“ …`

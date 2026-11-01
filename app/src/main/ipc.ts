@@ -155,6 +155,34 @@ export function registerIpcHandlers(opts: { devServerUrl?: string; secrets: Secr
   })
   handle('connectors:test', async ({ id }) => (await hub.testConnector(id)) as IpcResponse<'connectors:test'>)
   handle('connectors:tools', async ({ id }) => (await hub.connectorTools(id)) as IpcResponse<'connectors:tools'>)
+  // E-Mail-Konto zum Senden (SMTP). Passwort bleibt im sicheren Speicher/Main-Prozess, nie im Renderer oder in der DB.
+  const smtpStatus = (): IpcResponse<'email:get'> => {
+    const c = secrets.getSmtp()
+    if (!c) return null
+    return {
+      host: String(c['host'] ?? ''),
+      port: Number(c['port'] ?? 0),
+      security: (['ssl', 'starttls', 'none'].includes(String(c['security'])) ? c['security'] : 'starttls') as 'ssl' | 'starttls' | 'none',
+      user: String(c['user'] ?? ''),
+      fromAddr: String(c['fromAddr'] ?? '')
+    }
+  }
+  handle('email:get', () => smtpStatus())
+  handle('email:set', async (config) => {
+    secrets.setSmtp(config)
+    await hub.pushSecrets()
+    return smtpStatus()
+  })
+  handle('email:clear', async () => {
+    secrets.clearSmtp()
+    await hub.pushSecrets()
+    return smtpStatus()
+  })
+  handle('email:test', async () => {
+    const c = secrets.getSmtp()
+    if (!c) return { ok: false, message: 'Kein E-Mail-Konto hinterlegt.' }
+    return (await hub.emailTest(c)) as IpcResponse<'email:test'>
+  })
   handle('desktop:windows', async () => (await hub.desktopWindows()) as IpcResponse<'desktop:windows'>)
   handle('desktop:elements', async ({ window }) => (await hub.desktopElements(window)) as IpcResponse<'desktop:elements'>)
   handle('ai:test', async ({ provider }) => (await hub.testAi(provider)) as IpcResponse<'ai:test'>)
@@ -246,6 +274,19 @@ export function registerIpcHandlers(opts: { devServerUrl?: string; secrets: Secr
           try {
             mkdirSync(outFolder, { recursive: true })
             return await hub.runToCompletion('draft_emails', { subject, briefing, recipients, outFolder, useCloudAi: false }, ['drafts.write', 'files.write'])
+          } catch (err) {
+            return { ok: false, summary: err instanceof Error ? err.message : 'Fehler', text: '' }
+          }
+        }
+        if (name === 'email_senden') {
+          if (!secrets.getSmtp()) return { ok: false, summary: 'Kein E-Mail-Konto hinterlegt. Bitte unter Einstellungen ein E-Mail-Konto zum Senden einrichten.', text: '' }
+          const subject = String(args['betreff'] ?? '').trim()
+          const body = String(args['text'] ?? '').trim()
+          const emails = Array.isArray(args['empfaenger']) ? (args['empfaenger'] as unknown[]).map(String) : []
+          const recipients = emails.filter((e) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)).map((email) => ({ name: '', email }))
+          if (subject.length < 1 || body.length < 1 || recipients.length === 0) return { ok: false, summary: 'Betreff, Text oder gültige Empfänger fehlen', text: '' }
+          try {
+            return await hub.runToCompletion('send_email', { subject, body, recipients }, ['email.send'])
           } catch (err) {
             return { ok: false, summary: err instanceof Error ? err.message : 'Fehler', text: '' }
           }

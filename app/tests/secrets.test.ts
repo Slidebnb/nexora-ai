@@ -54,6 +54,43 @@ describe('SecretStore', () => {
   })
 })
 
+describe('SecretStore – SMTP-Konto', () => {
+  const SMTP = { host: 'smtp.beispiel.de', port: 587, security: 'starttls' as const, user: 'name@beispiel.de', password: 'geheim-app-passwort', fromAddr: 'name@beispiel.de' }
+
+  it('legt das SMTP-Konto verschlüsselt ab und das Passwort steht nie im Klartext', () => {
+    const { file, s } = store()
+    s.setSmtp(SMTP)
+    const raw = readFileSync(file, 'utf8')
+    expect(raw).not.toContain('geheim-app-passwort')
+    expect(s.getSmtp()).toEqual(SMTP)
+  })
+
+  it('entfernt das SMTP-Konto wieder', () => {
+    const { s } = store()
+    s.setSmtp(SMTP)
+    s.clearSmtp()
+    expect(s.getSmtp()).toBeUndefined()
+  })
+
+  it('verweigert das Speichern ohne OS-Verschlüsselung', () => {
+    const { s } = store(false)
+    expect(() => s.setSmtp(SMTP)).toThrow(/nicht verfügbar/)
+  })
+
+  it('der email:get-Status enthält niemals das Passwort', () => {
+    const status = { host: SMTP.host, port: SMTP.port, security: SMTP.security, user: SMTP.user, fromAddr: SMTP.fromAddr }
+    const parsed = IPC_CHANNELS['email:get'].response.parse(status)
+    expect(JSON.stringify(parsed)).not.toContain('geheim-app-passwort')
+    expect(JSON.stringify(parsed)).not.toContain('password')
+  })
+
+  it('das email:set-Schema verlangt eine gültige Absender-Adresse', () => {
+    expect(IPC_CHANNELS['email:set'].request.safeParse(SMTP).success).toBe(true)
+    expect(IPC_CHANNELS['email:set'].request.safeParse({ ...SMTP, fromAddr: 'keine-mail' }).success).toBe(false)
+    expect(IPC_CHANNELS['email:set'].request.safeParse({ ...SMTP, password: '' }).success).toBe(false)
+  })
+})
+
 describe('ApiKeySchema', () => {
   it('akzeptiert typische Schlüssel und lehnt Unsinn ab', () => {
     expect(ApiKeySchema.safeParse(KEY).success).toBe(true)

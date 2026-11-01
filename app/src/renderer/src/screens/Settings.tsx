@@ -7,6 +7,7 @@ import { ScreenHeader } from './ScreenHeader'
 import { LicenseSection } from '../components/settings/LicenseSection'
 import { SystemStatusPanel } from '../components/settings/SystemStatusPanel'
 import { ConnectorsSection } from '../components/settings/ConnectorsSection'
+import { EmailAccountSection } from '../components/settings/EmailAccountSection'
 
 const THEME_OPTIONS = [
   { id: 'crimson', label: 'Crimson', color: '#f43f67' },
@@ -126,6 +127,7 @@ export function Settings() {
         <SystemStatusPanel />
         <LicenseSection />
         <ConnectorsSection />
+        <EmailAccountSection />
 
         <section className="panel p-5" aria-labelledby="keys-title">
           <h2 id="keys-title" className="hud-label">API-Schlüssel (BYOK)</h2>
