@@ -31,7 +31,7 @@ export function Dashboard() {
   const intensity = Math.min(1, active.length * 0.5)
 
   return (
-    <div className="relative grid h-full min-h-[760px] grid-rows-[auto_minmax(0,1fr)_220px] gap-3 p-4">
+    <div className="relative grid h-full min-h-0 grid-rows-[auto_minmax(360px,1fr)_220px] gap-3 overflow-y-auto p-4">
       <NeuralNetwork opacity={0.1} />
       <GlitchOverlay />
       <CommandCenter />
