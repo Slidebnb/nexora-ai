@@ -402,3 +402,19 @@ Dienste, die Kunden verbinden können – ähnlich der Konnektor-Übersicht in C
 - Tests: Unit 73, Typecheck grün. Bestehender E2E-Konnektor-Test bleibt gültig (Karte „Eigener Dienst" → verbinden →
   testen → Werkzeuge → entfernen).
 
+## Agent-Werkzeuge: Ordner aufräumen & PDF lesen im Chat (2026-11-01) ✅
+
+Der Chat-Agent kann jetzt auch die beiden letzten Kern-Workflows selbst nutzen – damit sind alle Aufgaben aus dem
+Gespräch heraus erreichbar.
+- **„ordner_aufraeumen":** NEXORA räumt einen Ordner auf (sortiert Dateien nach Typ). Der Nutzer wählt den Ordner im
+  **nativen Fenster** selbst; **jede Verschiebung** wird einzeln freigegeben (Worker-Workflow `organize_folder`,
+  Fähigkeiten `files.read`/`files.move`).
+- **„pdf_lesen":** NEXORA liest die im nativen Fenster gewählten PDF-Dateien und fasst sie zusammen (nur lesend,
+  Worker-Workflow `pdf_analysis`, Fähigkeiten `pdf.read`/`files.export`; ohne Cloud-KI, keine OCR).
+- Beide Werkzeuge nehmen keine Argumente – der Pfad wird nie von der KI bestimmt, sondern vom Nutzer im Dialog
+  gewählt (sicherer). Ohne Lizenz-Fähigkeit „Echte Aufgaben" melden sie das ehrlich und tun nichts.
+- Der Agent hat damit: web_recherche, email_entwurf, email_senden, ordner_aufraeumen, pdf_lesen, konnektoren_auflisten,
+  konnektor_aufrufen. Die Schritte erscheinen als sichtbare „arbeitet …"-Karten im Chat.
+- Tests: Unit 73, Typecheck grün (die zugrunde liegenden Workflows sind im Worker getestet). Ehrlich: Der native
+  Datei-/Ordnerdialog ist – wie der bestehende Auswahlpfad – nicht per E2E automatisiert.
+

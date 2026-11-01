@@ -242,7 +242,7 @@ export function registerIpcHandlers(opts: { devServerUrl?: string; secrets: Secr
     const provider = activeProvider()
     return { provider, model: provider ? DEFAULT_MODEL[provider] : null }
   })
-  handle('chat:send', async ({ id, messages }) => {
+  handle('chat:send', async ({ id, messages }, event) => {
     const provider = activeProvider()
     if (!provider) throw new Error('Kein KI-Schlüssel hinterlegt. Bitte unter Einstellungen einen Anthropic- oder OpenAI-Schlüssel eintragen.')
     requireFeature('cloud_ai')
@@ -287,6 +287,40 @@ export function registerIpcHandlers(opts: { devServerUrl?: string; secrets: Secr
           if (subject.length < 1 || body.length < 1 || recipients.length === 0) return { ok: false, summary: 'Betreff, Text oder gültige Empfänger fehlen', text: '' }
           try {
             return await hub.runToCompletion('send_email', { subject, body, recipients }, ['email.send'])
+          } catch (err) {
+            return { ok: false, summary: err instanceof Error ? err.message : 'Fehler', text: '' }
+          }
+        }
+        if (name === 'ordner_aufraeumen') {
+          try {
+            requireFeature('workflows')
+          } catch (err) {
+            return { ok: false, summary: err instanceof Error ? err.message : 'Fehler', text: '' }
+          }
+          const win = BrowserWindow.fromWebContents(event.sender)
+          const options = { title: 'Ordner zum Aufräumen auswählen', properties: ['openDirectory' as const] }
+          const result = win ? await dialog.showOpenDialog(win, options) : await dialog.showOpenDialog(options)
+          const folder = result.filePaths[0]
+          if (result.canceled || !folder) return { ok: false, summary: 'Es wurde kein Ordner ausgewählt.', text: '' }
+          try {
+            return await hub.runToCompletion('organize_folder', { folder }, ['files.read', 'files.move'])
+          } catch (err) {
+            return { ok: false, summary: err instanceof Error ? err.message : 'Fehler', text: '' }
+          }
+        }
+        if (name === 'pdf_lesen') {
+          try {
+            requireFeature('workflows')
+          } catch (err) {
+            return { ok: false, summary: err instanceof Error ? err.message : 'Fehler', text: '' }
+          }
+          const win = BrowserWindow.fromWebContents(event.sender)
+          const options = { title: 'PDF-Dateien auswählen', properties: ['openFile' as const, 'multiSelections' as const], filters: [{ name: 'PDF-Dokumente', extensions: ['pdf'] }] }
+          const result = win ? await dialog.showOpenDialog(win, options) : await dialog.showOpenDialog(options)
+          if (result.canceled || result.filePaths.length === 0) return { ok: false, summary: 'Es wurden keine Dateien ausgewählt.', text: '' }
+          const files = result.filePaths.slice(0, 20)
+          try {
+            return await hub.runToCompletion('pdf_analysis', { files, useCloudAi: false, useOcr: false }, ['pdf.read', 'files.export'])
           } catch (err) {
             return { ok: false, summary: err instanceof Error ? err.message : 'Fehler', text: '' }
           }

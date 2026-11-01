@@ -24,6 +24,9 @@ const SYSTEM =
   '(Werkzeug „email_entwurf“ – es wird nichts gesendet, nur ein Entwurf gespeichert, und der Nutzer gibt das Speichern frei); ' +
   'E-Mails wirklich senden (Werkzeug „email_senden“), wenn der Nutzer ein E-Mail-Konto hinterlegt hat – jeder Versand wird ' +
   'dem Nutzer vorab einzeln zur Freigabe gezeigt; ' +
+  'einen Ordner aufräumen/sortieren (Werkzeug „ordner_aufraeumen“ – der Nutzer wählt den Ordner im Fenster, jede ' +
+  'Verschiebung wird freigegeben); PDF-Dateien lesen und zusammenfassen (Werkzeug „pdf_lesen“ – der Nutzer wählt die ' +
+  'Dateien im Fenster); ' +
   'und die verbundenen Dienste des Nutzers nutzen: rufe „konnektoren_auflisten“ auf, um verfügbare Dienste und ihre ' +
   'Werkzeuge zu sehen, und „konnektor_aufrufen“, um ein Werkzeug auszuführen (jeder Aufruf wird einzeln freigegeben).'
 
@@ -99,7 +102,23 @@ const TOOL_EMAIL_SEND = {
   }
 } as const
 
-const ALL_TOOLS = [TOOL_WEB, TOOL_EMAIL, TOOL_EMAIL_SEND, TOOL_CONN_LIST, TOOL_CONN_CALL]
+const TOOL_ORGANIZE = {
+  name: 'ordner_aufraeumen',
+  description:
+    'Räumt einen Ordner auf, indem Dateien nach Typ in Unterordner sortiert werden. Der Nutzer wählt den Ordner im ' +
+    'Fenster selbst aus; jede Verschiebung wird einzeln freigegeben. Keine Argumente nötig.',
+  parameters: { type: 'object', properties: {}, required: [] }
+} as const
+
+const TOOL_PDF = {
+  name: 'pdf_lesen',
+  description:
+    'Liest eine oder mehrere PDF-Dateien und fasst sie zusammen. Der Nutzer wählt die Dateien im Fenster selbst aus. ' +
+    'Nur lesend. Keine Argumente nötig.',
+  parameters: { type: 'object', properties: {}, required: [] }
+} as const
+
+const ALL_TOOLS = [TOOL_WEB, TOOL_EMAIL, TOOL_EMAIL_SEND, TOOL_ORGANIZE, TOOL_PDF, TOOL_CONN_LIST, TOOL_CONN_CALL]
 
 const MAX_STEPS = 8
 
@@ -188,6 +207,8 @@ function labelFor(name: string): string {
       web_recherche: 'Recherchiert im Web …',
       email_entwurf: 'Erstellt E-Mail-Entwürfe …',
       email_senden: 'Sendet eine E-Mail (nach Freigabe) …',
+      ordner_aufraeumen: 'Räumt einen Ordner auf (du wählst ihn, jede Verschiebung mit Freigabe) …',
+      pdf_lesen: 'Liest die gewählten PDF-Dateien …',
       konnektoren_auflisten: 'Sieht die verbundenen Dienste durch …',
       konnektor_aufrufen: 'Nutzt einen verbundenen Dienst …'
     }[name] ?? `Werkzeug „${name}“ …`
