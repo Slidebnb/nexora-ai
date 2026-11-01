@@ -9,6 +9,7 @@ import type { ChatMessage, Provider } from '@shared/ipc-contract'
 import { useNexora } from '../state/store'
 import { TaskWizard } from '../components/home/TaskWizard'
 import { WorkflowGallery } from '../components/home/WorkflowGallery'
+import { AgentPulse } from '../components/home/AgentPulse'
 import { TaskRuns } from '../components/home/TaskRuns'
 import { useVoice } from '../lib/useVoice'
 import { VoiceMode } from './VoiceMode'
@@ -141,7 +142,7 @@ export function Chat() {
         <button type="button" className="btn-secondary ml-auto text-xs" onClick={() => setVoiceMode(true)} aria-label="Live-Sprachmodus öffnen" data-testid="open-voice">
           <AudioLines className="size-4" aria-hidden /> Sprachmodus
         </button>
-        {provider && <span className="text-xs text-text-2">über {PROVIDER_LABEL[provider]}</span>}
+        {streaming ? <AgentPulse /> : provider && <span className="text-xs text-text-2">über {PROVIDER_LABEL[provider]}</span>}
       </header>
       {voiceMode && <VoiceMode onClose={() => setVoiceMode(false)} />}
 

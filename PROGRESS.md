@@ -458,6 +458,17 @@ sofort startklar (behebt „man wusste nicht, wie man anfängt / man konnte nich
 - Tests: Unit 73, Typecheck grün. E2E-Erststart-Test an den neuen Ablauf angepasst (ein Schritt mehr: KI-Schlüssel wird
   im Test übersprungen; Abschluss über „Übungsordner").
 
+## Beeindruckende Live-Visualisierung während der Agent arbeitet (2026-11-01) ✅
+
+Vision-Säule „beeindruckende Live-Visualisierung": Während NEXORA eine Antwort/Aufgabe bearbeitet, zeigt der
+Chat-Header jetzt einen dezenten, lebendigen **„Agent-Puls"** (Equalizer-Balken in der Akzentfarbe) – NEXORA wirkt
+aktiv und lebendig, ohne die klare Oberfläche zu stören.
+- Neue Komponente `components/home/AgentPulse.tsx`; CSS-Animation (`.agent-eq` / `@keyframes nexora-eq`) in styles.css.
+- Erscheint nur während `streaming`; rein dekorativ (aria-hidden) mit Screenreader-Status „NEXORA arbeitet"; respektiert
+  `prefers-reduced-motion` (Balken werden statisch). Passt zu den bestehenden Visualisierungen (Orb im Sprachmodus,
+  drehende Schrittkarten).
+- Tests: Unit 73, Typecheck grün.
+
 ## Fertige Workflows als Ein-Klick-Galerie (2026-11-01) ✅
 
 Vision-Säule „fertige Workflows": Die mitgelieferten Workflows erscheinen im leeren Chat jetzt als schöne,
