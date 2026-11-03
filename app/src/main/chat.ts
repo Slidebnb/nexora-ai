@@ -183,6 +183,103 @@ export async function runAgent(opts: {
   return opts.provider === 'anthropic' ? runAnthropic(opts) : runOpenai(opts)
 }
 
+// ---------- Streaming (Server-Sent Events) ----------
+const isEventStream = (res: Response): boolean => (res.headers.get('content-type') ?? '').includes('text/event-stream')
+
+/** Liest die data:-Zeilen einer SSE-Antwort als JSON-Objekte (ein Ereignis je Leerzeilen-Block). */
+async function* sseEvents(res: Response): AsyncGenerator<any> {
+  if (!res.body) return
+  const reader = res.body.getReader()
+  const dec = new TextDecoder()
+  let buf = ''
+  for (;;) {
+    const { value, done } = await reader.read()
+    if (value) buf += dec.decode(value, { stream: true }).replace(/\r\n/g, '\n')
+    if (done) buf += '\n\n' // letzten Block ohne abschließende Leerzeile auch verarbeiten
+    let i: number
+    while ((i = buf.indexOf('\n\n')) >= 0) {
+      const block = buf.slice(0, i)
+      buf = buf.slice(i + 2)
+      for (const line of block.split('\n')) {
+        if (!line.startsWith('data:')) continue
+        const data = line.slice(5).trim()
+        if (!data || data === '[DONE]') continue
+        try {
+          yield JSON.parse(data)
+        } catch {
+          /* unvollständige oder fremde Zeile ignorieren */
+        }
+      }
+    }
+    if (done) return
+  }
+}
+
+/** Anthropic-Stream: Text sofort weiterreichen, Werkzeug-Eingaben aus Stücken zusammensetzen. */
+async function readAnthropicStream(res: Response, onDelta: (t: string) => void): Promise<{ content: any[]; stop_reason?: string; usage: { input_tokens: number; output_tokens: number } }> {
+  const content: any[] = []
+  const partialJson = new Map<number, string>()
+  const usage = { input_tokens: 0, output_tokens: 0 }
+  let stop_reason: string | undefined
+  for await (const ev of sseEvents(res)) {
+    if (ev.type === 'message_start') {
+      usage.input_tokens = Number(ev.message?.usage?.input_tokens) || 0
+      usage.output_tokens = Number(ev.message?.usage?.output_tokens) || 0
+    } else if (ev.type === 'content_block_start') {
+      content[ev.index] = { ...ev.content_block }
+    } else if (ev.type === 'content_block_delta') {
+      const block = content[ev.index]
+      if (!block) continue
+      if (ev.delta?.type === 'text_delta' && ev.delta.text) {
+        block.text = (block.text ?? '') + ev.delta.text
+        onDelta(ev.delta.text)
+      } else if (ev.delta?.type === 'input_json_delta') {
+        partialJson.set(ev.index, (partialJson.get(ev.index) ?? '') + (ev.delta.partial_json ?? ''))
+      }
+    } else if (ev.type === 'message_delta') {
+      if (ev.delta?.stop_reason) stop_reason = ev.delta.stop_reason
+      if (ev.usage?.output_tokens != null) usage.output_tokens = Number(ev.usage.output_tokens) || 0
+    } else if (ev.type === 'error') {
+      throw new ChatError(`Der KI-Anbieter hat die Antwort abgebrochen: ${ev.error?.message ?? 'unbekannter Fehler'}`)
+    }
+  }
+  for (const [i, json] of partialJson) {
+    if (!content[i]) continue
+    try {
+      content[i].input = json ? JSON.parse(json) : {}
+    } catch {
+      content[i].input = {}
+    }
+  }
+  return { content: content.filter(Boolean), stop_reason, usage }
+}
+
+/** OpenAI-kompatibler Stream (auch Ollama): Text sofort weiterreichen, Werkzeug-Aufrufe zusammensetzen. */
+async function readOpenaiStream(res: Response, onDelta: (t: string) => void): Promise<{ msg: any; usage?: { prompt_tokens?: number; completion_tokens?: number } }> {
+  let content = ''
+  const calls: any[] = []
+  let usage: { prompt_tokens?: number; completion_tokens?: number } | undefined
+  for await (const chunk of sseEvents(res)) {
+    if (chunk.usage) usage = chunk.usage
+    const delta = chunk.choices?.[0]?.delta
+    if (!delta) continue
+    if (typeof delta.content === 'string' && delta.content) {
+      content += delta.content
+      onDelta(delta.content)
+    }
+    for (const tc of delta.tool_calls ?? []) {
+      const c = (calls[tc.index ?? 0] ??= { id: '', type: 'function', function: { name: '', arguments: '' } })
+      if (tc.id) c.id = tc.id
+      if (tc.function?.name) c.function.name = tc.function.name
+      if (tc.function?.arguments) c.function.arguments += tc.function.arguments
+    }
+  }
+  const msg: any = { role: 'assistant', content: content || null }
+  const toolCalls = calls.filter(Boolean)
+  if (toolCalls.length) msg.tool_calls = toolCalls
+  return { msg, usage }
+}
+
 // ---------- Anthropic ----------
 async function runAnthropic(o: Parameters<typeof runAgent>[0]): Promise<string> {
   const url = (!process.env['NEXORA_PACKAGED'] && process.env['NEXORA_CHAT_ANTHROPIC_URL']) || 'https://api.anthropic.com/v1/messages'
@@ -193,17 +290,20 @@ async function runAnthropic(o: Parameters<typeof runAgent>[0]): Promise<string> 
       max_tokens: 4096,
       system: SYSTEM,
       tools: ALL_TOOLS.map((t) => ({ name: t.name, description: t.description, input_schema: t.parameters })),
-      messages: convo
+      messages: convo,
+      stream: true
     }
     const res = await fetch(url, { method: 'POST', signal: o.signal, headers: { 'x-api-key': o.key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' }, body: JSON.stringify(body) })
     if (!res.ok) throw new ChatError(providerError(res.status, await res.text().catch(() => '')))
-    const json: any = await res.json()
+    // Live-Streaming: Text erscheint Wort für Wort. Antwortet der Server ohne Stream, gilt der bisherige Weg.
+    const streamed = isEventStream(res)
+    const json: any = streamed ? await readAnthropicStream(res, o.onDelta) : await res.json()
     if (json.usage) o.onUsage?.(Number(json.usage.input_tokens) || 0, Number(json.usage.output_tokens) || 0)
     const content: any[] = json.content ?? []
     const toolUses = content.filter((b) => b.type === 'tool_use')
     const textBlocks = content.filter((b) => b.type === 'text').map((b) => b.text).join('')
     if (json.stop_reason !== 'tool_use' || toolUses.length === 0) {
-      if (textBlocks) o.onDelta(textBlocks)
+      if (textBlocks && !streamed) o.onDelta(textBlocks)
       return textBlocks
     }
     convo.push({ role: 'assistant', content })
@@ -227,15 +327,25 @@ async function runOpenai(o: Parameters<typeof runAgent>[0]): Promise<string> {
   const convo: any[] = [{ role: 'system', content: SYSTEM }, ...o.messages.map((m) => ({ role: m.role, content: m.content }))]
   const tools = ALL_TOOLS.map((t) => ({ type: 'function', function: t }))
   for (let step = 0; step < MAX_STEPS; step++) {
-    const res = await fetch(url, { method: 'POST', signal: o.signal, headers, body: JSON.stringify({ model: o.model, max_tokens: 4096, tools, messages: convo }) })
+    // Token-Angabe im Stream gibt es nur bei OpenAI selbst; lokale Server (Ollama) bekommen sie nicht angefragt.
+    const streamOpts = o.baseUrl ? {} : { stream_options: { include_usage: true } }
+    const res = await fetch(url, { method: 'POST', signal: o.signal, headers, body: JSON.stringify({ model: o.model, max_tokens: 4096, tools, messages: convo, stream: true, ...streamOpts }) })
     if (!res.ok) throw new ChatError(providerError(res.status, await res.text().catch(() => '')))
-    const json: any = await res.json()
-    if (json.usage) o.onUsage?.(Number(json.usage.prompt_tokens) || 0, Number(json.usage.completion_tokens) || 0)
-    const msg = json.choices?.[0]?.message ?? {}
+    const streamed = isEventStream(res)
+    let msg: any
+    let usage: { prompt_tokens?: number; completion_tokens?: number } | undefined
+    if (streamed) {
+      ;({ msg, usage } = await readOpenaiStream(res, o.onDelta))
+    } else {
+      const json: any = await res.json()
+      usage = json.usage
+      msg = json.choices?.[0]?.message ?? {}
+    }
+    if (usage) o.onUsage?.(Number(usage.prompt_tokens) || 0, Number(usage.completion_tokens) || 0)
     const calls = msg.tool_calls ?? []
     if (!calls.length) {
       const text = msg.content ?? ''
-      if (text) o.onDelta(text)
+      if (text && !streamed) o.onDelta(text)
       return text
     }
     convo.push(msg)

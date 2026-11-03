@@ -79,8 +79,29 @@ const web = createServer(async (req, res) => {
     } else {
       reply = { content: [{ type: 'text', text: 'Hallo! Ich bin NEXORA.' }], stop_reason: 'end_turn' }
     }
-    res.writeHead(200, { 'Content-Type': 'application/json' })
-    res.end(JSON.stringify(reply))
+    if (!body.stream) {
+      res.writeHead(200, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify(reply))
+      return
+    }
+    // Streaming wie bei Anthropic: Text und Werkzeug-Eingaben kommen in Stücken (prüft den Live-Weg bis zur Oberfläche)
+    const ev = (o) => res.write(`event: ${o.type}\ndata: ${JSON.stringify(o)}\n\n`)
+    const halves = (s) => [s.slice(0, Math.ceil(s.length / 2)), s.slice(Math.ceil(s.length / 2))]
+    res.writeHead(200, { 'Content-Type': 'text/event-stream' })
+    ev({ type: 'message_start', message: { usage: { input_tokens: 10, output_tokens: 1 } } })
+    reply.content.forEach((b, index) => {
+      if (b.type === 'text') {
+        ev({ type: 'content_block_start', index, content_block: { type: 'text', text: '' } })
+        for (const t of halves(b.text)) ev({ type: 'content_block_delta', index, delta: { type: 'text_delta', text: t } })
+      } else {
+        ev({ type: 'content_block_start', index, content_block: { type: 'tool_use', id: b.id, name: b.name, input: {} } })
+        for (const p of halves(JSON.stringify(b.input))) ev({ type: 'content_block_delta', index, delta: { type: 'input_json_delta', partial_json: p } })
+      }
+      ev({ type: 'content_block_stop', index })
+    })
+    ev({ type: 'message_delta', delta: { stop_reason: reply.stop_reason }, usage: { output_tokens: 5 } })
+    ev({ type: 'message_stop' })
+    res.end()
     return
   }
   if (req.url === '/mcp' && req.method === 'POST') {
