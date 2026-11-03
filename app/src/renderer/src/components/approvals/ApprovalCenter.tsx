@@ -33,7 +33,17 @@ export function ApprovalCard({ approval, runTitle, onRespond, autoFocus }: Appro
       {runTitle && <p className="mt-1 text-xs text-text-2">Vorgang: {runTitle}</p>}
       <dl className="mt-3 grid grid-cols-[110px_1fr] gap-x-3 gap-y-1.5 text-sm">
         <dt className="text-text-2">Wo</dt>
-        <dd className="break-all font-mono text-xs text-text">{approval.target}</dd>
+        <dd className="min-w-0">
+          {/* Pfade: groß nur der Name („Downloads“), der volle Pfad klein darunter zum Nachprüfen */}
+          {/^([A-Za-z]:\\|\/)/.test(approval.target) ? (
+            <>
+              <span className="block text-sm font-medium text-text">„{approval.target.split(/[\\/]/).filter(Boolean).pop() ?? approval.target}“</span>
+              <span className="block break-all font-mono text-[11px] text-text-2">{approval.target}</span>
+            </>
+          ) : (
+            <span className="break-all text-sm text-text">{approval.target}</span>
+          )}
+        </dd>
         <dt className="text-text-2">Was genau</dt>
         <dd className="text-text">{approval.data}</dd>
         <dt className="text-text-2">Was passiert</dt>

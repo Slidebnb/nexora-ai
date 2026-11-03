@@ -7,7 +7,7 @@ export const STATE_LABEL: Record<LicenseStatus['state'], string> = {
   unconfigured: 'Entwicklungsversion',
   trial: 'Testzeitraum',
   active: 'Aktiv',
-  expired: 'Bestätigung abgelaufen',
+  expired: 'Bitte kurz online gehen',
   trial_over: 'Testzeitraum beendet'
 }
 const FEATURE_LABEL: Record<string, string> = { workflows: 'echte Aufgaben', schedules: 'Zeitpläne', cloud_ai: 'Cloud-KI' }
@@ -83,8 +83,8 @@ export function LicenseSection() {
       )}
       {error && <p role="alert" className="mt-2 text-xs text-danger">{error}</p>}
       <p className="mt-3 text-xs text-text-2">
-        Bezahlung und Rechnungen laufen über Stripe auf der NEXORA-Website. Die App speichert keine Zahlungsdaten; die Lizenz wird lokal
-        gespeichert und funktioniert 14 Tage auch ohne Internet.
+        Bezahlung und Rechnungen laufen sicher über die NEXORA-Website – die App selbst speichert keine Zahlungsdaten. NEXORA
+        funktioniert auch bis zu 14 Tage ohne Internet.
       </p>
     </section>
   )
