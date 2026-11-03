@@ -58,7 +58,7 @@ export function TaskComposer({ fixedWorkflowId, simple = false, onStarted }: Tas
   return (
     <form
       data-testid="task-composer"
-      className={simple ? 'flex min-w-0 flex-col gap-4' : 'panel flex min-w-0 flex-col gap-3 p-4'}
+      className={simple ? 'flex min-w-0 flex-col gap-4' : 'panel flex min-h-0 min-w-0 flex-col gap-3 overflow-y-auto p-4'}
       aria-label="Neue Aufgabe"
       onSubmit={(e) => {
         e.preventDefault()

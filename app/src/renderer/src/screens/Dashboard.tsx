@@ -36,7 +36,8 @@ export function Dashboard() {
       <GlitchOverlay />
       <CommandCenter />
       <div className={cx('grid min-h-0 gap-3', rightOpen ? 'grid-cols-[minmax(0,1fr)_340px]' : 'grid-cols-1')}>
-        <div className="grid min-h-0 min-w-0 grid-rows-[minmax(0,1fr)_auto] gap-3 xl:grid-cols-[minmax(0,1fr)_340px] xl:grid-rows-1">
+        {/* Orbit behält mind. 200 px; das Aufgabenfeld bekommt den Rest und scrollt intern, statt Nachbarn zu überdecken */}
+        <div className="grid min-h-0 min-w-0 grid-rows-[minmax(200px,1fr)_minmax(0,auto)] gap-3 xl:grid-cols-[minmax(0,1fr)_340px] xl:grid-rows-1">
           <div data-testid="orbit-panel" className="panel hud-grid relative min-h-[200px] overflow-hidden p-3">
             <WireframeGlobe opacity={0.22} />
             <MatrixRain intensity={intensity} opacity={0.18 + intensity * 0.17} />

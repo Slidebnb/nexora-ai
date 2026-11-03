@@ -44,7 +44,7 @@ export const RECIPES: Recipe[] = [
 
   // PC steuern  → Werkzeuge offene_fenster / computer_steuern (jede Aktion mit Freigabe)
   { id: 'p-fenster', category: 'PC steuern', title: 'Offene Programme zeigen', prompt: 'Welche Programmfenster sind gerade offen?' },
-  { id: 'p-bedienen', category: 'PC steuern', title: 'Programm bedienen', prompt: 'Bediene für mich ein geöffnetes Programm. Ziel: ' },
+  { id: 'p-bedienen', category: 'PC steuern', title: 'Programm per KI steuern', prompt: 'Bediene für mich ein geöffnetes Programm. Ziel: ' },
 
   // Verbundene Dienste  → Werkzeuge konnektoren_auflisten / konnektor_aufrufen
   { id: 'c-liste', category: 'Verbundene Dienste', title: 'Verbundene Dienste zeigen', prompt: 'Welche Dienste sind mit dir verbunden und was können sie?' },

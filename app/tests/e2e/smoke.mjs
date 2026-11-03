@@ -257,7 +257,7 @@ try {
   await step('KUNDE: „Programm bedienen“ – Aufzeichnung per Auswahl (Windows) bzw. ehrlicher Hinweis', async () => {
     await nav('Dateien')
     await nav('Start') // frischer Chat → Aufgaben-Vorschläge sichtbar
-    await win.getByRole('button', { name: /Programm bedienen/ }).click()
+    await win.getByTestId('task-chips').getByRole('button', { name: /Programm bedienen/ }).click()
     const dialog = win.getByRole('dialog', { name: 'Programm bedienen' })
     await dialog.getByTestId('desktop-recorder').waitFor()
     if (process.platform === 'win32') {
@@ -276,7 +276,7 @@ try {
   await step('KUNDE: Startseite → „Ordner aufräumen“ → bestätigen → Ergebnis → Rückgängig', async () => {
     await nav('Dateien')
     await nav('Start') // frischer Chat → Aufgaben-Vorschläge sichtbar
-    await win.getByRole('button', { name: /Ordner aufräumen/ }).click()
+    await win.getByTestId('task-chips').getByRole('button', { name: /Ordner aufräumen/ }).click()
     const wizard = win.getByRole('dialog', { name: 'Ordner aufräumen' })
     await wizard.getByRole('button', { name: 'Ordner wählen' }).click()
     await wizard.getByTestId('picked-folder').getByText(folder).waitFor()
@@ -302,7 +302,7 @@ try {
   await step('KUNDE: Aufgabe pausieren und fortsetzen', async () => {
     await nav('Dateien')
     await nav('Start') // frischer Chat → Aufgaben-Vorschläge sichtbar
-    await win.getByRole('button', { name: /Webseiten vergleichen/ }).click()
+    await win.getByTestId('task-chips').getByRole('button', { name: /Webseiten vergleichen/ }).click()
     const wizard = win.getByRole('dialog', { name: 'Webseiten vergleichen' })
     await wizard.getByLabel('Recherchefrage').fill('Was kostet der Tarif?')
     await wizard.getByLabel('Adressen').fill(`${webBase}/langsam\n${webBase}/a`)
@@ -352,7 +352,8 @@ try {
     if (!(runs >= 2 && events > runs)) throw new Error(`unerwartete Zählwerte: ${counts}`)
     await panel.getByText(/organize_folder/).waitFor()
     // Ohne hinterlegten Schlüssel gibt es nichts zu testen
-    if ((await win.getByRole('button', { name: 'Verbindung testen' }).count()) !== 0) throw new Error('Verbindungstest ohne Schlüssel sichtbar')
+    // exact: sonst passt auch „E-Mail-Verbindung testen“ (Playwright vergleicht Namen sonst als Teilwort)
+    if ((await win.getByRole('button', { name: 'Verbindung testen', exact: true }).count()) !== 0) throw new Error('Verbindungstest ohne Schlüssel sichtbar')
     await panel.screenshot({ path: join(shots, '02f-systemzustand.png') })
     await nav('Start')
   })

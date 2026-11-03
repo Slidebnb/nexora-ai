@@ -100,7 +100,7 @@ export function LiveForm({ template, onError }: { template: WorkflowTemplate; on
   switch (template.live?.workflow) {
     case 'organize_folder':
       return (
-        <div className="flex min-h-16 flex-1 flex-col gap-2">
+        <div className="flex flex-1 flex-col gap-2">
           <p className="text-sm text-text-2">{template.description}</p>
           <div className="flex items-center gap-2">
             <PickButton
@@ -129,7 +129,7 @@ export function LiveForm({ template, onError }: { template: WorkflowTemplate; on
       )
     case 'web_research':
       return (
-        <div className="flex min-h-16 flex-1 flex-col gap-2">
+        <div className="flex flex-1 flex-col gap-2">
           <input
             value={d.question}
             onChange={(e) => set({ question: e.target.value })}
@@ -149,7 +149,7 @@ export function LiveForm({ template, onError }: { template: WorkflowTemplate; on
       )
     case 'pdf_analysis':
       return (
-        <div className="flex min-h-16 flex-1 flex-col gap-2">
+        <div className="flex flex-1 flex-col gap-2">
           <div className="flex items-center gap-2">
             <PickButton
               label="PDFs wählen"
@@ -188,7 +188,7 @@ export function LiveForm({ template, onError }: { template: WorkflowTemplate; on
       return <DesktopRecorder />
     case 'draft_emails':
       return (
-        <div className="flex min-h-16 flex-1 flex-col gap-2">
+        <div className="flex flex-1 flex-col gap-2">
           <input value={d.subject} onChange={(e) => set({ subject: e.target.value })} placeholder="Betreff" aria-label="Betreff" className="input text-sm" />
           <div className="grid min-h-0 flex-1 grid-cols-2 gap-2">
             <textarea
