@@ -77,9 +77,11 @@ try {
   await win.getByRole('dialog', { name: 'Willkommen bei NEXORA' }).waitFor({ timeout: 10_000 })
   await win.screenshot({ path: join(shots, 'audit-01-begruessung.png') })
   check('Begrüßung beim Erststart', true)
-  await win.getByRole('button', { name: 'Weiter' }).click()
-  await win.getByRole('button', { name: 'Weiter' }).click()
-  await win.getByRole('button', { name: 'Übungsordner anlegen und loslegen' }).click()
+  await win.getByRole('button', { name: 'Weiter' }).click() // → KI-Schlüssel (überspringbar)
+  await win.getByRole('button', { name: 'Weiter' }).click() // → Kontrolle/Freigaben
+  await win.getByRole('button', { name: 'Weiter' }).click() // → Deine Dienste verbinden (optional)
+  await win.getByRole('button', { name: 'Weiter' }).click() // → Loslegen
+  await win.getByRole('button', { name: 'Übungsordner' }).click()
   const wizard = win.getByRole('dialog', { name: 'Ordner aufräumen' })
   await wizard.getByTestId('picked-folder').getByText('NEXORA Übungsordner').waitFor()
   const practice = (await wizard.getByTestId('picked-folder').innerText()).trim()
@@ -108,8 +110,10 @@ try {
   const secure = await win.getByText('Sichere Speicherung verfügbar').waitFor({ timeout: 10_000 }).then(() => true, () => false)
   check('Sichere Speicherung (DPAPI) verfügbar', secure)
   const fakeKey = 'sk-ant-audit-' + 'X'.repeat(32)
-  await win.getByLabel('API-Schlüssel Anthropic (Claude)').fill(fakeKey)
-  await win.getByRole('button', { name: 'Speichern' }).first().click()
+  // Nur im Schlüssel-Bereich klicken – E-Mail-Konto & Co. haben eigene „Speichern“-Knöpfe weiter oben
+  const keys = win.getByRole('region', { name: 'API-Schlüssel (BYOK)' })
+  await keys.getByLabel('API-Schlüssel Anthropic (Claude)').fill(fakeKey)
+  await keys.getByRole('button', { name: 'Speichern' }).first().click()
   await win.getByText('✓ hinterlegt (verschlüsselt)').first().waitFor({ timeout: 10_000 })
   const secretsFile = join(userData, 'secrets.json')
   const raw = existsSync(secretsFile) ? readFileSync(secretsFile, 'utf8') : ''
@@ -122,7 +126,7 @@ try {
   await win.getByText('✓ hinterlegt (verschlüsselt)').first().waitFor({ timeout: 10_000 })
   check('Schlüssel nach Neustart weiterhin hinterlegt', true)
   check('Begrüßung erscheint beim zweiten Start nicht erneut', (await win.getByRole('dialog', { name: 'Willkommen bei NEXORA' }).count()) === 0)
-  await win.getByRole('button', { name: 'Entfernen' }).first().click()
+  await win.getByRole('region', { name: 'API-Schlüssel (BYOK)' }).getByRole('button', { name: 'Entfernen' }).first().click()
   await win.getByText('nicht hinterlegt').first().waitFor()
   check('Schlüssel lässt sich wieder entfernen', true)
 } catch (e) {
