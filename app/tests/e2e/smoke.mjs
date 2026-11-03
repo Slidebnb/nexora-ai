@@ -480,7 +480,13 @@ try {
     assert.deepEqual(readdirSync(draftsDir), [])
     await win.screenshot({ path: join(shots, '08-live-entwurf-freigabe.png') })
     await dlg.getByRole('button', { name: 'Erlauben' }).click()
-    await win.getByText(/Nichts wurde versendet/).first().waitFor({ timeout: 15_000 })
+    // Auf die echte Bedingung warten (Dateien geschrieben) – der Text „Nichts wurde versendet“ steht schon
+    // vom früheren Agent-Entwurf auf der Seite und kam unter Windows vor dem Schreiben zurück (Race).
+    const until = Date.now() + 20_000
+    while (readdirSync(draftsDir).filter((f) => f.endsWith('.eml')).length < 2) {
+      if (Date.now() > until) throw new Error(`Zeitüberschreitung: Entwürfe nicht geschrieben (${readdirSync(draftsDir).join(', ')})`)
+      await new Promise((r) => setTimeout(r, 200))
+    }
     const emls = readdirSync(draftsDir).sort()
     assert.deepEqual(emls, ['Entwurf 01 - Anna Muster.eml', 'Entwurf 02 - bob.eml'])
     const eml = readFileSync(join(draftsDir, emls[0]), 'utf8')
