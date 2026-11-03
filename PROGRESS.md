@@ -537,6 +537,20 @@ Ehrlich: Preise sind Schätzungen; die Rechnung des Anbieters ist maßgeblich.
 TDD: `test_llm_price.py` (4), Kosten-Assertions in 3 Worker-Cloud-Tests (erst rot, dann grün), `audit.test.ts` (4).
 Worker 100 ✓ / 1 skip, App 91 ✓, Typecheck + Produktions-Build grün.
 
+## CI wieder grün + Live-Streaming der Antworten (2026-11-03) ✅
+
+**CI:** War seit Lauf #39 (31.10.) rot – unbemerkt, weil lokal nur Unit-Tests liefen. Systematisch behoben
+(Läufe #72–#75): verdeckte Klicks im Dashboard (feste Zeilen, Aufgabenfeld scrollt intern), Formulare schrumpften
+unter ihre Inhaltshöhe, doppelt beschrifteter Knopf, Neukunden ohne Schlüssel kamen nicht an lokale Aufgaben,
+Windows-Race im Entwurfs-Test, veraltetes Installationsaudit. **#75 komplett grün**, Windows-Installer als Artifact.
+Regel ab jetzt: nach jedem Push den CI-Lauf prüfen.
+
+**Live-Streaming:** Der Chat fordert `stream: true` an; Text erscheint Wort für Wort (Anthropic- und
+OpenAI/Ollama-SSE), Werkzeug-Eingaben werden aus Teil-JSON zusammengesetzt, Token kommen aus dem Stream.
+Antwortet ein Server ohne Stream, gilt der bisherige Weg. TDD: `chatStream.test.ts` (4); E2E-Testserver streamt
+jetzt wie Anthropic, sodass Chat-, Recherche- und Entwurfs-Klicktests den Live-Weg bis zur Oberfläche prüfen.
+Grundlage für spätere Echtzeit-Sprache.
+
 ## Voicestudio – Stimme & Diktat (OpenAI) (2026-11-01) ✅
 
 Kunden können jetzt **mit der KI sprechen** und bekommen **gesprochene Antworten**. Zwei Betriebsarten im selben Hook
