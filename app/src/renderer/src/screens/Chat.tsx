@@ -25,6 +25,7 @@ const PROVIDER_LABEL: Record<Provider, string> = { anthropic: 'Claude (Anthropic
 
 export function Chat() {
   const setScreen = useNexora((s) => s.setScreen)
+  const expertMode = useNexora((s) => s.expertMode)
   const [provider, setProvider] = useState<Provider | null>(null)
   const [checked, setChecked] = useState(false)
   const [messages, setMessages] = useState<Shown[]>([])
@@ -141,7 +142,7 @@ export function Chat() {
         <button type="button" className="btn-secondary ml-auto text-xs" onClick={() => setVoiceMode(true)} aria-label="Live-Sprachmodus öffnen" data-testid="open-voice">
           <AudioLines className="size-4" aria-hidden /> Sprachmodus
         </button>
-        {streaming ? <AgentPulse /> : provider && <span className="text-xs text-text-2">über {PROVIDER_LABEL[provider]}</span>}
+        {streaming ? <AgentPulse /> : provider && expertMode && <span className="text-xs text-text-2">über {PROVIDER_LABEL[provider]}</span>}
       </header>
       {voiceMode && <VoiceMode onClose={() => setVoiceMode(false)} />}
 
@@ -253,7 +254,7 @@ export function Chat() {
         </p>
       )}
       <p className="mt-1.5 text-center text-[11px] text-text-2">
-        NEXORA kann Fehler machen. Aktionen auf deinem PC (Ordner, Dateien …) folgen – dann jeweils mit deiner Freigabe.
+        NEXORA kann Fehler machen. Bevor auf deinem PC etwas verändert oder gesendet wird, fragt NEXORA dich.
       </p>
       <TaskWizard />
     </div>

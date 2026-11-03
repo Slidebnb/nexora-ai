@@ -76,15 +76,22 @@ export function TopBar() {
         {(expert || totalUsd > 0) && (
         <span
           className="inline-flex items-center gap-1.5"
-          title={`Geschätzte API-Kosten auf deinem eigenen Schlüssel (BYOK) – Aufgaben ${formatUsd(kpis.costUsd)}, Chat ${formatUsd(demoMode ? 0 : usage.chatUsd)}, Voicestudio ${formatUsd(demoMode ? 0 : usage.voiceUsd)}. Abgerechnet wird direkt vom KI-Anbieter – NEXORA schlägt nichts auf.`}
+          title={
+            expert
+              ? `Geschätzte API-Kosten auf deinem eigenen Schlüssel (BYOK) – Aufgaben ${formatUsd(kpis.costUsd)}, Chat ${formatUsd(demoMode ? 0 : usage.chatUsd)}, Voicestudio ${formatUsd(demoMode ? 0 : usage.voiceUsd)}. Abgerechnet wird direkt vom KI-Anbieter – NEXORA schlägt nichts auf.`
+              : `Ungefähre Kosten bei deinem KI-Anbieter: Aufgaben ${formatUsd(kpis.costUsd)}, Chat ${formatUsd(demoMode ? 0 : usage.chatUsd)}, Sprache ${formatUsd(demoMode ? 0 : usage.voiceUsd)}. NEXORA schlägt nichts auf.`
+          }
         >
-          <Cpu className="size-3.5" aria-hidden /> <span className="max-xl:hidden">API-Kosten:</span> {formatUsd(totalUsd)}
+          <Cpu className="size-3.5" aria-hidden /> <span className="max-xl:hidden">{expert ? 'API-Kosten:' : 'KI-Kosten:'}</span> {formatUsd(totalUsd)}
           {demoMode && kpis.costUsd > 0 && <span className="text-warning">(simuliert)</span>}
         </span>
         )}
       </div>
 
       <div className="ml-auto flex items-center gap-2">
+        {/* Kunden sehen Pause/Stopp nur, wenn wirklich etwas läuft; Experten immer */}
+        {(expert || hasActive) && (
+        <>
         <button
           type="button"
           className="btn-ghost"
@@ -104,17 +111,23 @@ export function TopBar() {
         >
           <Square className="size-4" aria-hidden /> <span className="max-xl:sr-only">Stopp</span>
         </button>
-        <button
-          type="button"
-          className="btn-ghost"
-          onClick={toggleRight}
-          aria-pressed={rightOpen}
-          title="Seitenleiste mit Agenten und Aktivität ein-/ausblenden"
-        >
-          <PanelRight className="size-4" aria-hidden />
-          <span className="sr-only">Seitenleiste umschalten</span>
-        </button>
-        <span className="ml-2 font-mono text-sm tabular-nums text-text-2">{clock.format(now)}</span>
+        </>
+        )}
+        {expert && (
+          <>
+            <button
+              type="button"
+              className="btn-ghost"
+              onClick={toggleRight}
+              aria-pressed={rightOpen}
+              title="Seitenleiste mit Agenten und Aktivität ein-/ausblenden"
+            >
+              <PanelRight className="size-4" aria-hidden />
+              <span className="sr-only">Seitenleiste umschalten</span>
+            </button>
+            <span className="ml-2 font-mono text-sm tabular-nums text-text-2">{clock.format(now)}</span>
+          </>
+        )}
         <button
           type="button"
           onClick={() => setScreen('settings')}

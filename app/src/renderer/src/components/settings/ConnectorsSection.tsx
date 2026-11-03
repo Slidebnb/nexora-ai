@@ -156,10 +156,10 @@ export function ConnectorsSection() {
     <section className="panel p-5" aria-labelledby="connectors-title">
       <h2 id="connectors-title" className="hud-label">Verbindungen</h2>
       <p className="mt-2 text-sm text-text-2">
-        Verbinde NEXORA mit deinen Diensten (über das offene MCP-Format, wie bei Claude). Danach kann NEXORA deren
-        Werkzeuge nutzen. Bevor etwas verändert oder gesendet wird, fragt NEXORA dich einzeln.
+        Verbinde NEXORA mit deinen Diensten – zum Beispiel E-Mail, Kalender oder Cloud-Speicher. Danach kann NEXORA dort
+        für dich arbeiten. Bevor etwas verändert oder gesendet wird, fragt NEXORA dich jedes Mal.
       </p>
-      {!connected && <p className="mt-3 text-sm text-warning">NEXORA startet noch – Verbindungen erscheinen, sobald der Hintergrunddienst bereit ist.</p>}
+      {!connected && <p className="mt-3 text-sm text-warning">NEXORA startet noch – gleich kannst du hier Dienste verbinden.</p>}
       {error && <p role="alert" className="mt-3 text-sm text-danger">{error}</p>}
       {connected && (
         <>

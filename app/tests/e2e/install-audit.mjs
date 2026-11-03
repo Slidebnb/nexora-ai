@@ -111,7 +111,7 @@ try {
   check('Sichere Speicherung (DPAPI) verfügbar', secure)
   const fakeKey = 'sk-ant-audit-' + 'X'.repeat(32)
   // Nur im Schlüssel-Bereich klicken – E-Mail-Konto & Co. haben eigene „Speichern“-Knöpfe weiter oben
-  const keys = win.getByRole('region', { name: 'API-Schlüssel (BYOK)' })
+  const keys = win.getByRole('region', { name: 'KI-Zugang' })
   await keys.getByLabel('API-Schlüssel Anthropic (Claude)').fill(fakeKey)
   await keys.getByRole('button', { name: 'Speichern' }).first().click()
   await win.getByText('✓ hinterlegt (verschlüsselt)').first().waitFor({ timeout: 10_000 })
@@ -126,7 +126,7 @@ try {
   await win.getByText('✓ hinterlegt (verschlüsselt)').first().waitFor({ timeout: 10_000 })
   check('Schlüssel nach Neustart weiterhin hinterlegt', true)
   check('Begrüßung erscheint beim zweiten Start nicht erneut', (await win.getByRole('dialog', { name: 'Willkommen bei NEXORA' }).count()) === 0)
-  await win.getByRole('region', { name: 'API-Schlüssel (BYOK)' }).getByRole('button', { name: 'Entfernen' }).first().click()
+  await win.getByRole('region', { name: 'KI-Zugang' }).getByRole('button', { name: 'Entfernen' }).first().click()
   await win.getByText('nicht hinterlegt').first().waitFor()
   check('Schlüssel lässt sich wieder entfernen', true)
 } catch (e) {

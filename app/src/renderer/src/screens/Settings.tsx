@@ -303,16 +303,12 @@ export function Settings() {
     <div className="h-full overflow-y-auto p-6">
       <ScreenHeader title="Einstellungen" />
       <div className="grid max-w-3xl gap-5">
-        <SystemStatusPanel />
-        <LicenseSection />
-        <ConnectorsSection />
-        <EmailAccountSection />
-
         <section className="panel p-5" aria-labelledby="keys-title">
-          <h2 id="keys-title" className="hud-label">API-Schlüssel (BYOK)</h2>
+          <h2 id="keys-title" className="hud-label">KI-Zugang</h2>
           <p className="mt-2 text-sm text-text-2">
-            Schlüssel werden nur im Hauptprozess mit der Verschlüsselung des Betriebssystems gespeichert (Windows: DPAPI). Die Oberfläche
-            sieht sie nie, und sie erscheinen nicht in Logs.
+            Damit NEXORA schreiben, antworten und Aufgaben mit KI erledigen kann, trägst du hier einmalig deinen Schlüssel von
+            Anthropic (Claude) oder OpenAI ein. Er wird verschlüsselt auf deinem PC gespeichert.
+            {expertMode && ' Technisch: nur im Hauptprozess, mit der Verschlüsselung des Betriebssystems (Windows: DPAPI); nie in der Oberfläche oder in Logs.'}
           </p>
           {loadError && <p role="alert" className="mt-2 text-sm text-danger">{loadError}</p>}
           {status && (
@@ -328,23 +324,13 @@ export function Settings() {
               ))}
             </>
           )}
-          <p className="mt-2 text-xs text-text-2">„Verbindung testen“ fragt nur die Modellliste des Anbieters ab und verbraucht keine Tokens.</p>
-          <p className="mt-2 text-xs text-success">Kein Abo, keine Marge: Du zahlst nur deine tatsächliche Nutzung direkt beim Anbieter. Die laufenden Kosten siehst du jederzeit live oben in der Leiste.</p>
+          {expertMode && <p className="mt-2 text-xs text-text-2">„Verbindung testen“ fragt nur die Modellliste des Anbieters ab und verbraucht keine Tokens.</p>}
+          <p className="mt-2 text-xs text-success">Du zahlst nur, was du wirklich nutzt – direkt beim Anbieter, ohne Aufschlag von NEXORA. Die Kosten siehst du oben in der Leiste.</p>
         </section>
 
-        <OllamaSection />
+        <ConnectorsSection />
+        <EmailAccountSection />
         <VoicestudioSection />
-        <AuditSection />
-
-        <section className="panel p-5" aria-labelledby="demo-title">
-          <h2 id="demo-title" className="hud-label">Demo-Modus</h2>
-          <p className="mt-2 text-sm text-text-2">
-            Zeigt simulierte Abläufe für Präsentationen. Alles ist als DEMO gekennzeichnet. Beim Beenden werden alle Demo-Daten entfernt.
-          </p>
-          <button type="button" className="btn-secondary mt-3" onClick={demoMode ? exitDemo : enterDemo}>
-            <FlaskConical className="size-4" aria-hidden /> {demoMode ? 'Demo-Modus beenden' : 'Demo-Modus starten'}
-          </button>
-        </section>
 
         <section className="panel p-5" aria-labelledby="expert-title">
           <h2 id="expert-title" className="hud-label">Ansicht</h2>
@@ -357,14 +343,6 @@ export function Settings() {
               </span>
             </span>
           </label>
-        </section>
-
-        <section className="panel p-5" aria-labelledby="data-title">
-          <h2 id="data-title" className="hud-label">Datenverarbeitung</h2>
-          <p className="mt-2 text-sm text-text-2">
-            Ordner aufräumen läuft vollständig auf diesem PC; die Web-Recherche ruft nur die Webseiten ab, die du angibst. Bevor Inhalte an
-            einen KI-Anbieter gesendet werden (PDF-Analyse oder E-Mail-Entwürfe mit KI), fragt NEXORA ausdrücklich nach.
-          </p>
         </section>
 
         <section className="panel p-5" aria-labelledby="theme-title">
@@ -399,11 +377,40 @@ export function Settings() {
           </label>
         </section>
 
-        {info && (
-          <p className="text-xs text-text-2">
-            {info.name} {info.version} · {info.platform}
-          </p>
-        )}
+        <LicenseSection />
+
+        {/* Technik für Fortgeschrittene: für Kunden zugeklappt, in der Expertenansicht offen */}
+        <details className="group" open={expertMode} data-testid="advanced-settings">
+          <summary className="cursor-pointer select-none rounded-md px-1 py-2 text-sm font-medium text-text-2 hover:text-text">
+            Erweitert – für Fortgeschrittene (Systemzustand, lokales KI-Modell, Protokoll, Demo)
+          </summary>
+          <div className="mt-3 grid gap-5">
+            <SystemStatusPanel />
+            <OllamaSection />
+            <AuditSection />
+            <section className="panel p-5" aria-labelledby="demo-title">
+              <h2 id="demo-title" className="hud-label">Demo-Modus</h2>
+              <p className="mt-2 text-sm text-text-2">
+                Zeigt simulierte Abläufe für Präsentationen. Alles ist als DEMO gekennzeichnet. Beim Beenden werden alle Demo-Daten entfernt.
+              </p>
+              <button type="button" className="btn-secondary mt-3" onClick={demoMode ? exitDemo : enterDemo}>
+                <FlaskConical className="size-4" aria-hidden /> {demoMode ? 'Demo-Modus beenden' : 'Demo-Modus starten'}
+              </button>
+            </section>
+            <section className="panel p-5" aria-labelledby="data-title">
+              <h2 id="data-title" className="hud-label">Datenverarbeitung</h2>
+              <p className="mt-2 text-sm text-text-2">
+                Ordner aufräumen läuft vollständig auf diesem PC; die Web-Recherche ruft nur die Webseiten ab, die du angibst. Bevor Inhalte an
+                einen KI-Anbieter gesendet werden (PDF-Analyse oder E-Mail-Entwürfe mit KI), fragt NEXORA ausdrücklich nach.
+              </p>
+            </section>
+            {info && (
+              <p className="text-xs text-text-2">
+                {info.name} {info.version} · {info.platform}
+              </p>
+            )}
+          </div>
+        </details>
       </div>
     </div>
   )

@@ -211,7 +211,7 @@ class OrganizeFolder(Workflow):
             action="Dateien verschieben",
             target=str(root),
             data=f"{len(moves)} Dateien → {len(counts)} Unterordner: {summary}" + (f". {renamed} Datei(en) werden wegen Namensgleichheit umbenannt." if renamed else ""),
-            impact="Dateien werden innerhalb dieses Ordners in Unterordner verschoben. Nichts wird gelöscht oder überschrieben. Ein Undo-Protokoll wird gespeichert; „Rückgängig machen“ ist danach möglich.",
+            impact="Die Dateien werden in diesem Ordner in passende Unterordner einsortiert. Nichts wird gelöscht oder überschrieben. Mit „Rückgängig machen“ kannst du danach alles wieder zurückholen.",
         )
         if decision != "allow":
             ctx.cancelled("Freigabe abgelehnt – es wurde keine Datei verschoben")
