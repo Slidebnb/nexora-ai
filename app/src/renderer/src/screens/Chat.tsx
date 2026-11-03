@@ -122,6 +122,13 @@ export function Chat() {
         <button type="button" className="btn-primary" onClick={() => setScreen('settings')}>
           <KeyRound className="size-4" aria-hidden /> Schlüssel eintragen
         </button>
+        {/* Lokale Aufgaben brauchen keinen Schlüssel – Neukunden sollen sie sofort nutzen können. */}
+        <p className="mt-4 text-xs uppercase tracking-wider text-text-2/70">Schon jetzt ohne Schlüssel möglich</p>
+        <WorkflowGallery />
+        <div className="mt-2 w-full max-w-2xl empty:hidden">
+          <TaskRuns />
+        </div>
+        <TaskWizard />
       </div>
     )
   }
